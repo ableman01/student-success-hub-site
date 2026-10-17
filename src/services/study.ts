@@ -51,23 +51,27 @@ export async function getStudyGroups () {
 }
 
 export async function createStudyGroup (input: { name: string, course: string, description: string }) {
-  const client = requireSupabase()
-  const { data: user } = await client.auth.getUser()
-  if (!user.user) throw new Error('Sign in before creating a study group.')
-  const { data: group, error } = await client.from('study_groups').insert({ ...input, owner_id: user.user.id }).select('*').single()
-  if (error) throw getSchemaError(error)
-  const { error: memberError } = await client.from('study_group_members').insert({ group_id: group.id, user_id: user.user.id })
-  if (memberError) {
-    await client.from('study_groups').delete().eq('id', group.id)
-    throw getSchemaError(memberError)
-  }
-  return group as StudyGroup
+  const { data, error } = await requireSupabase().functions.invoke('create-study-group', { body: input })
+  if (error) throw await getFunctionError(error)
+  return data as StudyGroup
 }
 
 export async function joinStudyGroup (inviteCode: string) {
   const { data, error } = await requireSupabase().functions.invoke('join-study-group', { body: { invite_code: inviteCode.trim() } })
-  if (error) throw getSchemaError(error)
+  if (error) throw await getFunctionError(error)
   return data as Pick<StudyGroup, 'id' | 'name' | 'course' | 'description'>
+}
+
+async function getFunctionError (error: unknown) {
+  if (typeof error === 'object' && error !== null && 'context' in error && error.context instanceof Response) {
+    try {
+      const body = await error.context.clone().json() as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) return new Error(body.error)
+    } catch {
+      // Use the SDK error below when the response has no JSON body.
+    }
+  }
+  return getSchemaError(error as { code?: string, message: string })
 }
 
 export async function getStudyGroupPosts (groupId: string) {

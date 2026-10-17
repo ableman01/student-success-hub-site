@@ -175,6 +175,9 @@
                 {{ successMessage }}
               </v-alert>
             </v-col>
+            <v-col v-if="canResendConfirmation" cols="12" class="pt-0">
+              <v-btn :loading="resendingConfirmation" prepend-icon="mdi-email-sync-outline" rounded="pill" variant="tonal" @click="resendConfirmation">Resend confirmation email</v-btn>
+            </v-col>
           </v-row>
         </v-card-text>
 
@@ -203,7 +206,7 @@
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { academicLevels } from '@/lib/academics'
-  import { signUp } from '@/lib/auth'
+  import { resendSignUpConfirmation, signUp } from '@/lib/auth'
 
   const router = useRouter()
   const firstName = ref('')
@@ -219,6 +222,8 @@
   const showConfirmPassword = ref(false)
   const agreedToTerms = ref(false)
   const loading = ref(false)
+  const resendingConfirmation = ref(false)
+  const canResendConfirmation = ref(false)
   const successMessage = ref('')
   const errorMessage = ref('')
   const genders = new Set(['Female', 'Male'])
@@ -232,21 +237,26 @@
       || 'Enter a valid email address',
   ]
   function getErrorMessage (error: unknown) {
-    if (
-      error instanceof Error
-      && /error sending confirmation email|email_send_failed/i.test(error.message)
-    ) {
-      return 'The confirmation email was not delivered. The website redirect is configured, and email is sent through the external Resend SMTP provider. Check that mail2student.com is verified in Resend and review its delivery logs and SMTP credentials. Check Supabase Authentication → Users before retrying in case the account was created without the email being delivered.'
+    const message = error instanceof Error ? error.message : ''
+    if (/error sending confirmation email|email_send_failed/i.test(message)) {
+      return 'Your account may have been created, but Supabase could not send the confirmation email. Check your inbox and spam folder, then use Resend confirmation email. If delivery keeps failing, the project owner needs to check Supabase Auth SMTP settings.'
     }
-
-    return error instanceof Error
-      ? error.message
-      : 'Registration failed. Please try again.'
+    if (/redirect.*(not allowed|allowlist)|email_redirect/i.test(message)) {
+      return 'Supabase rejected the confirmation link address. Add this site URL and /auth/confirm to the Supabase Auth redirect URL allowlist, then try again.'
+    }
+    if (/rate limit|too many requests/i.test(message)) {
+      return 'Too many signup or email requests were made. Wait a few minutes, then try again.'
+    }
+    if (/password.*(weak|characters|at least)/i.test(message)) {
+      return 'Choose a stronger password with at least 8 characters, then try again.'
+    }
+    return message || 'Registration failed. Please check your details and try again.'
   }
 
   async function register () {
     errorMessage.value = ''
     successMessage.value = ''
+    canResendConfirmation.value = false
 
     if (!firstName.value.trim() || !lastName.value.trim()) {
       errorMessage.value = 'Enter your first and last name.'
@@ -303,13 +313,29 @@
       if (hasSession) {
         await router.replace('/dashboard')
       } else {
+        canResendConfirmation.value = true
         successMessage.value
           = 'Account created. Check your inbox for the LASU Student Success Hub confirmation email, then return here to log in.'
       }
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
+      if (/already (has an account|registered)|already exists|error sending confirmation email|email_send_failed/i.test(error instanceof Error ? error.message : '')) canResendConfirmation.value = true
     } finally {
       loading.value = false
+    }
+  }
+
+  async function resendConfirmation () {
+    errorMessage.value = ''
+    successMessage.value = ''
+    resendingConfirmation.value = true
+    try {
+      await resendSignUpConfirmation(email.value)
+      successMessage.value = 'A new confirmation link was sent if this email has an unconfirmed account. Check your inbox and spam folder.'
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error)
+    } finally {
+      resendingConfirmation.value = false
     }
   }
 </script>

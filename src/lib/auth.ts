@@ -187,6 +187,24 @@ export async function signUp (input: {
   }
 }
 
+export async function resendSignUpConfirmation (email: string) {
+  if (!isSupabaseConfigured) {
+    throw new Error('Email confirmation is only available when the live Supabase project is connected.')
+  }
+
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!normalizedEmail) {
+    throw new Error('Enter the email address you used to sign up.')
+  }
+
+  const { error } = await getSupabaseClient().auth.resend({
+    type: 'signup',
+    email: normalizedEmail,
+    options: { emailRedirectTo: `${window.location.origin}/auth/confirm?confirmed=1` },
+  })
+  if (error) throw error
+}
+
 function toDemoUser (account: DemoAccount): AppUser {
   return {
     id: account.id,

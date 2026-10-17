@@ -27,6 +27,13 @@
         <p>Join classmates to discuss questions, share assignment prompts, and read course PDFs together.</p>
       </section>
 
+      <nav aria-label="Study room sections" class="study-section-nav">
+        <a href="#study-groups">Study groups</a>
+        <a href="#course-room">Course discussion</a>
+        <a href="#course-resources">Course PDFs</a>
+        <a href="#study-guidance">Study guidance</a>
+      </nav>
+
       <v-alert
         v-if="roomError"
         class="mb-5"
@@ -47,7 +54,7 @@
         {{ resourceError }}
       </v-alert>
 
-      <section class="groups-section" aria-labelledby="groups-heading">
+      <section id="study-groups" class="groups-section" aria-labelledby="groups-heading">
         <div class="groups-heading-row">
           <div>
             <div class="section-kicker">SMALL GROUP STUDY</div>
@@ -113,7 +120,7 @@
 
       <v-row align="start">
         <v-col cols="12" lg="8">
-          <v-card class="room-card pa-4 pa-md-6" rounded="xl">
+          <v-card id="course-room" class="room-card pa-4 pa-md-6" rounded="xl">
             <div class="room-toolbar">
               <div>
                 <div class="section-kicker">LIVE COURSE ROOM</div>
@@ -237,7 +244,7 @@
         </v-col>
 
         <v-col cols="12" lg="4">
-          <v-card class="reading-card pa-5" rounded="xl">
+          <v-card id="course-resources" class="reading-card pa-5" rounded="xl">
             <div class="section-kicker">READ TOGETHER</div>
             <h2 class="mt-1">Course PDFs</h2>
             <p class="text-body-2 text-medium-emphasis">Open a shared resource while you discuss it in the room.</p>
@@ -347,7 +354,7 @@
             <p>Post a problem as an assignment question, then use discussion comments to compare ideas and explain solutions.</p>
           </v-card>
 
-          <v-card class="guide-card mt-5 pa-5" rounded="xl">
+          <v-card id="study-guidance" class="guide-card mt-5 pa-5" rounded="xl">
             <img class="guide-art" src="/study-planner.svg" alt="Illustrated study planner with completed tasks and a course book">
             <div class="section-kicker">A SIMPLE STUDY ROUTINE</div>
             <h3 class="mt-2">Make each session count</h3>
@@ -767,6 +774,43 @@
   .study-intro {
     padding: 38px 0 28px;
   }
+
+  .study-section-nav {
+    position: sticky;
+    z-index: 3;
+    top: 8px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin: 0 0 22px;
+    border: 1px solid #e3e9e2;
+    border-radius: 999px;
+    padding: 8px;
+    background: rgb(255 254 250 / 94%);
+    box-shadow: 0 8px 24px rgb(37 58 47 / 7%);
+    scrollbar-width: none;
+  }
+
+  .study-section-nav::-webkit-scrollbar { display: none; }
+
+  .study-section-nav a {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #37574b;
+    font-size: 0.82rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .study-section-nav a:hover,
+  .study-section-nav a:focus-visible {
+    background: #e9f1e9;
+    outline: 2px solid #74977b;
+    outline-offset: 1px;
+  }
+
+  #study-groups, #course-room, #course-resources, #study-guidance { scroll-margin-top: 88px; }
 
   .section-kicker {
     color: #668d76;

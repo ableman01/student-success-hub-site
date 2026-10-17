@@ -290,11 +290,6 @@ create policy "Members can view their study groups"
     where member.group_id = study_groups.id and member.user_id = (select auth.uid())
   ));
 
-drop policy if exists "Students can create study groups" on public.study_groups;
-create policy "Students can create study groups"
-  on public.study_groups for insert to authenticated
-  with check ((select auth.uid()) = owner_id);
-
 drop policy if exists "Owners can update their study groups" on public.study_groups;
 create policy "Owners can update their study groups"
   on public.study_groups for update to authenticated
@@ -310,18 +305,6 @@ drop policy if exists "Members can view group memberships" on public.study_group
 create policy "Members can view group memberships"
   on public.study_group_members for select to authenticated
   using ((select auth.uid()) = user_id);
-
-drop policy if exists "Owners can add themselves as a member" on public.study_group_members;
-create policy "Owners can add themselves as a member"
-  on public.study_group_members for insert to authenticated
-  with check (
-    (select auth.uid()) = user_id
-    and exists (
-      select 1 from public.study_groups study_group
-      where study_group.id = study_group_members.group_id
-        and study_group.owner_id = (select auth.uid())
-    )
-  );
 
 drop policy if exists "Members can leave groups" on public.study_group_members;
 create policy "Members can leave groups"
@@ -370,9 +353,13 @@ create trigger set_study_group_post_sender_name
   before insert on public.study_group_posts
   for each row execute function public.set_study_group_post_sender_name();
 
-grant select, insert, update, delete on public.study_groups to authenticated;
-grant select, insert, delete on public.study_group_members to authenticated;
+grant select, update, delete on public.study_groups to authenticated;
+grant select, delete on public.study_group_members to authenticated;
 grant select, insert on public.study_group_posts to authenticated;
+drop policy if exists "Owners can add themselves as a member" on public.study_group_members;
+drop policy if exists "Students can create study groups" on public.study_groups;
+revoke insert on public.study_groups from authenticated;
+revoke insert on public.study_group_members from authenticated;
 
 do $$
 begin
