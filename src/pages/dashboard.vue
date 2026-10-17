@@ -2,11 +2,11 @@
   <main class="dashboard-page">
     <v-container class="dashboard-width py-5 py-md-8" fluid>
       <header class="dashboard-header">
-        <RouterLink aria-label="Student Success Hub home" class="dashboard-brand" to="/">
+        <RouterLink aria-label="LASU Student Success Hub home" class="dashboard-brand" to="/">
           <img alt="" src="/academic-mark.svg">
 
           <span>
-            <strong>Student Success Hub</strong>
+            <strong>LASU Student Success Hub</strong>
             <small>Your academic space</small>
           </span>
         </RouterLink>
@@ -43,7 +43,7 @@
           </v-btn>
 
           <v-btn
-            href="mailto:noreply@mail2student.com?subject=Student%20Success%20Hub%20support"
+            href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
             prepend-icon="mdi-lifebuoy"
             rounded="pill"
             variant="text"
@@ -488,11 +488,20 @@
             variant="outlined"
           />
 
-          <v-chip
-            color="secondary"
-            prepend-icon="mdi-account-school-outline"
-            variant="tonal"
-          >
+          <v-select
+            v-model="materialCategory"
+            class="material-category-filter"
+            density="comfortable"
+            hide-details
+            item-title="title"
+            item-value="value"
+            :items="materialCategoryFilters"
+            label="Filter by category"
+            prepend-inner-icon="mdi-shape-outline"
+            variant="outlined"
+          />
+
+          <v-chip color="secondary" prepend-icon="mdi-account-school-outline" variant="tonal">
             {{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'All levels' }}
           </v-chip>
         </div>
@@ -548,6 +557,13 @@
                     · {{ formatDate(resource.created_at) }}
                   </p>
                 </div>
+              </div>
+
+              <div class="material-meta">
+                <v-chip color="primary" size="x-small" variant="tonal">
+                  {{ getResourceCategoryLabel(resource.category) }}
+                </v-chip>
+                <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
               </div>
 
               <v-chip
@@ -643,6 +659,16 @@
                   />
                 </v-col>
               </v-row>
+
+              <v-select
+                v-model="resourceCategory"
+                item-title="title"
+                item-value="value"
+                :items="materialCategories"
+                label="Resource category"
+                prepend-inner-icon="mdi-shape-outline"
+                required
+              />
 
               <v-file-input
                 v-model="resourceFile"
@@ -842,7 +868,7 @@
 
       <footer class="dashboard-footer">
         <span>One step at a time. You’re making progress.</span>
-        <RouterLink to="/">Back to Student Success Hub</RouterLink>
+        <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
       </footer>
 
       <v-snackbar v-model="successSnackbar" color="success" timeout="3000">
@@ -854,7 +880,7 @@
 
 <script setup lang="ts">
   import type { AppUser } from '@/lib/auth'
-  import type { Resource } from '@/services/resources'
+  import type { Resource, ResourceCategory } from '@/services/resources'
   import type { Task } from '@/services/tasks'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
@@ -873,6 +899,8 @@
   import { isSupabaseConfigured } from '@/lib/supabase'
   import {
     getResources,
+    getResourceCategoryLabel,
+    resourceCategories,
     uploadResource,
   } from '@/services/resources'
   import {
@@ -887,15 +915,23 @@
   const tasks = ref<Task[]>([])
   const classMaterials = ref<Resource[]>([])
   const materialSearch = ref('')
+  const materialCategory = ref<ResourceCategory | 'all'>('all')
+  const resourceCategory = ref<ResourceCategory>('lecture_notes')
+  const materialCategories = resourceCategories.filter(category => category.value !== 'past_question')
+  const materialCategoryFilters = [
+    { title: 'All categories', value: 'all' },
+    ...materialCategories,
+  ]
   const filteredClassMaterials = computed(() => {
     const query = materialSearch.value.trim().toLocaleLowerCase()
-    if (!query) return classMaterials.value
 
-    return classMaterials.value.filter(resource =>
-      `${resource.title} ${resource.course} ${resource.description}`
-        .toLocaleLowerCase()
-        .includes(query),
-    )
+    return classMaterials.value
+      .filter(resource => materialCategory.value === 'all' || resource.category === materialCategory.value)
+      .filter(resource => !query ||
+        `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)} ${resource.uploaded_by_name}`
+          .toLocaleLowerCase()
+          .includes(query),
+      )
   })
   const title = ref('')
   const description = ref('')
@@ -1102,6 +1138,7 @@
         course: resourceCourse.value,
         description: resourceDescription.value,
         kind: 'class_material',
+        category: resourceCategory.value,
         file,
         academic_level: sharedLevel,
       })
@@ -1109,6 +1146,7 @@
       showMaterialForm.value = false
       resourceTitle.value = ''
       resourceCourse.value = ''
+      resourceCategory.value = 'lecture_notes'
       resourceDescription.value = ''
       resourceFile.value = null
       successMessage.value = `Class material shared with ${getAcademicLevelLabel(sharedLevel)} students.`
@@ -1531,8 +1569,9 @@
   }
 
   .materials-toolbar {
-    display: flex;
-    max-width: 560px;
+    display: grid;
+    max-width: 1040px;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.8fr) max-content;
     align-items: center;
     gap: 14px;
     margin: 18px 0;
@@ -1540,6 +1579,19 @@
 
   .materials-search {
     flex: 1;
+  }
+
+  .material-category-filter {
+    min-width: 220px;
+  }
+
+  .material-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: #78868a;
+    font-size: 0.76rem;
   }
 
   .material-level-chip {
@@ -2324,8 +2376,12 @@
     }
 
     .materials-toolbar {
-      align-items: flex-start;
-      flex-direction: column;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .material-category-filter {
+      min-width: 0;
     }
 
     .assignment-heading-actions .v-btn {

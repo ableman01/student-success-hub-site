@@ -46,10 +46,12 @@ export interface Database {
           course: string
           description: string
           kind: 'class_material' | 'past_question'
+          category: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level: string | null
           file_name: string
           file_path: string
           uploaded_by: string
+          uploaded_by_name: string
           created_at: string
         }
         Insert: {
@@ -58,10 +60,12 @@ export interface Database {
           course?: string
           description?: string
           kind: 'class_material' | 'past_question'
+          category?: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level?: string | null
           file_name: string
           file_path: string
           uploaded_by?: string
+          uploaded_by_name?: string
           created_at?: string
         }
         Update: {
@@ -70,10 +74,12 @@ export interface Database {
           course?: string
           description?: string
           kind?: 'class_material' | 'past_question'
+          category?: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level?: string | null
           file_name?: string
           file_path?: string
           uploaded_by?: string
+          uploaded_by_name?: string
           created_at?: string
         }
         Relationships: []

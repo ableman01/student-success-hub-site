@@ -2,11 +2,11 @@
   <main class="home-page">
     <div class="home-width">
       <header class="home-header">
-        <RouterLink aria-label="Student Success Hub home" class="brand" to="/">
+        <RouterLink aria-label="LASU Student Success Hub home" class="brand" to="/">
           <img alt="" class="brand-mark" src="/academic-mark.svg">
 
           <span class="brand-copy">
-            <strong>Student Success Hub</strong>
+            <strong>LASU Student Success Hub</strong>
             <span>Learn together. Go further.</span>
           </span>
         </RouterLink>
@@ -43,7 +43,7 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot" />
-            A better way to study, together
+            BUILT FOR LASU STUDENTS
           </div>
 
           <h1>
@@ -139,7 +139,7 @@
           <div>
             <div class="section-kicker">STUDENT-SHARED LIBRARY</div>
             <h2>Give your next exam a head start.</h2>
-            <p>Browse past questions shared by students, or add one that helped you.</p>
+            <p>Find questions by course and level. Every upload shows the student who shared it.</p>
           </div>
 
           <v-btn
@@ -201,6 +201,16 @@
             prepend-inner-icon="mdi-book-open-outline"
             variant="outlined"
           />
+
+          <v-select
+            v-model="questionLevel"
+            density="comfortable"
+            hide-details
+            :items="questionLevels"
+            label="Filter by level"
+            prepend-inner-icon="mdi-account-school-outline"
+            variant="outlined"
+          />
         </div>
 
         <v-alert
@@ -242,6 +252,18 @@
                   v-model="resourceCourse"
                   label="Course"
                   placeholder="e.g. BIO 201"
+                />
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="resourceAcademicLevel"
+                  clearable
+                  item-title="title"
+                  item-value="value"
+                  :items="academicLevels"
+                  label="Academic level"
+                  prepend-inner-icon="mdi-account-school-outline"
                 />
               </v-col>
 
@@ -340,6 +362,14 @@
                     ·
                     {{ formatDate(resource.created_at) }}
                   </p>
+
+                  <div class="resource-attribution">
+                    <v-chip color="primary" size="x-small" variant="tonal">Past question</v-chip>
+                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'LASU student' }}</strong></span>
+                    <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">
+                      {{ getAcademicLevelLabel(getQuestionLevel(resource)) }}
+                    </v-chip>
+                  </div>
                 </div>
               </div>
 
@@ -396,9 +426,9 @@
       </section>
 
       <footer class="home-footer">
-        <RouterLink aria-label="Student Success Hub home" class="brand footer-brand" to="/">
+        <RouterLink aria-label="LASU Student Success Hub home" class="brand footer-brand" to="/">
           <img alt="" class="brand-mark brand-mark-small" src="/academic-mark.svg">
-          <strong>Student Success Hub</strong>
+          <strong>LASU Student Success Hub</strong>
         </RouterLink>
 
         <span class="footer-links">
@@ -415,15 +445,15 @@
 </template>
 
 <script setup lang="ts">
-  import type { AppUser } from '@/lib/auth'
+  import { getCurrentUser, type AppUser } from '@/lib/auth'
   import type { Resource } from '@/services/resources'
   import { computed, onMounted, ref } from 'vue'
-  import { getCurrentUser } from '@/lib/auth'
+  import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { getResources, uploadResource } from '@/services/resources'
 
-  const supportMailto = 'mailto:noreply@mail2student.com?subject=Student%20Success%20Hub%20support'
+  const supportMailto = 'mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support'
   const modeMessage = computed(() => isSupabaseConfigured
     ? 'Connected to Supabase'
     : 'Local test mode')
@@ -431,6 +461,7 @@
   const pastQuestions = ref<Resource[]>([])
   const resourceTitle = ref('')
   const resourceCourse = ref('')
+  const resourceAcademicLevel = ref<string | null>(null)
   const resourceDescription = ref('')
   const resourceFile = ref<File | File[] | null>(null)
   const loading = ref(false)
@@ -440,6 +471,14 @@
   const errorMessage = ref('')
   const questionSearch = ref('')
   const questionCourse = ref<string | null>(null)
+  const questionLevel = ref<string | null>(null)
+  const questionLevels = computed(() => [
+    { title: 'All levels', value: null },
+    ...academicLevels.map(level => ({ title: level.title, value: level.value })),
+  ])
+  function getQuestionLevel (resource: Resource) {
+    return getCourseAcademicLevel(resource.course) || resource.academic_level
+  }
   const questionCourses = computed(() =>
     [...new Set(pastQuestions.value.map(resource => resource.course.trim()).filter(Boolean))]
       .toSorted((a, b) => a.localeCompare(b))
@@ -453,10 +492,12 @@
         !questionCourse.value
         || resource.course.trim().toLocaleLowerCase() === questionCourse.value.toLocaleLowerCase(),
       )
+      .filter(resource => !questionLevel.value || getQuestionLevel(resource) === questionLevel.value)
       .filter(resource => !query || [
         resource.title,
         resource.course,
         resource.description,
+        resource.uploaded_by_name || '',
       ].some(value => value.toLocaleLowerCase().includes(query)))
       .toSorted((a, b) =>
         a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
@@ -505,11 +546,13 @@
         course: resourceCourse.value,
         description: resourceDescription.value,
         kind: 'past_question',
+        academic_level: getCourseAcademicLevel(resourceCourse.value) || resourceAcademicLevel.value,
         file,
       })
       pastQuestions.value.unshift(resource)
       resourceTitle.value = ''
       resourceCourse.value = ''
+      resourceAcademicLevel.value = null
       resourceDescription.value = ''
       resourceFile.value = null
       showUpload.value = false
@@ -974,9 +1017,24 @@
   .question-tools {
     display: grid;
     width: 100%;
-    grid-template-columns: minmax(0, 2.5fr) minmax(260px, 0.9fr);
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(210px, 0.8fr));
     gap: 14px;
     margin: 22px 0;
+  }
+
+  .resource-attribution {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    color: #77868a;
+    font-size: 0.76rem;
+  }
+
+  .resource-attribution strong {
+    color: #294453;
+    font-weight: 700;
   }
 
   .section-heading {
@@ -1268,6 +1326,14 @@
   }
 
   @media (max-width: 900px) {
+    .question-tools {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .question-tools > :first-child {
+      grid-column: 1 / -1;
+    }
+
     .hero-panel {
       grid-template-columns: 1fr 0.8fr;
       padding: 48px 42px;
@@ -1403,6 +1469,10 @@
 
     .question-tools {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .question-tools > :first-child {
+      grid-column: auto;
     }
 
     .empty-library {

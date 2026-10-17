@@ -1,6 +1,6 @@
-# Student Success Hub
+# LASU Student Success Hub
 
-A student workspace for class resources, past questions, assignments, and course study rooms.
+A LASU student workspace for categorized course materials, past questions with contributor names, assignment planning, and live study rooms.
 
 ## Run locally
 

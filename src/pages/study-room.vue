@@ -2,16 +2,16 @@
   <main class="study-page">
     <v-container class="study-width py-5 py-md-8" fluid>
       <header class="study-header">
-        <RouterLink aria-label="Student Success Hub home" class="study-brand" to="/">
+        <RouterLink aria-label="LASU Student Success Hub home" class="study-brand" to="/">
           <img alt="" src="/academic-mark.svg">
-          <span><strong>Student Success Hub</strong><small>Learn together. Go further.</small></span>
+          <span><strong>LASU Student Success Hub</strong><small>Learn together. Go further.</small></span>
         </RouterLink>
 
         <nav aria-label="Study room navigation" class="study-header-actions">
           <v-btn rounded="pill" to="/dashboard" variant="text">My dashboard</v-btn>
 
           <v-btn
-            href="mailto:noreply@mail2student.com?subject=Student%20Success%20Hub%20support"
+            href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
             prepend-icon="mdi-lifebuoy"
             rounded="pill"
             variant="tonal"
@@ -55,7 +55,7 @@
                 <div class="section-kicker">LIVE COURSE ROOM</div>
                 <h2>{{ activeCourse || 'Choose a course' }}</h2>
 
-                <v-chip class="presence-summary" color="success" size="small" variant="tonal">
+              <v-chip class="presence-summary" color="success" size="small" variant="tonal">
                   <v-icon class="mr-1" color="success" size="16">mdi-circle</v-icon>
                   {{ onlineCount }} {{ onlineCount === 1 ? 'student' : 'students' }} here now
                 </v-chip>
@@ -155,6 +155,19 @@
               </v-btn>
             </v-form>
 
+            <div class="discussion-starters" aria-label="Discussion starters">
+              <span>Need a starting point?</span>
+              <v-chip size="small" variant="outlined" @click="messageText = 'Which part of this topic should we review first?'">
+                Review a topic
+              </v-chip>
+              <v-chip size="small" variant="outlined" @click="messageText = 'Can someone explain how they approached this problem?'">
+                Explain a problem
+              </v-chip>
+              <v-chip size="small" variant="outlined" @click="messageText = 'What are the key ideas we should remember for this course?'">
+                Share key ideas
+              </v-chip>
+            </div>
+
             <p class="room-guideline">Keep the room welcoming. Don’t post private information or content you don’t have permission to share.</p>
           </v-card>
         </v-col>
@@ -165,6 +178,19 @@
             <h2 class="mt-1">Course PDFs</h2>
             <p class="text-body-2 text-medium-emphasis">Open a shared resource while you discuss it in the room.</p>
 
+            <v-select
+              v-model="resourceCategoryFilter"
+              class="room-category-filter mt-3"
+              density="comfortable"
+              hide-details
+              item-title="title"
+              item-value="value"
+              :items="roomCategoryOptions"
+              label="Resource category"
+              prepend-inner-icon="mdi-shape-outline"
+              variant="outlined"
+            />
+
             <v-progress-linear
               v-if="loadingResources"
               class="my-4"
@@ -173,13 +199,16 @@
               rounded
             />
 
-            <div v-else-if="roomResources.length > 0" class="room-resources">
-              <article v-for="resource in roomResources" :key="resource.id" class="room-resource">
+            <div v-else-if="filteredRoomResources.length > 0" class="room-resources">
+              <article v-for="resource in filteredRoomResources" :key="resource.id" class="room-resource">
                 <v-icon color="error">mdi-file-pdf-box</v-icon>
 
                 <div class="room-resource-copy">
                   <strong>{{ resource.title }}</strong>
                   <small>{{ resource.course || 'Course not specified' }}</small>
+                  <v-chip size="x-small" color="secondary" variant="tonal">
+                    {{ getResourceCategoryLabel(resource.category) }}
+                  </v-chip>
                 </div>
 
                 <v-btn
@@ -191,6 +220,12 @@
                   variant="text"
                 />
               </article>
+            </div>
+
+            <div v-else-if="roomResources.length > 0" class="room-empty compact-room-empty">
+              <v-icon>mdi-filter-remove-outline</v-icon>
+              <span>No resources in this category for {{ activeCourse }}.</span>
+              <v-btn size="small" variant="text" @click="resourceCategoryFilter = 'all'">Show all resources</v-btn>
             </div>
 
             <div v-else class="room-empty compact-room-empty">
@@ -211,6 +246,37 @@
             </v-btn>
           </v-card>
 
+          <v-card class="focus-card mt-5 pa-5" rounded="xl">
+            <div class="section-kicker">FOCUS SESSION</div>
+            <div class="focus-timer" role="timer" aria-label="Time remaining" aria-live="off">
+              {{ formatFocusTime(focusRemaining) }}
+            </div>
+            <p class="focus-caption">A short, focused study sprint for {{ activeCourse || 'your next course' }}.</p>
+            <v-progress-linear
+              class="my-4"
+              color="secondary"
+              :model-value="focusProgress"
+              rounded
+            />
+            <v-text-field
+              v-model="focusGoal"
+              density="compact"
+              hide-details
+              label="My goal for this session"
+              placeholder="e.g. Review lecture 3"
+              prepend-inner-icon="mdi-target"
+              variant="outlined"
+            />
+            <div class="focus-actions">
+              <v-btn color="primary" rounded="pill" @click="toggleFocusTimer">
+                {{ focusRunning ? 'Pause sprint' : 'Start 25-minute sprint' }}
+                <v-icon end>{{ focusRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+              </v-btn>
+              <v-btn aria-label="Reset focus timer" icon="mdi-restart" variant="text" @click="resetFocusTimer" />
+            </div>
+            <p v-if="focusRemaining === 0" class="focus-complete">Sprint complete. Take a short break and celebrate your progress.</p>
+          </v-card>
+
           <v-card class="community-note mt-5 pa-5" rounded="xl">
             <v-icon color="secondary" size="26">mdi-account-group-outline</v-icon>
             <h3 class="mt-2">Practice as a group</h3>
@@ -225,12 +291,13 @@
 
 <script setup lang="ts">
   import type { Resource } from '@/services/resources'
+  import type { ResourceCategory } from '@/services/resources'
   import type { StudyMessage, StudyMessageType } from '@/services/study'
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { getErrorMessage } from '@/lib/errors'
-  import { getResources } from '@/services/resources'
+  import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
   import { getStudyMessages, leaveStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
 
   const route = useRoute()
@@ -239,6 +306,16 @@
   const messages = ref<StudyMessage[]>([])
   const messageText = ref('')
   const messageType = ref<StudyMessageType>('discussion')
+  const resourceCategoryFilter = ref<ResourceCategory | 'all'>('all')
+  const roomCategoryOptions = [
+    { title: 'All categories', value: 'all' },
+    ...resourceCategories,
+  ]
+  const focusDurationSeconds = 25 * 60
+  const focusRemaining = ref(focusDurationSeconds)
+  const focusGoal = ref('')
+  const focusRunning = ref(false)
+  const focusProgress = computed(() => ((focusDurationSeconds - focusRemaining.value) / focusDurationSeconds) * 100)
   const onlineCount = ref(0)
   const loadingMessages = ref(false)
   const loadingResources = ref(false)
@@ -253,8 +330,47 @@
     !activeCourse.value.trim()
     || resource.course.trim().toLocaleLowerCase() === activeCourse.value.trim().toLocaleLowerCase(),
   ))
+  const filteredRoomResources = computed(() => roomResources.value.filter(resource =>
+    resourceCategoryFilter.value === 'all' || resource.category === resourceCategoryFilter.value,
+  ))
   let roomChannel: RealtimeChannel | null = null
   let connectionVersion = 0
+  let focusInterval: ReturnType<typeof globalThis.setInterval> | null = null
+
+  function formatFocusTime (seconds: number) {
+    const minutes = Math.floor(seconds / 60).toString().padStart(2, '0')
+    const remainder = (seconds % 60).toString().padStart(2, '0')
+    return `${minutes}:${remainder}`
+  }
+
+  function toggleFocusTimer () {
+    if (focusRunning.value) {
+      if (focusInterval !== null) globalThis.clearInterval(focusInterval)
+      focusInterval = null
+      focusRunning.value = false
+      return
+    }
+
+    if (focusRemaining.value === 0) focusRemaining.value = focusDurationSeconds
+    focusRunning.value = true
+    focusInterval = globalThis.setInterval(() => {
+      if (focusRemaining.value <= 1) {
+        focusRemaining.value = 0
+        focusRunning.value = false
+        if (focusInterval !== null) globalThis.clearInterval(focusInterval)
+        focusInterval = null
+      } else {
+        focusRemaining.value--
+      }
+    }, 1000)
+  }
+
+  function resetFocusTimer () {
+    if (focusInterval !== null) globalThis.clearInterval(focusInterval)
+    focusInterval = null
+    focusRemaining.value = focusDurationSeconds
+    focusRunning.value = false
+  }
 
   async function loadResources () {
     loadingResources.value = true
@@ -371,6 +487,7 @@
 
   onBeforeUnmount(() => {
     connectionVersion++
+    if (focusInterval !== null) globalThis.clearInterval(focusInterval)
     void leaveStudyRoom(roomChannel).catch(error => {
       console.error('Could not leave the study room.', error)
     })
@@ -472,7 +589,8 @@
 
   .room-card,
   .reading-card,
-  .community-note {
+  .community-note,
+  .focus-card {
     border: 1px solid #e4e9e1;
     background: #fffefa;
     box-shadow: 0 12px 32px rgb(30 53 54 / 5%);
@@ -611,6 +729,78 @@
     display: grid;
     gap: 6px;
     margin-top: 16px;
+  }
+
+  .discussion-starters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    color: #718085;
+    font-size: 0.78rem;
+  }
+
+  .discussion-starters > span {
+    margin-right: 2px;
+    font-weight: 650;
+  }
+
+  .focus-card {
+    overflow: hidden;
+    border-color: #286354;
+    background:
+      radial-gradient(circle at 100% 0%, rgb(224 190 104 / 22%), transparent 12rem),
+      linear-gradient(145deg, #17483e, #23614f);
+    color: #fff;
+  }
+
+  .focus-card .section-kicker {
+    color: #cbdccf;
+  }
+
+  .focus-card :deep(.v-field__outline) {
+    color: rgb(255 255 255 / 40%);
+  }
+
+  .focus-card :deep(.v-field__input),
+  .focus-card :deep(.v-label) {
+    color: #fff;
+  }
+
+  .focus-timer {
+    margin-top: 12px;
+    color: #f0d68d;
+    font-size: 3rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+    letter-spacing: -0.06em;
+    line-height: 1;
+  }
+
+  .focus-caption,
+  .focus-complete {
+    margin: 10px 0 0;
+    color: #e0ece5;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .focus-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .focus-actions :deep(.v-btn--icon) {
+    color: #fff;
+  }
+
+  .focus-complete {
+    color: #f0d68d;
+    font-weight: 650;
   }
 
   .room-resource {

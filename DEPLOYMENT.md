@@ -38,7 +38,7 @@ https://student-success-hub-site.pages.dev/auth/confirm?confirmed=1
 
 Add preview URLs separately if you want email links from preview builds to work. The app builds confirmation links from the current site origin, and Supabase only accepts redirect URLs on its allow-list. Keep service-role keys and database passwords out of all `VITE_` variables.
 
-Run [`supabase/schema.sql`](./supabase/schema.sql) in the SQL Editor of the same Supabase project to set up the app's tables, storage policies, and realtime study-room messages. If this project already has a live schema, inspect and synchronize it before turning on automatic schema migrations; the repository currently has an idempotent SQL setup script, but no migration history.
+For a first-time setup, run [`supabase/schema.sql`](./supabase/schema.sql) in the SQL Editor of the same Supabase project to set up the app's tables, storage policies, and realtime study-room messages. Incremental database changes are recorded under [`supabase/migrations`](./supabase/migrations). If this project already has a live schema, inspect and synchronize its migration history before enabling automatic schema migrations.
 
 If using a custom SMTP sender, configure and verify it in Supabase Auth. Store SMTP credentials in Supabase settings, never in this repository or browser environment variables.
 

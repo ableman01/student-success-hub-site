@@ -1,9 +1,9 @@
 <template>
   <main class="signup-page">
     <header class="signup-header">
-      <RouterLink aria-label="Student Success Hub home" class="signup-brand" to="/">
+      <RouterLink aria-label="LASU Student Success Hub home" class="signup-brand" to="/">
         <img alt="" src="/academic-mark.svg">
-        <strong>Student Success Hub</strong>
+        <strong>LASU Student Success Hub</strong>
       </RouterLink>
 
     </header>
@@ -304,7 +304,7 @@
         await router.replace('/dashboard')
       } else {
         successMessage.value
-          = 'Account created. Check your inbox for the Student Success Hub confirmation email, then return here to log in.'
+          = 'Account created. Check your inbox for the LASU Student Success Hub confirmation email, then return here to log in.'
       }
     } catch (error) {
       errorMessage.value = getErrorMessage(error)

@@ -1,9 +1,21 @@
 import { getCourseAcademicLevel } from '@/lib/academics'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser, type AppUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
+export type ResourceCategory = 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
+
+export const resourceCategories: { title: string, value: ResourceCategory }[] = [
+  { title: 'Past questions', value: 'past_question' },
+  { title: 'Lecture notes', value: 'lecture_notes' },
+  { title: 'Course handouts', value: 'course_handout' },
+  { title: 'Study guides', value: 'study_guide' },
+]
+
+export function getResourceCategoryLabel (category: ResourceCategory) {
+  return resourceCategories.find(option => option.value === category)?.title || 'Course material'
+}
 
 export interface Resource {
   id: string
@@ -11,10 +23,12 @@ export interface Resource {
   course: string
   description: string
   kind: ResourceKind
+  category: ResourceCategory
   academic_level: string | null
   file_name: string
   file_path: string
   uploaded_by: string
+  uploaded_by_name: string
   created_at: string
   url: string
 }
@@ -24,6 +38,7 @@ export interface NewResource {
   course: string
   description: string
   kind: ResourceKind
+  category?: ResourceCategory
   file: File
   academic_level?: string | null
 }
@@ -40,6 +55,11 @@ function matchesAcademicLevel (resource: Resource, academicLevel: string) {
   }
 
   return !resource.academic_level || resource.academic_level === academicLevel
+}
+
+function getContributorName (user: AppUser) {
+  const firstName = user.firstName === user.email ? '' : user.firstName
+  return [firstName, user.lastName].filter(Boolean).join(' ').trim() || 'LASU student'
 }
 
 function openLocalDatabase () {
@@ -109,6 +129,8 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
       .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
       .map(({ blob, ...resource }) => ({
         ...resource,
+        category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
+        uploaded_by_name: resource.uploaded_by_name || 'LASU student',
         url: URL.createObjectURL(blob),
       }))
   }
@@ -128,7 +150,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
     }
     if (error.code === 'PGRST204' || error.code === '42703') {
       throw new Error(
-        'The Supabase resources table needs the latest academic_level column. Re-run supabase/schema.sql in the Supabase SQL Editor, then reload this page.',
+        'The Supabase resources table needs the latest category and contributor fields. Run the latest resource migration, then reload this page.',
       )
     }
 
@@ -158,10 +180,12 @@ export async function uploadResource (input: NewResource) {
       course: input.course.trim(),
       description: input.description.trim(),
       kind: input.kind,
+      category: input.category || (input.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
       academic_level: input.academic_level || null,
       file_name: fileName,
       file_path: fileName,
       uploaded_by: user.id,
+      uploaded_by_name: getContributorName(user),
       created_at: new Date().toISOString(),
       url: '',
     }
@@ -194,10 +218,12 @@ export async function uploadResource (input: NewResource) {
       course: input.course.trim(),
       description: input.description.trim(),
       kind: input.kind,
+      category: input.category || (input.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
       academic_level: input.academic_level || null,
       file_name: fileName,
       file_path: filePath,
       uploaded_by: user.id,
+      uploaded_by_name: getContributorName(user),
     })
     .select('*')
     .single()

@@ -2,9 +2,9 @@
   <main class="login-page">
     <div class="auth-shell">
       <header class="auth-header">
-        <RouterLink aria-label="Student Success Hub home" class="auth-brand" to="/">
+        <RouterLink aria-label="LASU Student Success Hub home" class="auth-brand" to="/">
           <img alt="" src="/academic-mark.svg">
-          <span>Student Success Hub</span>
+          <span>LASU Student Success Hub</span>
         </RouterLink>
 
         <div class="auth-header-actions">
@@ -142,7 +142,7 @@
       </section>
 
       <footer class="auth-footer">
-        <span>Student Success Hub</span>
+        <span>LASU Student Success Hub</span>
         <span>Built for your academic journey</span>
       </footer>
     </div>
