@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="250" viewBox="0 0 480 250" fill="none">
+  <defs>
+    <linearGradient id="paper" x1="106" y1="28" x2="375" y2="223" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCFDF7"/>
+      <stop offset="1" stop-color="#EAF2E9"/>
+    </linearGradient>
+    <linearGradient id="book" x1="63" y1="137" x2="184" y2="212" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#588B71"/>
+      <stop offset="1" stop-color="#326352"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="241" cy="220" rx="190" ry="15" fill="#25483A" fill-opacity=".08"/>
+  <circle cx="240" cy="125" r="111" fill="#E7F0E6"/>
+  <circle cx="347" cy="63" r="23" fill="#F4DFAB"/>
+  <rect x="128" y="33" width="213" height="179" rx="18" fill="url(#paper)" stroke="#DBE6DA" stroke-width="2"/>
+  <rect x="150" y="56" width="102" height="8" rx="4" fill="#456D5A"/>
+  <rect x="150" y="72" width="66" height="5" rx="2.5" fill="#A3B7A5"/>
+  <rect x="151" y="94" width="20" height="20" rx="6" fill="#E8F2E9" stroke="#8EAB93" stroke-width="2"/>
+  <path d="m156 104 4 4 7-9" stroke="#4E856A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="180" y="97" width="111" height="5" rx="2.5" fill="#81958A"/>
+  <rect x="180" y="107" width="81" height="4" rx="2" fill="#CBD7CA"/>
+  <rect x="151" y="128" width="20" height="20" rx="6" fill="#E8F2E9" stroke="#8EAB93" stroke-width="2"/>
+  <path d="m156 138 4 4 7-9" stroke="#4E856A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="180" y="131" width="127" height="5" rx="2.5" fill="#81958A"/>
+  <rect x="180" y="141" width="91" height="4" rx="2" fill="#CBD7CA"/>
+  <rect x="151" y="162" width="20" height="20" rx="6" fill="#FFF9E8" stroke="#D9BD79" stroke-width="2"/>
+  <circle cx="161" cy="172" r="3" fill="#C5A14F"/>
+  <rect x="180" y="165" width="102" height="5" rx="2.5" fill="#81958A"/>
+  <rect x="180" y="175" width="72" height="4" rx="2" fill="#CBD7CA"/>
+  <path d="m72 156 47-24 72 37-48 26-71-39Z" fill="url(#book)"/>
+  <path d="m119 132 2 61m70-24-70 24" stroke="#DDEADD" stroke-width="2"/>
+  <path d="m85 156 24-12m-16 18 24-12m44 14 16-8" stroke="#D5E5D6" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="m370 142 9 9 18-22" stroke="#6F9D7C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="385" cy="144" r="25" fill="#fff" fill-opacity=".8" stroke="#D9E7D9" stroke-width="2"/>
+  <path d="M103 56h-20m10-10v20" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>

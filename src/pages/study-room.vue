@@ -47,6 +47,70 @@
         {{ resourceError }}
       </v-alert>
 
+      <section class="groups-section" aria-labelledby="groups-heading">
+        <div class="groups-heading-row">
+          <div>
+            <div class="section-kicker">SMALL GROUP STUDY</div>
+            <h2 id="groups-heading">Study with your people</h2>
+            <p>Create a private group, invite selected classmates with a link, then work through questions, assignments and practice together.</p>
+          </div>
+          <img alt="Students sharing notes and studying together" class="group-art" src="/study-together.svg">
+        </div>
+
+        <v-alert v-if="groupError" class="mb-4" type="error" variant="tonal">{{ groupError }}</v-alert>
+        <v-alert v-if="groupNotice" class="mb-4" type="success" variant="tonal">{{ groupNotice }}</v-alert>
+
+        <v-card class="group-card pa-4 pa-md-6" rounded="xl">
+          <div class="group-actions">
+            <v-btn color="primary" prepend-icon="mdi-account-multiple-plus" rounded="pill" @click="showCreateGroup = !showCreateGroup">Create a group</v-btn>
+            <v-text-field v-model="inviteCodeInput" class="invite-input" density="comfortable" hide-details label="Paste a classmate’s invite code" prepend-inner-icon="mdi-link-variant" variant="outlined" @keydown.enter.prevent="joinGroup" />
+            <v-btn :loading="joiningGroup" rounded="pill" variant="tonal" @click="joinGroup">Join group</v-btn>
+          </div>
+
+          <v-expand-transition>
+            <v-form v-if="showCreateGroup" class="create-group-form" @submit.prevent="createGroup">
+              <v-text-field v-model="newGroupName" label="Group name" maxlength="80" placeholder="BIO 101 Saturday revision" required />
+              <v-text-field v-model="newGroupCourse" label="Course" maxlength="80" placeholder="BIO 101" required />
+              <v-text-field v-model="newGroupDescription" label="Study goal (optional)" maxlength="300" placeholder="Review lecture topics and solve past questions" />
+              <div class="create-group-actions">
+                <v-btn :loading="creatingGroup" color="primary" rounded="pill" type="submit">Create and join</v-btn>
+                <v-btn rounded="pill" variant="text" @click="showCreateGroup = false">Cancel</v-btn>
+              </div>
+            </v-form>
+          </v-expand-transition>
+
+          <v-divider class="my-4" />
+          <div v-if="groups.length" class="group-workspace">
+            <v-select v-model="activeGroupId" class="group-picker" hide-details item-title="name" item-value="id" :items="groups" label="Your study groups" prepend-inner-icon="mdi-account-group" variant="outlined">
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props" :subtitle="`${item.raw.course} · ${item.raw.description || 'Study together'}`" />
+              </template>
+            </v-select>
+            <div v-if="activeGroup" class="active-group-summary">
+              <div><strong>{{ activeGroup.name }}</strong><span>{{ activeGroup.course }}<template v-if="activeGroup.description"> · {{ activeGroup.description }}</template></span></div>
+              <v-btn :aria-label="`Copy invitation for ${activeGroup.name}`" color="primary" prepend-icon="mdi-content-copy" rounded="pill" size="small" variant="tonal" @click="copyGroupInvite">Invite selected classmates</v-btn>
+            </div>
+
+            <v-progress-linear v-if="loadingGroupPosts" class="my-3" color="primary" indeterminate rounded />
+            <div v-else class="group-post-list" aria-live="polite">
+              <div v-if="groupPosts.length === 0" class="group-empty"><v-icon size="26">mdi-chat-processing-outline</v-icon><strong>Start your group’s first study session</strong><span>Post a question, assignment, or practice problem and invite classmates to explain their thinking.</span></div>
+              <article v-for="post in groupPosts" :key="post.id" class="group-post" :class="`group-post-${post.post_type}`">
+                <div class="group-post-meta"><strong>{{ post.sender_name }}</strong><v-chip size="x-small" variant="tonal">{{ groupPostLabels[post.post_type] }}</v-chip><time :datetime="post.created_at">{{ formatTime(post.created_at) }}</time></div>
+                <p>{{ post.content }}</p>
+              </article>
+            </div>
+
+            <v-form class="group-post-form" @submit.prevent="postToGroup">
+              <v-select v-model="groupPostType" class="group-post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
+              <v-textarea v-model="groupPostText" auto-grow class="group-post-text" hide-details label="Share a question, assignment prompt, or practice problem" maxlength="2000" rows="2" />
+              <v-btn color="primary" :disabled="!groupPostText.trim()" :loading="sendingGroupPost" prepend-icon="mdi-send" rounded="pill" type="submit">Post to group</v-btn>
+            </v-form>
+            <p class="group-safety-note"><v-icon size="16">mdi-shield-check-outline</v-icon> Group posts are visible only to members. Share the invite link with classmates you choose.</p>
+          </div>
+          <div v-else class="group-empty groups-first-empty"><v-icon size="30">mdi-account-multiple-outline</v-icon><strong>Your study groups will appear here</strong><span>Create a group and you’ll be added automatically, or join with a classmate’s invite code.</span></div>
+        </v-card>
+      </section>
+
       <v-row align="start">
         <v-col cols="12" lg="8">
           <v-card class="room-card pa-4 pa-md-6" rounded="xl">
@@ -282,6 +346,19 @@
             <h3 class="mt-2">Practice as a group</h3>
             <p>Post a problem as an assignment question, then use discussion comments to compare ideas and explain solutions.</p>
           </v-card>
+
+          <v-card class="guide-card mt-5 pa-5" rounded="xl">
+            <img class="guide-art" src="/study-planner.svg" alt="Illustrated study planner with completed tasks and a course book">
+            <div class="section-kicker">A SIMPLE STUDY ROUTINE</div>
+            <h3 class="mt-2">Make each session count</h3>
+            <ol class="study-routine">
+              <li><strong>Choose one clear goal.</strong><span>Write what you’ll understand or finish before the session ends.</span></li>
+              <li><strong>Try active recall.</strong><span>Close your notes and explain the idea from memory before checking.</span></li>
+              <li><strong>Practise in short rounds.</strong><span>Attempt a past question, compare approaches, then correct your work.</span></li>
+              <li><strong>Return to it later.</strong><span>Review the same topic tomorrow and again later in the week.</span></li>
+            </ol>
+            <v-btn class="mt-2" rounded="pill" to="/dashboard" variant="tonal">Plan your study week<v-icon end>mdi-arrow-right</v-icon></v-btn>
+          </v-card>
         </v-col>
       </v-row>
 
@@ -292,13 +369,13 @@
 <script setup lang="ts">
   import type { Resource } from '@/services/resources'
   import type { ResourceCategory } from '@/services/resources'
-  import type { StudyMessage, StudyMessageType } from '@/services/study'
+  import type { GroupPostType, StudyGroup, StudyGroupPost, StudyMessage, StudyMessageType } from '@/services/study'
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { getErrorMessage } from '@/lib/errors'
   import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
-  import { getStudyMessages, leaveStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
+  import { createStudyGroup as createGroupRecord, getStudyGroupPosts, getStudyGroups, getStudyMessages, joinStudyGroup, leaveStudyGroup, leaveStudyRoom, sendStudyGroupPost, sendStudyMessage, subscribeToStudyGroup, subscribeToStudyRoom } from '@/services/study'
 
   const route = useRoute()
   const activeCourse = ref(typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : '')
@@ -323,6 +400,30 @@
   const roomError = ref('')
   const resourceError = ref('')
   const messageEnd = ref<HTMLElement | null>(null)
+  const groups = ref<StudyGroup[]>([])
+  const activeGroupId = ref('')
+  const activeGroup = computed(() => groups.value.find(group => group.id === activeGroupId.value) ?? null)
+  const groupPosts = ref<StudyGroupPost[]>([])
+  const groupError = ref('')
+  const groupNotice = ref('')
+  const inviteCodeInput = ref(typeof route.query.invite === 'string' ? route.query.invite : '')
+  const showCreateGroup = ref(false)
+  const newGroupName = ref('')
+  const newGroupCourse = ref(typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : '')
+  const newGroupDescription = ref('')
+  const creatingGroup = ref(false)
+  const joiningGroup = ref(false)
+  const loadingGroupPosts = ref(false)
+  const sendingGroupPost = ref(false)
+  const groupPostText = ref('')
+  const groupPostType = ref<GroupPostType>('discussion')
+  const groupPostOptions = [
+    { title: 'Discussion', value: 'discussion' },
+    { title: 'Past question', value: 'question' },
+    { title: 'Assignment', value: 'assignment' },
+    { title: 'Practice problem', value: 'practice' },
+  ]
+  const groupPostLabels: Record<GroupPostType, string> = { discussion: 'Discussion', question: 'Past question', assignment: 'Assignment', practice: 'Practice problem' }
   const courseOptions = computed(() => [
     ...new Set(courseResources.value.map(resource => resource.course.trim()).filter(Boolean)),
   ].toSorted((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })))
@@ -334,8 +435,107 @@
     resourceCategoryFilter.value === 'all' || resource.category === resourceCategoryFilter.value,
   ))
   let roomChannel: RealtimeChannel | null = null
+  let groupChannel: RealtimeChannel | null = null
   let connectionVersion = 0
   let focusInterval: ReturnType<typeof globalThis.setInterval> | null = null
+
+  async function loadGroups () {
+    try {
+      groups.value = await getStudyGroups()
+      if (!groups.value.some(group => group.id === activeGroupId.value)) activeGroupId.value = groups.value[0]?.id ?? ''
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not load your study groups.')
+    }
+  }
+
+  async function createGroup () {
+    groupError.value = ''
+    const name = newGroupName.value.trim()
+    const course = normalizeCourse(newGroupCourse.value)
+    if (!name || !course) return
+    creatingGroup.value = true
+    try {
+      const group = await createGroupRecord({ name, course, description: newGroupDescription.value.trim() })
+      groups.value.unshift(group)
+      activeGroupId.value = group.id
+      showCreateGroup.value = false
+      newGroupName.value = ''
+      newGroupDescription.value = ''
+      groupNotice.value = 'Your group is ready. Copy the invite code and share it with the classmates you want to join.'
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not create the study group.')
+    } finally {
+      creatingGroup.value = false
+    }
+  }
+
+  async function joinGroup () {
+    groupError.value = ''
+    groupNotice.value = ''
+    if (!inviteCodeInput.value.trim()) {
+      groupError.value = 'Paste the invitation code or open the group invite link first.'
+      return
+    }
+    joiningGroup.value = true
+    try {
+      const joined = await joinStudyGroup(inviteCodeInput.value)
+      await loadGroups()
+      if (joined) {
+        activeGroupId.value = joined.id
+        groupNotice.value = `You joined ${joined.name}. Say hello and agree on a study goal.`
+      }
+      inviteCodeInput.value = ''
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not join this group. Ask for a fresh invitation.')
+    } finally {
+      joiningGroup.value = false
+    }
+  }
+
+  async function copyGroupInvite () {
+    if (!activeGroup.value) return
+    const inviteUrl = new URL('/study', window.location.origin)
+    inviteUrl.searchParams.set('invite', activeGroup.value.invite_code)
+    try {
+      await navigator.clipboard.writeText(inviteUrl.toString())
+      groupNotice.value = 'Invite link copied. Send it directly to the classmates you want in the group.'
+    } catch {
+      groupNotice.value = `Share this invite code with selected classmates: ${activeGroup.value.invite_code}`
+    }
+  }
+
+  async function connectGroup (groupId: string) {
+    if (groupChannel) await leaveStudyGroup(groupChannel)
+    groupChannel = null
+    groupPosts.value = []
+    if (!groupId) return
+    loadingGroupPosts.value = true
+    try {
+      groupPosts.value = await getStudyGroupPosts(groupId)
+      groupChannel = subscribeToStudyGroup(groupId, post => {
+        if (!groupPosts.value.some(existing => existing.id === post.id)) groupPosts.value.push(post)
+      })
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not open this group. Check that you are still a member.')
+    } finally {
+      loadingGroupPosts.value = false
+    }
+  }
+
+  async function postToGroup () {
+    if (!activeGroupId.value || !groupPostText.value.trim()) return
+    sendingGroupPost.value = true
+    groupError.value = ''
+    try {
+      const post = await sendStudyGroupPost(activeGroupId.value, groupPostType.value, groupPostText.value)
+      if (!groupPosts.value.some(existing => existing.id === post.id)) groupPosts.value.push(post)
+      groupPostText.value = ''
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not post to the study group.')
+    } finally {
+      sendingGroupPost.value = false
+    }
+  }
 
   function formatFocusTime (seconds: number) {
     const minutes = Math.floor(seconds / 60).toString().padStart(2, '0')
@@ -473,6 +673,8 @@
   }
 
   onMounted(async () => {
+    await loadGroups()
+    if (inviteCodeInput.value) await joinGroup()
     await loadResources()
     if (activeCourse.value) {
       await connectRoom(activeCourse.value)
@@ -485,9 +687,12 @@
     if (course !== previous) void connectRoom(course)
   })
 
+  watch(activeGroupId, groupId => { void connectGroup(groupId) })
+
   onBeforeUnmount(() => {
     connectionVersion++
     if (focusInterval !== null) globalThis.clearInterval(focusInterval)
+    if (groupChannel) void leaveStudyGroup(groupChannel)
     void leaveStudyRoom(roomChannel).catch(error => {
       console.error('Could not leave the study room.', error)
     })
@@ -590,6 +795,8 @@
   .room-card,
   .reading-card,
   .community-note,
+  .guide-card,
+  .group-card,
   .focus-card {
     border: 1px solid #e4e9e1;
     background: #fffefa;
@@ -786,6 +993,278 @@
     line-height: 1.55;
   }
 
+  .groups-section {
+    margin-bottom: 28px;
+  }
+
+  .groups-heading-row {
+    display: flex;
+    min-height: 150px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+    border: 1px solid #dce8dd;
+    border-radius: 24px;
+    padding: 20px 28px;
+    background: linear-gradient(112deg, #eff5ed 0%, #fbfaf3 62%, #edf4ef 100%);
+  }
+
+  .groups-heading-row h2 {
+    margin: 7px 0 5px;
+    color: #203a4a;
+    font-size: clamp(1.3rem, 2.7vw, 1.85rem);
+    font-weight: 750;
+    letter-spacing: -0.035em;
+  }
+
+  .groups-heading-row p {
+    max-width: 700px;
+    margin: 0;
+    color: #748187;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .group-art {
+    width: 130px;
+    height: 120px;
+    flex: 0 0 auto;
+    object-fit: contain;
+  }
+
+  .group-card {
+    border-color: #dfe8df;
+  }
+
+  .group-actions,
+  .create-group-actions,
+  .active-group-summary,
+  .group-post-meta,
+  .group-safety-note {
+    display: flex;
+    align-items: center;
+  }
+
+  .group-actions {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .invite-input {
+    min-width: min(100%, 280px);
+    flex: 1;
+  }
+
+  .create-group-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+    margin-top: 20px;
+    border-radius: 16px;
+    padding: 17px;
+    background: #f5f8f3;
+  }
+
+  .create-group-form > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .create-group-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .group-workspace {
+    display: grid;
+    gap: 14px;
+  }
+
+  .group-picker {
+    max-width: 520px;
+  }
+
+  .active-group-summary {
+    justify-content: space-between;
+    gap: 14px;
+    border-radius: 15px;
+    padding: 13px 16px;
+    background: #f1f6f0;
+  }
+
+  .active-group-summary > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .active-group-summary strong {
+    color: #294453;
+    font-size: 0.95rem;
+  }
+
+  .active-group-summary span {
+    color: #718085;
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
+  }
+
+  .group-post-list {
+    display: flex;
+    min-height: 130px;
+    max-height: 420px;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .group-empty {
+    display: grid;
+    min-height: 145px;
+    align-content: center;
+    justify-items: center;
+    gap: 7px;
+    color: #718085;
+    text-align: center;
+  }
+
+  .group-empty .v-icon {
+    color: #638874;
+  }
+
+  .group-empty strong {
+    color: #294453;
+  }
+
+  .group-empty span {
+    max-width: 560px;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .groups-first-empty {
+    min-height: 180px;
+  }
+
+  .group-post {
+    max-width: min(94%, 850px);
+    align-self: flex-start;
+    border: 1px solid #e2e9df;
+    border-radius: 15px;
+    padding: 12px 15px;
+    background: #f7f9f5;
+  }
+
+  .group-post-question,
+  .group-post-practice {
+    border-color: #d6e5dd;
+    background: #f0f6f1;
+  }
+
+  .group-post-assignment {
+    border-color: #ead9ad;
+    background: #fcf8eb;
+  }
+
+  .group-post-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .group-post-meta strong {
+    color: #294453;
+    font-size: 0.83rem;
+  }
+
+  .group-post-meta time {
+    margin-left: auto;
+    color: #78868a;
+    font-size: 0.7rem;
+  }
+
+  .group-post p {
+    margin: 8px 0 0;
+    color: #40545f;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .group-post-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 11px;
+    border-top: 1px solid #e7ece5;
+    padding-top: 14px;
+  }
+
+  .group-post-type {
+    max-width: 180px;
+    flex: 0 0 180px;
+  }
+
+  .group-post-text {
+    flex: 1;
+  }
+
+  .group-safety-note {
+    gap: 6px;
+    margin: 0;
+    color: #718085;
+    font-size: 0.75rem;
+  }
+
+  .guide-card {
+    border-color: #e2e9df;
+    background: linear-gradient(150deg, #fffefa, #f4f7f1);
+  }
+
+  .guide-card h3 {
+    margin-bottom: 12px;
+    color: #294453;
+    font-size: 1.08rem;
+    font-weight: 750;
+  }
+
+  .guide-art {
+    display: block;
+    width: 100%;
+    max-height: 145px;
+    margin: -7px auto 12px;
+    object-fit: contain;
+  }
+
+  .study-routine {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding-left: 20px;
+    color: #638874;
+  }
+
+  .study-routine li {
+    padding-left: 3px;
+  }
+
+  .study-routine strong,
+  .study-routine span {
+    display: block;
+  }
+
+  .study-routine strong {
+    color: #294453;
+    font-size: 0.82rem;
+  }
+
+  .study-routine span {
+    margin-top: 3px;
+    color: #718085;
+    font-size: 0.77rem;
+    line-height: 1.5;
+  }
+
   .focus-actions {
     display: flex;
     align-items: center;
@@ -882,6 +1361,35 @@
     .message-form > :deep(.v-btn) {
       align-self: flex-end;
     }
+
+    .groups-heading-row {
+      padding: 18px;
+    }
+
+    .group-art {
+      width: 96px;
+      height: 90px;
+    }
+
+    .group-post-form {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .group-post-type {
+      width: 100%;
+      max-width: none;
+      flex-basis: auto;
+    }
+
+    .group-post-form > :deep(.v-btn) {
+      align-self: flex-end;
+    }
+
+    .active-group-summary {
+      align-items: flex-start;
+      flex-direction: column;
+    }
   }
 
   @media (max-width: 420px) {
@@ -904,6 +1412,41 @@
 
     .study-message {
       max-width: 100%;
+    }
+
+    .groups-heading-row {
+      align-items: flex-start;
+    }
+
+    .group-art {
+      width: 72px;
+      height: 72px;
+    }
+
+    .group-actions > :deep(.v-btn) {
+      width: 100%;
+    }
+
+    .invite-input {
+      min-width: 100%;
+    }
+
+    .create-group-form {
+      grid-template-columns: 1fr;
+      padding-inline: 10px;
+    }
+
+    .create-group-form > :nth-child(3),
+    .create-group-actions {
+      grid-column: auto;
+    }
+
+    .group-post {
+      max-width: 100%;
+    }
+
+    .group-safety-note {
+      align-items: flex-start;
     }
   }
 </style>

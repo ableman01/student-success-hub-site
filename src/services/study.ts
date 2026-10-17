@@ -4,6 +4,26 @@ import { getErrorMessage } from '@/lib/errors'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type StudyMessageType = 'discussion' | 'assignment'
+export type GroupPostType = 'discussion' | 'question' | 'assignment' | 'practice'
+
+export interface StudyGroup {
+  id: string
+  name: string
+  course: string
+  description: string
+  invite_code: string
+  owner_id: string
+}
+
+export interface StudyGroupPost {
+  id: string
+  group_id: string
+  user_id: string
+  sender_name: string
+  post_type: GroupPostType
+  content: string
+  created_at: string
+}
 
 export interface StudyMessage {
   id: string
@@ -13,6 +33,68 @@ export interface StudyMessage {
   message_type: StudyMessageType
   content: string
   created_at: string
+}
+
+export async function getStudyGroups () {
+  const client = requireSupabase()
+  const { data: memberships, error: membershipError } = await client
+    .from('study_group_members')
+    .select('group_id')
+  if (membershipError) throw getSchemaError(membershipError)
+
+  const groupIds = (memberships ?? []).map(item => item.group_id)
+  if (groupIds.length === 0) return []
+
+  const { data, error } = await client.from('study_groups').select('*').in('id', groupIds).order('created_at', { ascending: false })
+  if (error) throw getSchemaError(error)
+  return data as StudyGroup[]
+}
+
+export async function createStudyGroup (input: { name: string, course: string, description: string }) {
+  const client = requireSupabase()
+  const { data: user } = await client.auth.getUser()
+  if (!user.user) throw new Error('Sign in before creating a study group.')
+  const { data: group, error } = await client.from('study_groups').insert({ ...input, owner_id: user.user.id }).select('*').single()
+  if (error) throw getSchemaError(error)
+  const { error: memberError } = await client.from('study_group_members').insert({ group_id: group.id, user_id: user.user.id })
+  if (memberError) {
+    await client.from('study_groups').delete().eq('id', group.id)
+    throw getSchemaError(memberError)
+  }
+  return group as StudyGroup
+}
+
+export async function joinStudyGroup (inviteCode: string) {
+  const { data, error } = await requireSupabase().functions.invoke('join-study-group', { body: { invite_code: inviteCode.trim() } })
+  if (error) throw getSchemaError(error)
+  return data as Pick<StudyGroup, 'id' | 'name' | 'course' | 'description'>
+}
+
+export async function getStudyGroupPosts (groupId: string) {
+  const { data, error } = await requireSupabase().from('study_group_posts').select('*').eq('group_id', groupId).order('created_at', { ascending: true }).limit(100)
+  if (error) throw getSchemaError(error)
+  return data as StudyGroupPost[]
+}
+
+export async function sendStudyGroupPost (groupId: string, postType: GroupPostType, content: string) {
+  const text = content.trim()
+  if (!text || text.length > maxMessageLength) throw new Error('Write a message of 1–2,000 characters before sending.')
+  const { data, error } = await requireSupabase().from('study_group_posts').insert({ group_id: groupId, post_type: postType, content: text }).select('*').single()
+  if (error) throw getSchemaError(error)
+  return data as StudyGroupPost
+}
+
+export function subscribeToStudyGroup (groupId: string, onPost: (post: StudyGroupPost) => void) {
+  return requireSupabase().channel(`study-group:${groupId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_posts', filter: `group_id=eq.${groupId}` }, payload => onPost(payload.new as StudyGroupPost))
+    .subscribe()
+}
+
+export async function leaveStudyGroup (channel: RealtimeChannel | null) {
+  if (channel) {
+    const { error } = await requireSupabase().removeChannel(channel)
+    if (error) throw new Error(getErrorMessage(error, 'Could not leave the group room cleanly.'))
+  }
 }
 
 const maxMessageLength = 2000
