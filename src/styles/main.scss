@@ -1,0 +1,60 @@
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+.v-application {
+  font-family: var(--v-font-family), Inter, "Segoe UI", sans-serif;
+  letter-spacing: normal;
+}
+
+.v-btn {
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.v-card {
+  border-color: #e4e9e1;
+}
+
+.v-field {
+  border-radius: 12px;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid rgb(82 130 106 / 55%);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer vuetify-overrides {
+  code, pre, .v-code {
+    font-family: var(--v-font-mono);
+  }
+}
