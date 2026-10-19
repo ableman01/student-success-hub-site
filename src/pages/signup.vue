@@ -469,6 +469,24 @@
     padding: 18px 24px 4px;
   }
 
+  .signup-fields :deep(.v-row) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+    margin: 0;
+  }
+
+  .signup-fields :deep(.v-col) {
+    width: auto;
+    max-width: none;
+    flex: initial;
+    padding: 7px 0;
+  }
+
+  .signup-fields :deep(.v-col-12) {
+    grid-column: 1 / -1;
+  }
+
   .signup-section-title {
     display: grid;
     gap: 2px;
@@ -540,6 +558,14 @@
 
     .signup-fields {
       padding-inline: 10px;
+    }
+
+    .signup-fields :deep(.v-row) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .signup-fields :deep(.v-col) {
+      grid-column: 1 / -1;
     }
 
     .signup-actions {
