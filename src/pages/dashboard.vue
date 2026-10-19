@@ -13,6 +13,19 @@
 
         <nav aria-label="Dashboard navigation" class="dashboard-actions">
           <v-btn
+            aria-label="Notifications"
+            icon
+            rounded="circle"
+            variant="tonal"
+            @click="openNotifications"
+          >
+            <v-badge v-if="unreadNotificationCount" color="error" :content="unreadNotificationCount" floating>
+              <v-icon>mdi-bell-outline</v-icon>
+            </v-badge>
+            <v-icon v-else>mdi-bell-outline</v-icon>
+          </v-btn>
+
+          <v-btn
             class="shared-link"
             prepend-icon="mdi-account-group-outline"
             rounded="pill"
@@ -112,6 +125,39 @@
       >
         {{ errorMessage }}
       </v-alert>
+
+      <section v-if="isResourceModerator" aria-labelledby="moderation-heading" class="moderation-panel">
+        <div class="section-title-row">
+          <div>
+            <div class="section-kicker">CREATOR TOOLS</div>
+            <h2 id="moderation-heading">Upload approvals</h2>
+            <p>Review new past questions and course PDFs before students can access them.</p>
+          </div>
+          <v-chip color="warning" prepend-icon="mdi-clock-outline" variant="tonal">
+            {{ pendingResources.length }} waiting
+          </v-chip>
+        </div>
+
+        <v-alert v-if="pendingResources.length === 0" class="mt-4" type="success" variant="tonal">
+          Everything is up to date. New student uploads will appear here for review.
+        </v-alert>
+
+        <div v-else class="moderation-list">
+          <article v-for="resource in pendingResources" :key="resource.id" class="moderation-item">
+            <div class="moderation-copy">
+              <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
+              <strong>{{ resource.title }}</strong>
+              <span>{{ resource.course || 'Course not specified' }} · {{ resource.uploaded_by_name }} · {{ formatDate(resource.created_at) }}</span>
+              <p v-if="resource.description">{{ resource.description }}</p>
+            </div>
+            <div class="moderation-actions">
+              <v-btn :href="resource.url" prepend-icon="mdi-file-eye-outline" rounded="pill" target="_blank" variant="tonal">Preview PDF</v-btn>
+              <v-btn color="error" :disabled="reviewingResourceId === resource.id" :loading="reviewingResourceId === resource.id && reviewAction === 'rejected'" rounded="pill" variant="text" @click="moderateResource(resource, 'rejected')">Reject</v-btn>
+              <v-btn color="success" :disabled="reviewingResourceId === resource.id" :loading="reviewingResourceId === resource.id && reviewAction === 'approved'" rounded="pill" @click="moderateResource(resource, 'approved')">Approve</v-btn>
+            </div>
+          </article>
+        </div>
+      </section>
 
       <section aria-label="Academic overview" class="stats-grid">
         <v-card class="stat-card stat-pending" rounded="xl">
@@ -461,7 +507,7 @@
             <h2 id="materials-heading">Class materials</h2>
 
             <p>
-              Browse lecture notes and handouts for courses in
+              Browse approved lecture notes, assignment PDFs, and handouts for courses in
               {{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'your level' }}.
             </p>
           </div>
@@ -567,6 +613,17 @@
               </div>
 
               <v-chip
+                v-if="resource.status !== 'approved'"
+                class="mt-3 align-self-start"
+                :color="resource.status === 'pending' ? 'warning' : 'error'"
+                prepend-icon="mdi-clock-outline"
+                size="small"
+                variant="tonal"
+              >
+                {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved · upload a corrected PDF' }}
+              </v-chip>
+
+              <v-chip
                 class="material-level-chip"
                 color="secondary"
                 prepend-icon="mdi-account-school-outline"
@@ -593,10 +650,59 @@
                 Read PDF
                 <v-icon end>mdi-open-in-new</v-icon>
               </v-btn>
+
+              <v-btn
+                v-if="user?.id === resource.uploaded_by"
+                block
+                class="mt-2"
+                color="error"
+                prepend-icon="mdi-delete-outline"
+                rounded="pill"
+                variant="text"
+                @click="resourceToDelete = resource"
+              >
+                Delete my upload
+              </v-btn>
             </v-card>
           </v-col>
         </v-row>
       </section>
+
+      <v-dialog
+        :model-value="Boolean(resourceToDelete)"
+        max-width="440"
+        @update:model-value="value => { if (!value) resourceToDelete = null }"
+      >
+        <v-card rounded="xl">
+          <v-card-title>Delete your class material?</v-card-title>
+          <v-card-text>“{{ resourceToDelete?.title }}” and its PDF will be removed from the library.</v-card-text>
+          <v-card-actions class="pa-4 pt-0">
+            <v-spacer />
+            <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
+            <v-btn color="error" :loading="deletingResource" rounded="pill" @click="confirmDeleteMaterial">Delete upload</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="showNotifications" max-width="560" scrollable>
+        <v-card class="notification-dialog" rounded="xl">
+          <v-card-title class="d-flex align-center justify-space-between">
+            <span>Notifications</span>
+            <v-btn aria-label="Close notifications" icon="mdi-close" variant="text" @click="showNotifications = false" />
+          </v-card-title>
+          <v-card-text>
+            <div v-if="notifications.length" class="notification-list">
+              <article v-for="notification in notifications" :key="notification.id" class="notification-item" :class="{ 'notification-unread': !notification.is_read }">
+                <v-icon :color="notification.type === 'resource_rejected' ? 'error' : notification.type === 'resource_approved' ? 'success' : 'primary'">
+                  {{ notification.type === 'resource_uploaded' ? 'mdi-file-upload-outline' : notification.type === 'resource_approved' ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}
+                </v-icon>
+                <div><p>{{ notification.message }}</p><small>{{ formatDate(notification.created_at) }}</small></div>
+              </article>
+            </div>
+            <v-alert v-else type="info" variant="tonal">No notifications yet. Upload reviews and decisions will show here.</v-alert>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
 
       <v-dialog
         v-model="showMaterialForm"
@@ -611,7 +717,7 @@
             <div>
               <div class="section-kicker">SHARE WITH CLASSMATES</div>
               <h2 id="material-dialog-title">Add class material</h2>
-              <p>PDFs are shared with students taking courses in the same level band.</p>
+              <p>Choose whether to share lecture notes, an assignment PDF, or another class handout. New uploads are reviewed before students can access them.</p>
             </div>
 
             <v-btn
@@ -889,7 +995,7 @@
   import type { AppUser } from '@/lib/auth'
   import type { Resource, ResourceCategory } from '@/services/resources'
   import type { Task } from '@/services/tasks'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import {
     academicLevels,
@@ -905,10 +1011,17 @@
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import {
+    deleteResource,
     getResources,
+    getNotifications,
+    getPendingResources,
     getResourceCategoryLabel,
+    isResourceModerator,
+    markNotificationsRead,
     resourceCategories,
+    reviewResource,
     uploadResource,
+    type AppNotification,
   } from '@/services/resources'
   import {
     createTask,
@@ -921,6 +1034,16 @@
   const user = ref<AppUser | null>(null)
   const tasks = ref<Task[]>([])
   const classMaterials = ref<Resource[]>([])
+  const pendingResources = ref<Resource[]>([])
+  const notifications = ref<AppNotification[]>([])
+  const isResourceModerator = ref(false)
+  const showNotifications = ref(false)
+  const resourceToDelete = ref<Resource | null>(null)
+  const deletingResource = ref(false)
+  const reviewingResourceId = ref<string | null>(null)
+  const reviewAction = ref<'approved' | 'rejected' | null>(null)
+  let notificationPoll: ReturnType<typeof globalThis.setInterval> | null = null
+  const unreadNotificationCount = computed(() => notifications.value.filter(item => !item.is_read).length)
   const materialSearch = ref('')
   const materialCategory = ref<ResourceCategory | 'all'>('all')
   const resourceCategory = ref<ResourceCategory>('lecture_notes')
@@ -1066,12 +1189,83 @@
       }
 
       user.value = currentUser
-      tasks.value = await getTasks()
-      await loadClassMaterials()
+      const moderator = await isResourceModerator(currentUser.id)
+      isResourceModerator.value = moderator
+      const [loadedTasks] = await Promise.all([
+        getTasks(),
+        loadClassMaterials(),
+        refreshDashboardSignals(moderator),
+      ])
+      tasks.value = loadedTasks
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
     } finally {
       loading.value = false
+    }
+  }
+
+  async function refreshDashboardSignals (moderator = isResourceModerator.value) {
+    if (!isSupabaseConfigured) return
+    try {
+      const [loadedNotifications, pending] = await Promise.all([
+        getNotifications(),
+        moderator ? getPendingResources() : Promise.resolve([]),
+      ])
+      notifications.value = loadedNotifications
+      pendingResources.value = pending
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not refresh notifications and upload approvals.')
+    }
+  }
+
+  async function openNotifications () {
+    showNotifications.value = true
+    await refreshDashboardSignals()
+    const unread = notifications.value.filter(item => !item.is_read).map(item => item.id)
+    if (!unread.length) return
+    try {
+      await markNotificationsRead(unread)
+      notifications.value = notifications.value.map(item => unread.includes(item.id) ? { ...item, is_read: true } : item)
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not mark notifications as read.')
+    }
+  }
+
+  async function moderateResource (resource: Resource, status: 'approved' | 'rejected') {
+    reviewingResourceId.value = resource.id
+    reviewAction.value = status
+    errorMessage.value = ''
+    try {
+      await reviewResource(resource.id, status)
+      pendingResources.value = pendingResources.value.filter(item => item.id !== resource.id)
+      await refreshDashboardSignals()
+      successMessage.value = status === 'approved'
+        ? `${resource.title} approved and shared with students.`
+        : `${resource.title} rejected. The uploader has been notified.`
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not review this upload.')
+    } finally {
+      reviewingResourceId.value = null
+      reviewAction.value = null
+    }
+  }
+
+  async function confirmDeleteMaterial () {
+    const resource = resourceToDelete.value
+    if (!resource) return
+    deletingResource.value = true
+    errorMessage.value = ''
+    try {
+      await deleteResource(resource)
+      classMaterials.value = classMaterials.value.filter(item => item.id !== resource.id)
+      resourceToDelete.value = null
+      successMessage.value = 'Your class material upload has been deleted.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not delete this class material.')
+    } finally {
+      deletingResource.value = false
     }
   }
 
@@ -1156,8 +1350,11 @@
       resourceCategory.value = 'lecture_notes'
       resourceDescription.value = ''
       resourceFile.value = null
-      successMessage.value = `Class material shared with ${getAcademicLevelLabel(sharedLevel)} students.`
+      successMessage.value = isSupabaseConfigured
+        ? 'Upload received. The creator will review it before it appears to students.'
+        : `Class material shared with ${getAcademicLevelLabel(sharedLevel)} students.`
       successSnackbar.value = true
+      await refreshDashboardSignals()
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
     } finally {
@@ -1290,7 +1487,16 @@
     }
   }
 
-  onMounted(loadTasks)
+  onMounted(async () => {
+    await loadTasks()
+    notificationPoll = globalThis.setInterval(() => {
+      void refreshDashboardSignals()
+      void loadClassMaterials()
+    }, 30_000)
+  })
+  onBeforeUnmount(() => {
+    if (notificationPoll !== null) globalThis.clearInterval(notificationPoll)
+  })
 </script>
 
 <style scoped>
@@ -2033,6 +2239,48 @@
     display: none;
   }
 
+  @media (max-width: 1279px) {
+    .mobile-dashboard-nav {
+      position: fixed;
+      z-index: 20;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      border: 1px solid #e3e9e1;
+      border-radius: 18px;
+      padding: 8px 5px;
+      background: rgb(255 255 255 / 96%);
+      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
+      backdrop-filter: blur(14px);
+    }
+
+    .mobile-dashboard-nav a {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      color: #68746f;
+      font-size: 10px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .mobile-dashboard-nav .v-icon {
+      color: #5146ea;
+      font-size: 20px;
+    }
+
+    .dashboard-width {
+      padding-bottom: 92px;
+    }
+
+    .dashboard-actions .shared-link {
+      display: none;
+    }
+  }
+
   .dashboard-footer a {
     color: #638371;
     font-weight: 650;
@@ -2267,6 +2515,117 @@
   :global(.v-theme--scholarBlue) .profile-dialog-card {
     border-color: #dbe5ee;
     background: #fbfdff;
+  }
+
+  .moderation-panel {
+    margin-bottom: 24px;
+    border: 1px solid #e4e9e1;
+    border-radius: 22px;
+    padding: 22px;
+    background: #fffefa;
+    box-shadow: 0 9px 28px rgb(30 53 54 / 4%);
+  }
+
+  .moderation-list,
+  .notification-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .moderation-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border: 1px solid #e5eae3;
+    border-radius: 16px;
+    padding: 14px;
+    background: #fbfcf8;
+  }
+
+  .moderation-copy {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .moderation-copy strong,
+  .moderation-copy span,
+  .moderation-copy p {
+    overflow-wrap: anywhere;
+  }
+
+  .moderation-copy strong {
+    color: #294453;
+    font-size: 14px;
+  }
+
+  .moderation-copy span,
+  .moderation-copy p {
+    margin: 0;
+    color: #718085;
+    font-size: 11px;
+  }
+
+  .moderation-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+
+  .notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .notification-unread {
+    background: #f0f5ef;
+  }
+
+  .notification-item p {
+    margin: 0;
+    color: #344a55;
+  }
+
+  .notification-item small {
+    display: block;
+    margin-top: 5px;
+    color: #83908e;
+  }
+
+  @media (max-width: 1279px) {
+    .dashboard-content > .v-col {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .moderation-panel {
+      padding: 16px 13px;
+    }
+
+    .moderation-item {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .moderation-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-content: stretch;
+    }
+
+    .moderation-actions > :deep(.v-btn:first-child) {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 760px) {

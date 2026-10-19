@@ -4,13 +4,15 @@ import { getErrorMessage } from '@/lib/errors'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
-export type ResourceCategory = 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
+export type ResourceCategory = 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide' | 'assignment'
+export type ResourceStatus = 'pending' | 'approved' | 'rejected'
 
 export const resourceCategories: { title: string, value: ResourceCategory }[] = [
   { title: 'Past questions', value: 'past_question' },
   { title: 'Lecture notes', value: 'lecture_notes' },
   { title: 'Course handouts', value: 'course_handout' },
   { title: 'Study guides', value: 'study_guide' },
+  { title: 'Assignment PDFs', value: 'assignment' },
 ]
 
 export function getResourceCategoryLabel (category: ResourceCategory) {
@@ -29,8 +31,19 @@ export interface Resource {
   file_path: string
   uploaded_by: string
   uploaded_by_name: string
+  status: ResourceStatus
+  reviewed_at: string | null
   created_at: string
   url: string
+}
+
+export interface AppNotification {
+  id: string
+  type: 'resource_uploaded' | 'resource_approved' | 'resource_rejected'
+  message: string
+  resource_id: string | null
+  is_read: boolean
+  created_at: string
 }
 
 export interface NewResource {
@@ -89,15 +102,17 @@ async function localTransaction<T> (
   })
 }
 
-function normalizeResource (
+async function normalizeResource (
   row: Omit<Resource, 'url'>,
-): Resource {
-  const { data } = getSupabaseClient()
+): Promise<Resource> {
+  const { data, error } = await getSupabaseClient()
     .storage
     .from(bucketName)
-    .getPublicUrl(row.file_path)
+    .createSignedUrl(row.file_path, 60 * 60)
 
-  return { ...row, url: data.publicUrl }
+  if (error) throw new Error(getErrorMessage(error))
+
+  return { ...row, url: data.signedUrl }
 }
 
 function validateResource (resource: NewResource) {
@@ -129,6 +144,8 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
       .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
       .map(({ blob, ...resource }) => ({
         ...resource,
+        status: resource.status || 'approved',
+        reviewed_at: resource.reviewed_at || null,
         category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
         uploaded_by_name: resource.uploaded_by_name || 'LASU student',
         url: URL.createObjectURL(blob),
@@ -157,11 +174,71 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
     throw new Error(getErrorMessage(error))
   }
 
-  const resources = data.map(row => normalizeResource(row))
+  const resources = await Promise.all(data.map(row => normalizeResource(row)))
 
   return kind === 'class_material' && academicLevel
     ? resources.filter(resource => matchesAcademicLevel(resource, academicLevel))
     : resources
+}
+
+export async function isResourceModerator (userId: string) {
+  if (!isSupabaseConfigured) return false
+
+  const { data, error } = await getSupabaseClient()
+    .from('resource_moderators')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) throw new Error(getErrorMessage(error))
+  return Boolean(data)
+}
+
+export async function getPendingResources () {
+  const { data, error } = await getSupabaseClient()
+    .from('resources')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  if (error) throw new Error(getErrorMessage(error))
+  return Promise.all(data.map(row => normalizeResource(row)))
+}
+
+export async function reviewResource (resourceId: string, status: Exclude<ResourceStatus, 'pending'>) {
+  const { data, error } = await getSupabaseClient()
+    .from('resources')
+    .update({ status, reviewed_at: new Date().toISOString() })
+    .eq('id', resourceId)
+    .eq('status', 'pending')
+    .select('*')
+    .maybeSingle()
+
+  if (error) throw new Error(getErrorMessage(error))
+  if (!data) throw new Error('This upload was already reviewed or is no longer available.')
+  return normalizeResource(data)
+}
+
+export async function getNotifications () {
+  const { data, error } = await getSupabaseClient()
+    .from('app_notifications')
+    .select('id, type, message, resource_id, is_read, created_at')
+    .order('created_at', { ascending: false })
+    .limit(30)
+
+  if (error) throw new Error(getErrorMessage(error))
+  return data as AppNotification[]
+}
+
+export async function markNotificationsRead (ids: string[]) {
+  if (!ids.length) return
+  const { error } = await getSupabaseClient()
+    .from('app_notifications')
+    .update({ is_read: true })
+    .in('id', ids)
+    .eq('is_read', false)
+
+  if (error) throw new Error(getErrorMessage(error))
 }
 
 export async function uploadResource (input: NewResource) {
@@ -186,6 +263,8 @@ export async function uploadResource (input: NewResource) {
       file_path: fileName,
       uploaded_by: user.id,
       uploaded_by_name: getContributorName(user),
+      status: 'approved',
+      reviewed_at: null,
       created_at: new Date().toISOString(),
       url: '',
     }
@@ -224,6 +303,7 @@ export async function uploadResource (input: NewResource) {
       file_path: filePath,
       uploaded_by: user.id,
       uploaded_by_name: getContributorName(user),
+      status: 'pending',
     })
     .select('*')
     .single()

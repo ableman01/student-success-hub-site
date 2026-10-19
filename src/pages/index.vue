@@ -365,6 +365,14 @@
 
                   <div class="resource-attribution">
                     <v-chip color="primary" size="x-small" variant="tonal">Past question</v-chip>
+                    <v-chip
+                      v-if="resource.status !== 'approved' && currentUser?.id === resource.uploaded_by"
+                      :color="resource.status === 'pending' ? 'warning' : 'error'"
+                      size="x-small"
+                      variant="tonal"
+                    >
+                      {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved · see notifications' }}
+                    </v-chip>
                     <span>Shared by <strong>{{ resource.uploaded_by_name || 'LASU student' }}</strong></span>
                     <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">
                       {{ getAcademicLevelLabel(getQuestionLevel(resource)) }}
@@ -594,7 +602,9 @@
       resourceDescription.value = ''
       resourceFile.value = null
       showUpload.value = false
-      successMessage.value = 'Past question uploaded and shared.'
+      successMessage.value = isSupabaseConfigured
+        ? 'Past question uploaded. It is awaiting creator approval.'
+        : 'Past question uploaded and shared.'
       successSnackbar.value = true
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not upload this past question.')

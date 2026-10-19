@@ -137,7 +137,7 @@
         </v-card>
       </v-dialog>
 
-      <v-row align="start">
+      <v-row align="start" class="study-content-columns">
         <v-col cols="12" lg="8">
           <v-card id="course-room" class="room-card pa-4 pa-md-6" rounded="xl">
             <div class="room-toolbar">
@@ -387,6 +387,13 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <nav aria-label="Quick study navigation" class="mobile-study-nav">
+        <a href="#study-groups"><v-icon>mdi-account-multiple-outline</v-icon><span>Groups</span></a>
+        <a href="#course-room"><v-icon>mdi-forum-outline</v-icon><span>Discussion</span></a>
+        <a href="#course-resources"><v-icon>mdi-file-pdf-box</v-icon><span>Course PDFs</span></a>
+        <a href="#study-guidance"><v-icon>mdi-timer-outline</v-icon><span>Study guide</span></a>
+      </nav>
 
     </v-container>
   </main>
@@ -799,6 +806,9 @@
 
   .study-width {
     max-width: 1280px;
+    width: 100%;
+    min-width: 0;
+    margin-inline: auto;
   }
 
   .study-header,
@@ -894,6 +904,48 @@
   }
 
   #study-groups, #course-room, #course-resources, #study-guidance { scroll-margin-top: 88px; }
+
+  .mobile-study-nav {
+    display: none;
+  }
+
+  @media (max-width: 1279px) {
+    .mobile-study-nav {
+      position: fixed;
+      z-index: 20;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      border: 1px solid #e3e9e1;
+      border-radius: 18px;
+      padding: 8px 5px;
+      background: rgb(255 255 255 / 96%);
+      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
+      backdrop-filter: blur(14px);
+    }
+
+    .mobile-study-nav a {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      color: #68746f;
+      font-size: 10px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .mobile-study-nav .v-icon {
+      color: #5146ea;
+      font-size: 20px;
+    }
+
+    .study-width {
+      padding-bottom: 92px;
+    }
+  }
 
   .section-kicker {
     color: #668d76;
@@ -1515,7 +1567,63 @@
     line-height: 1.65;
   }
 
+  @media (max-width: 1279px) {
+    .study-content-columns > .v-col {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+  }
+
   @media (max-width: 700px) {
+    .study-width {
+      padding-bottom: 92px;
+    }
+
+    .study-section-nav {
+      position: static;
+      margin-bottom: 15px;
+      border-radius: 16px;
+      padding: 5px;
+    }
+
+    .study-section-nav a {
+      padding: 9px 11px;
+      font-size: 0.76rem;
+    }
+
+    .mobile-study-nav {
+      position: fixed;
+      z-index: 20;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      border: 1px solid #e3e9e1;
+      border-radius: 18px;
+      padding: 8px 5px;
+      background: rgb(255 255 255 / 96%);
+      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
+      backdrop-filter: blur(14px);
+    }
+
+    .mobile-study-nav a {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      color: #68746f;
+      font-size: 10px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .mobile-study-nav .v-icon {
+      color: #5146ea;
+      font-size: 20px;
+    }
+
+    #study-groups, #course-room, #course-resources, #study-guidance { scroll-margin-top: 16px; }
     .study-header,
     .room-toolbar {
       align-items: flex-start;
