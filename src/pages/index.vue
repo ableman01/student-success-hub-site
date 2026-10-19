@@ -413,7 +413,7 @@
               </v-btn>
 
               <v-btn
-                v-if="currentUser?.id === resource.uploaded_by"
+                v-if="isResourceModerator"
                 block
                 class="mt-2"
                 color="error"
@@ -421,7 +421,7 @@
                 variant="text"
                 @click="resourceToDelete = resource"
               >
-                Delete my upload
+                Delete resource
                 <v-icon end>mdi-delete-outline</v-icon>
               </v-btn>
             </v-card>
@@ -496,7 +496,7 @@
 
     <v-dialog v-model="showDeleteConfirmation" max-width="440">
       <v-card class="pa-2" rounded="xl">
-        <v-card-title class="text-h6 font-weight-bold">Delete this past question?</v-card-title>
+        <v-card-title class="text-h6 font-weight-bold">Delete this shared resource?</v-card-title>
         <v-card-text>
           “{{ resourceToDelete?.title }}” and its PDF will be removed from the shared library. This cannot be undone.
         </v-card-text>
@@ -504,7 +504,7 @@
           <v-spacer />
           <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
           <v-btn color="error" :loading="deleting" rounded="pill" @click="confirmDeleteResource">
-            Delete question
+            Delete resource
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -519,13 +519,14 @@
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
-  import { deleteResource, getResources, uploadResource } from '@/services/resources'
+  import { deleteResource, getResources, isResourceModerator as checkResourceModerator, uploadResource } from '@/services/resources'
 
   const supportMailto = 'mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support'
   const modeMessage = computed(() => isSupabaseConfigured
     ? 'Connected to Supabase'
     : 'Local test mode')
   const currentUser = ref<AppUser | null>(null)
+  const isResourceModerator = ref(false)
   const pastQuestions = ref<Resource[]>([])
   const resourceTitle = ref('')
   const resourceCourse = ref('')
@@ -597,6 +598,7 @@
         getResources('past_question'),
       ])
       currentUser.value = user
+      isResourceModerator.value = user ? await checkResourceModerator(user.id) : false
       pastQuestions.value = resources
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not load past questions.')

@@ -326,8 +326,8 @@ export async function uploadResource (input: NewResource) {
 
 export async function deleteResource (resource: Resource) {
   const user = await getCurrentUser()
-  if (!user || user.id !== resource.uploaded_by) {
-    throw new Error('You can only delete a past question that you uploaded.')
+  if (!user || !await isResourceModerator(user.id)) {
+    throw new Error('Only the site creator can delete shared resources.')
   }
 
   if (!isSupabaseConfigured) {
@@ -346,7 +346,6 @@ export async function deleteResource (resource: Resource) {
     .from('resources')
     .delete()
     .eq('id', resource.id)
-    .eq('uploaded_by', user.id)
 
   if (error) {
     throw new Error(getErrorMessage(error))

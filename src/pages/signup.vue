@@ -335,8 +335,10 @@
         await router.replace('/dashboard')
       } else {
         canResendConfirmation.value = true
-        successMessage.value
-          = 'Account created. Check your inbox for the LASU Student Success Hub confirmation email, then return here to log in.'
+        await router.replace({
+          path: '/login',
+          query: { signup: 'confirmation-sent' },
+        })
       }
     } catch (error) {
       errorMessage.value = getErrorMessage(error)

@@ -204,8 +204,8 @@
             <div class="section-title-row">
               <div>
                 <div class="section-kicker">PLAN YOUR WORK</div>
-                <h2 id="assignments-heading">My assignments</h2>
-                <p>Keep deadlines and instructions together in one place.</p>
+                <h2 id="assignments-heading">{{ isResourceModerator ? 'Student assignments' : 'My assignments' }}</h2>
+                <p>{{ isResourceModerator ? 'Review student planner entries and remove any assignment that should not remain.' : 'Keep deadlines and instructions together in one place.' }}</p>
               </div>
 
               <div class="assignment-heading-actions">
@@ -308,6 +308,7 @@
                 <v-checkbox-btn
                   class="assignment-checkbox"
                   color="success"
+                  :disabled="isResourceModerator && task.user_id !== user?.id"
                   :model-value="task.completed"
                   @update:model-value="toggleTask(task)"
                 />
@@ -328,6 +329,16 @@
                     </v-chip>
                   </div>
 
+                  <v-chip
+                    v-if="isResourceModerator && task.user_id !== user?.id"
+                    class="mt-2"
+                    color="secondary"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    Student assignment
+                  </v-chip>
+
                   <p v-if="task.description" class="assignment-description">
                     {{ task.description }}
                   </p>
@@ -343,6 +354,7 @@
                 </div>
 
                 <v-btn
+                  v-if="isResourceModerator"
                   aria-label="Delete assignment"
                   color="error"
                   icon="mdi-trash-can-outline"
@@ -590,7 +602,7 @@
           <span>No materials match that search. Try a different title, course, or keyword.</span>
         </div>
 
-        <v-row v-else>
+        <v-row v-else class="material-grid">
           <v-col
             v-for="resource in filteredClassMaterials"
             :key="resource.id"
@@ -659,7 +671,7 @@
               </v-btn>
 
               <v-btn
-                v-if="user?.id === resource.uploaded_by"
+                v-if="isResourceModerator"
                 block
                 class="mt-2"
                 color="error"
@@ -668,7 +680,7 @@
                 variant="text"
                 @click="resourceToDelete = resource"
               >
-                Delete my upload
+                Delete resource
               </v-btn>
             </v-card>
           </v-col>
@@ -681,12 +693,12 @@
         @update:model-value="value => { if (!value) resourceToDelete = null }"
       >
         <v-card rounded="xl">
-          <v-card-title>Delete your class material?</v-card-title>
+          <v-card-title>Delete this shared resource?</v-card-title>
           <v-card-text>“{{ resourceToDelete?.title }}” and its PDF will be removed from the library.</v-card-text>
           <v-card-actions class="pa-4 pt-0">
             <v-spacer />
             <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
-            <v-btn color="error" :loading="deletingResource" rounded="pill" @click="confirmDeleteMaterial">Delete upload</v-btn>
+            <v-btn color="error" :loading="deletingResource" rounded="pill" @click="confirmDeleteMaterial">Delete resource</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -2612,6 +2624,11 @@
       max-width: 100% !important;
     }
 
+    .material-grid > .v-col {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+
     .dashboard-header {
       align-items: center;
       flex-wrap: wrap;
@@ -2646,6 +2663,7 @@
     .dashboard-actions .profile-button :deep(.v-icon),
     .dashboard-actions .support-button :deep(.v-icon),
     .dashboard-actions .logout-button :deep(.v-icon) {
+      font-size: 20px !important;
       margin-inline: 0;
     }
   }

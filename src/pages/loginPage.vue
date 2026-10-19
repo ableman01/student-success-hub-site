@@ -60,6 +60,15 @@
           </div>
 
           <v-alert
+            v-if="route.query.signup === 'confirmation-sent'"
+            class="mb-5"
+            type="success"
+            variant="tonal"
+          >
+            Your account was created and a confirmation email has been sent. Confirm your email, then log in here.
+          </v-alert>
+
+          <v-alert
             v-if="isSupabaseConfigured && route.query.authError === 'session-check'"
             class="mb-5"
             type="error"

@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
+import { isResourceModerator } from '@/services/resources'
 
 export interface Task {
   id: string
@@ -145,14 +146,14 @@ export async function updateTask (
 }
 
 export async function deleteTask (id: Task['id']) {
-  if (!isSupabaseConfigured) {
-    const user = await getCurrentUser()
-    if (!user) {
-      throw new Error('Sign in before deleting assignments.')
-    }
+  const currentUser = await getCurrentUser()
+  if (!currentUser || !await isResourceModerator(currentUser.id)) {
+    throw new Error('Only the site creator can delete assignments.')
+  }
 
+  if (!isSupabaseConfigured) {
     const tasks = getDemoTasks()
-    const remaining = tasks.filter(task => task.id !== id || task.user_id !== user.id)
+    const remaining = tasks.filter(task => task.id !== id)
     if (remaining.length === tasks.length) {
       throw new Error('Assignment not found.')
     }
