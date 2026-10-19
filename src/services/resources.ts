@@ -243,3 +243,32 @@ export async function uploadResource (input: NewResource) {
 
   return normalizeResource(data)
 }
+
+export async function deleteResource (resource: Resource) {
+  const user = await getCurrentUser()
+  if (!user || user.id !== resource.uploaded_by) {
+    throw new Error('You can only delete a past question that you uploaded.')
+  }
+
+  if (!isSupabaseConfigured) {
+    await localTransaction<undefined>('readwrite', store => store.delete(resource.id))
+    URL.revokeObjectURL(resource.url)
+    return
+  }
+
+  const client = getSupabaseClient()
+  const { error: fileError } = await client.storage.from(bucketName).remove([resource.file_path])
+  if (fileError) {
+    throw new Error(getErrorMessage(fileError))
+  }
+
+  const { error } = await client
+    .from('resources')
+    .delete()
+    .eq('id', resource.id)
+    .eq('uploaded_by', user.id)
+
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
+}

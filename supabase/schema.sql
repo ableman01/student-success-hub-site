@@ -138,6 +138,14 @@ create policy "Signed-in users can upload resources"
 grant select on public.resources to anon, authenticated;
 grant insert on public.resources to authenticated;
 
+drop policy if exists "Users can delete their own resources" on public.resources;
+create policy "Users can delete their own resources"
+  on public.resources for delete
+  to authenticated
+  using ((select auth.uid()) = uploaded_by);
+
+grant delete on public.resources to authenticated;
+
 create table if not exists public.study_messages (
   id uuid primary key default gen_random_uuid(),
   course text not null check (length(trim(course)) between 1 and 80),

@@ -402,6 +402,19 @@
                 Discuss with classmates
                 <v-icon end>mdi-forum-outline</v-icon>
               </v-btn>
+
+              <v-btn
+                v-if="currentUser?.id === resource.uploaded_by"
+                block
+                class="mt-2"
+                color="error"
+                rounded="pill"
+                variant="text"
+                @click="resourceToDelete = resource"
+              >
+                Delete my upload
+                <v-icon end>mdi-delete-outline</v-icon>
+              </v-btn>
             </v-card>
           </v-col>
         </v-row>
@@ -439,8 +452,24 @@
     </div>
 
     <v-snackbar v-model="successSnackbar" color="success" timeout="3000">
-      Past question uploaded and shared.
+      {{ successMessage }}
     </v-snackbar>
+
+    <v-dialog v-model="showDeleteConfirmation" max-width="440">
+      <v-card class="pa-2" rounded="xl">
+        <v-card-title class="text-h6 font-weight-bold">Delete this past question?</v-card-title>
+        <v-card-text>
+          “{{ resourceToDelete?.title }}” and its PDF will be removed from the shared library. This cannot be undone.
+        </v-card-text>
+        <v-card-actions class="px-5 pb-4">
+          <v-spacer />
+          <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
+          <v-btn color="error" :loading="deleting" rounded="pill" @click="confirmDeleteResource">
+            Delete question
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
@@ -451,7 +480,7 @@
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
-  import { getResources, uploadResource } from '@/services/resources'
+  import { deleteResource, getResources, uploadResource } from '@/services/resources'
 
   const supportMailto = 'mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support'
   const modeMessage = computed(() => isSupabaseConfigured
@@ -468,6 +497,15 @@
   const uploading = ref(false)
   const showUpload = ref(false)
   const successSnackbar = ref(false)
+  const successMessage = ref('Past question uploaded and shared.')
+  const resourceToDelete = ref<Resource | null>(null)
+  const deleting = ref(false)
+  const showDeleteConfirmation = computed({
+    get: () => resourceToDelete.value !== null,
+    set: (value: boolean) => {
+      if (!value && !deleting.value) resourceToDelete.value = null
+    },
+  })
   const errorMessage = ref('')
   const questionSearch = ref('')
   const questionCourse = ref<string | null>(null)
@@ -556,11 +594,31 @@
       resourceDescription.value = ''
       resourceFile.value = null
       showUpload.value = false
+      successMessage.value = 'Past question uploaded and shared.'
       successSnackbar.value = true
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not upload this past question.')
     } finally {
       uploading.value = false
+    }
+  }
+
+  async function confirmDeleteResource () {
+    const resource = resourceToDelete.value
+    if (!resource) return
+
+    deleting.value = true
+    errorMessage.value = ''
+    try {
+      await deleteResource(resource)
+      pastQuestions.value = pastQuestions.value.filter(item => item.id !== resource.id)
+      resourceToDelete.value = null
+      successMessage.value = 'Past question deleted.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not delete this past question.')
+    } finally {
+      deleting.value = false
     }
   }
 
