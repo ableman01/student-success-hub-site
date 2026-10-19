@@ -26,7 +26,7 @@
       <v-form @submit.prevent="register">
         <v-card-text class="signup-fields">
           <v-row density="compact">
-            <v-col cols="12"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
+            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
             <v-col cols="12" sm="6">
               <v-text-field
                 v-model="firstName"
@@ -81,7 +81,7 @@
               />
             </v-col>
 
-            <v-col cols="12"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
+            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
 
             <v-col cols="12" sm="6">
               <v-select
@@ -108,9 +108,9 @@
               />
             </v-col>
 
-            <v-col cols="12"><div class="signup-section-title"><strong>Account details</strong><span>Use an email address you can access</span></div></v-col>
+            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>Account details</strong><span>Use an email address you can access</span></div></v-col>
 
-            <v-col cols="12">
+            <v-col cols="12" class="signup-full-row">
               <v-text-field
                 v-model="email"
                 autocomplete="email"
@@ -158,7 +158,7 @@
               />
             </v-col>
 
-            <v-col cols="12">
+            <v-col cols="12" class="signup-full-row">
               <v-checkbox
                 v-model="agreedToTerms"
                 color="secondary"
@@ -167,7 +167,7 @@
               />
             </v-col>
 
-            <v-col v-if="errorMessage" cols="12">
+            <v-col v-if="errorMessage" cols="12" class="signup-full-row">
               <v-alert
                 class="mb-4"
                 type="error"
@@ -177,7 +177,7 @@
               </v-alert>
             </v-col>
 
-            <v-col v-if="successMessage" cols="12">
+            <v-col v-if="successMessage" cols="12" class="signup-full-row">
               <v-alert
                 class="mb-4"
                 type="success"
@@ -186,7 +186,7 @@
                 {{ successMessage }}
               </v-alert>
             </v-col>
-            <v-col v-if="canResendConfirmation" cols="12" class="pt-0">
+            <v-col v-if="canResendConfirmation" cols="12" class="signup-full-row pt-0">
               <v-btn :loading="resendingConfirmation" prepend-icon="mdi-email-sync-outline" rounded="pill" variant="tonal" @click="resendConfirmation">Resend confirmation email</v-btn>
             </v-col>
           </v-row>
@@ -485,6 +485,11 @@
 
   .signup-fields :deep(.v-col-12) {
     grid-column: 1 / -1;
+  }
+
+  .signup-fields :deep(.signup-full-row) {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .signup-section-title {
