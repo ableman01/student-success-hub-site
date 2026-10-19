@@ -1,5 +1,5 @@
 <template>
-  <main class="dashboard-page">
+  <main id="dashboard-top" class="dashboard-page">
     <v-container class="dashboard-width py-5 py-md-8" fluid>
       <header class="dashboard-header">
         <RouterLink aria-label="LASU Student Success Hub home" class="dashboard-brand" to="/">
@@ -870,6 +870,13 @@
         <span>One step at a time. You’re making progress.</span>
         <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
       </footer>
+
+      <nav aria-label="Quick dashboard navigation" class="mobile-dashboard-nav">
+        <a href="#dashboard-top"><v-icon>mdi-view-dashboard-outline</v-icon><span>Home</span></a>
+        <a href="#assignments-heading"><v-icon>mdi-checkbox-marked-circle-outline</v-icon><span>Tasks</span></a>
+        <a href="#materials-heading"><v-icon>mdi-bookshelf</v-icon><span>Resources</span></a>
+        <RouterLink to="/study"><v-icon>mdi-account-group-outline</v-icon><span>Community</span></RouterLink>
+      </nav>
 
       <v-snackbar v-model="successSnackbar" color="success" timeout="3000">
         {{ successMessage }}
@@ -2022,6 +2029,10 @@
     font-size: 10px;
   }
 
+  .mobile-dashboard-nav {
+    display: none;
+  }
+
   .dashboard-footer a {
     color: #638371;
     font-weight: 650;
@@ -2259,6 +2270,41 @@
   }
 
   @media (max-width: 760px) {
+    .mobile-dashboard-nav {
+      position: fixed;
+      z-index: 20;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      border: 1px solid #e3e9e1;
+      border-radius: 18px;
+      padding: 8px 5px;
+      background: rgb(255 255 255 / 96%);
+      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
+      backdrop-filter: blur(14px);
+    }
+
+    .mobile-dashboard-nav a {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      color: #68746f;
+      font-size: 10px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .mobile-dashboard-nav .v-icon {
+      color: #5146ea;
+      font-size: 20px;
+    }
+
+    .dashboard-width {
+      padding-bottom: 92px;
+    }
     .dashboard-header {
       margin-bottom: 26px;
     }

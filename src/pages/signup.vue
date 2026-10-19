@@ -5,7 +5,7 @@
         <img alt="" src="/academic-mark.svg">
         <strong>LASU Student Success Hub</strong>
       </RouterLink>
-
+      <v-btn class="signup-login-link" rounded="pill" to="/login" variant="text">Already a member? Log in</v-btn>
     </header>
 
     <v-card
@@ -14,12 +14,19 @@
       max-width="760"
       rounded="lg"
     >
-      <v-card-title class="signup-card-title">Create your account</v-card-title>
-      <v-card-subtitle>Sign up to open your dashboard.</v-card-subtitle>
+      <div class="signup-card-heading">
+        <div class="signup-kicker"><v-icon size="16">mdi-school-outline</v-icon> YOUR ACADEMIC SPACE</div>
+        <v-card-title class="signup-card-title">Join the student community</v-card-title>
+        <v-card-subtitle>Set up your profile to plan coursework, share resources, and study with classmates.</v-card-subtitle>
+        <div aria-label="Three signup steps" class="signup-steps">
+          <span><b>1</b> About you</span><span><b>2</b> Your studies</span><span><b>3</b> Account</span>
+        </div>
+      </div>
 
       <v-form @submit.prevent="register">
         <v-card-text class="signup-fields">
           <v-row density="compact">
+            <v-col cols="12"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
             <v-col cols="12" sm="6">
               <v-text-field
                 v-model="firstName"
@@ -74,6 +81,8 @@
               />
             </v-col>
 
+            <v-col cols="12"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
+
             <v-col cols="12" sm="6">
               <v-select
                 v-model="academicLevel"
@@ -98,6 +107,8 @@
                 variant="outlined"
               />
             </v-col>
+
+            <v-col cols="12"><div class="signup-section-title"><strong>Account details</strong><span>Use an email address you can access</span></div></v-col>
 
             <v-col cols="12">
               <v-text-field
@@ -194,10 +205,6 @@
         </v-card-actions>
       </v-form>
 
-      <v-card-text class="text-center">
-        Already signed up?
-        <RouterLink to="/login">Log in</RouterLink>
-      </v-card-text>
     </v-card>
   </main>
 </template>
@@ -270,6 +277,20 @@
 
     if (!genders.has(gender.value)) {
       errorMessage.value = 'Choose male or female.'
+      return
+    }
+
+    const emailParts = email.value.trim().split('@')
+    const emailDomain = emailParts[1] || ''
+    if (
+      emailParts.length !== 2
+      || !emailParts[0]
+      || !emailDomain.includes('.')
+      || emailDomain.startsWith('.')
+      || emailDomain.endsWith('.')
+      || /\s/.test(email.value)
+    ) {
+      errorMessage.value = 'Enter a valid email address.'
       return
     }
 
@@ -359,6 +380,11 @@
     margin-inline: auto;
   }
 
+  .signup-login-link {
+    color: #5146ea;
+    font-size: 0.8rem;
+  }
+
   .signup-brand {
     display: inline-flex;
     align-items: center;
@@ -380,15 +406,84 @@
   }
 
   .signup-card-title {
-    padding: 24px 24px 4px;
+    padding: 10px 0 4px;
     color: #203a4a;
     font-size: clamp(1.5rem, 3vw, 1.9rem);
     font-weight: 750;
     letter-spacing: -0.04em;
   }
 
+  .signup-card-heading {
+    padding: 24px 32px 0;
+  }
+
+  .signup-kicker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #5146ea;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.09em;
+  }
+
+  .signup-card-heading :deep(.v-card-subtitle) {
+    max-width: 550px;
+    padding: 0;
+    color: #718085;
+    line-height: 1.55;
+    white-space: normal;
+  }
+
+  .signup-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 19px;
+  }
+
+  .signup-steps span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #e6e9f2;
+    border-radius: 999px;
+    padding: 5px 10px;
+    color: #68746f;
+    font-size: 0.7rem;
+    font-weight: 650;
+  }
+
+  .signup-steps b {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border-radius: 50%;
+    background: #eeedff;
+    color: #5146ea;
+    font-size: 0.65rem;
+  }
+
   .signup-fields {
-    padding: 16px 24px 4px;
+    padding: 18px 24px 4px;
+  }
+
+  .signup-section-title {
+    display: grid;
+    gap: 2px;
+    border-bottom: 1px solid #edf0eb;
+    padding: 5px 0 9px;
+  }
+
+  .signup-section-title strong {
+    color: #203a4a;
+    font-size: 0.9rem;
+  }
+
+  .signup-section-title span {
+    color: #83908a;
+    font-size: 0.72rem;
   }
 
   .signup-actions {
@@ -397,7 +492,28 @@
 
   @media (max-width: 600px) {
     .signup-page {
-      padding-inline: 14px;
+      padding: 0 12px 20px;
+    }
+
+    .signup-header {
+      min-height: 64px;
+      gap: 6px;
+    }
+
+    .signup-brand {
+      min-width: 0;
+      gap: 7px;
+      font-size: 0.68rem;
+    }
+
+    .signup-brand img {
+      width: 34px;
+      height: 34px;
+    }
+
+    .signup-login-link {
+      padding-inline: 8px;
+      font-size: 0.68rem;
     }
 
     .signup-card {
@@ -406,7 +522,20 @@
     }
 
     .signup-card-title {
-      padding-inline: 10px;
+      font-size: 1.55rem;
+    }
+
+    .signup-card-heading {
+      padding: 18px 18px 0;
+    }
+
+    .signup-steps {
+      gap: 5px;
+    }
+
+    .signup-steps span {
+      padding-inline: 8px;
+      font-size: 0.65rem;
     }
 
     .signup-fields {

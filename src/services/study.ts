@@ -57,9 +57,44 @@ export async function createStudyGroup (input: { name: string, course: string, d
 }
 
 export async function joinStudyGroup (inviteCode: string) {
-  const { data, error } = await requireSupabase().functions.invoke('join-study-group', { body: { invite_code: inviteCode.trim() } })
+  const normalizedInvite = normalizeInviteCode(inviteCode)
+  if (!normalizedInvite) throw new Error('Paste a valid group invite code or invite link.')
+  const { data, error } = await requireSupabase().functions.invoke('join-study-group', { body: { invite_code: normalizedInvite } })
   if (error) throw await getFunctionError(error)
   return data as Pick<StudyGroup, 'id' | 'name' | 'course' | 'description'>
+}
+
+export async function deleteStudyGroup (groupId: string) {
+  const { data, error } = await requireSupabase()
+    .from('study_groups')
+    .delete()
+    .eq('id', groupId)
+    .select('id')
+    .maybeSingle()
+  if (error) throw getSchemaError(error)
+  if (!data) throw new Error('Only the group creator can delete this group, or it may already be gone.')
+}
+
+export async function leaveStudyGroupMembership (groupId: string) {
+  const { data, error } = await requireSupabase()
+    .from('study_group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .select('group_id')
+    .maybeSingle()
+  if (error) throw getSchemaError(error)
+  if (!data) throw new Error('You are no longer a member of this group.')
+}
+
+function normalizeInviteCode (value: string) {
+  const input = value.trim()
+  if (!input) return ''
+  try {
+    const url = new URL(input)
+    return url.searchParams.get('invite')?.trim() || ''
+  } catch {
+    return input
+  }
 }
 
 async function getFunctionError (error: unknown) {

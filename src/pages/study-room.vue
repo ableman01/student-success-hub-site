@@ -88,35 +88,54 @@
 
           <v-divider class="my-4" />
           <div v-if="groups.length" class="group-workspace">
-            <v-select v-model="activeGroupId" class="group-picker" hide-details item-title="name" item-value="id" :items="groups" label="Your study groups" prepend-inner-icon="mdi-account-group" variant="outlined">
-              <template #item="{ props, item }">
-                <v-list-item v-bind="props" :subtitle="`${item.raw.course} · ${item.raw.description || 'Study together'}`" />
-              </template>
-            </v-select>
-            <div v-if="activeGroup" class="active-group-summary">
-              <div><strong>{{ activeGroup.name }}</strong><span>{{ activeGroup.course }}<template v-if="activeGroup.description"> · {{ activeGroup.description }}</template></span></div>
-              <v-btn :aria-label="`Copy invitation for ${activeGroup.name}`" color="primary" prepend-icon="mdi-content-copy" rounded="pill" size="small" variant="tonal" @click="copyGroupInvite">Invite selected classmates</v-btn>
-            </div>
-
-            <v-progress-linear v-if="loadingGroupPosts" class="my-3" color="primary" indeterminate rounded />
-            <div v-else class="group-post-list" aria-live="polite">
-              <div v-if="groupPosts.length === 0" class="group-empty"><v-icon size="26">mdi-chat-processing-outline</v-icon><strong>Start your group’s first study session</strong><span>Post a question, assignment, or practice problem and invite classmates to explain their thinking.</span></div>
-              <article v-for="post in groupPosts" :key="post.id" class="group-post" :class="`group-post-${post.post_type}`">
-                <div class="group-post-meta"><strong>{{ post.sender_name }}</strong><v-chip size="x-small" variant="tonal">{{ groupPostLabels[post.post_type] }}</v-chip><time :datetime="post.created_at">{{ formatTime(post.created_at) }}</time></div>
-                <p>{{ post.content }}</p>
-              </article>
-            </div>
-
-            <v-form class="group-post-form" @submit.prevent="postToGroup">
-              <v-select v-model="groupPostType" class="group-post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
-              <v-textarea v-model="groupPostText" auto-grow class="group-post-text" hide-details label="Share a question, assignment prompt, or practice problem" maxlength="2000" rows="2" />
-              <v-btn color="primary" :disabled="!groupPostText.trim()" :loading="sendingGroupPost" prepend-icon="mdi-send" rounded="pill" type="submit">Post to group</v-btn>
-            </v-form>
-            <p class="group-safety-note"><v-icon size="16">mdi-shield-check-outline</v-icon> Group posts are visible only to members. Share the invite link with classmates you choose.</p>
+            <p class="group-list-hint">{{ groups.length }} {{ groups.length === 1 ? 'group' : 'groups' }} · Open more than one to view their discussions together.</p>
+            <v-card v-for="group in groups" :key="group.id" class="group-room-card" rounded="lg" variant="outlined">
+              <div class="group-room-heading">
+                <button class="group-expand-button" :aria-expanded="expandedGroupIds.includes(group.id)" @click="toggleGroup(group.id)">
+                  <v-icon>{{ expandedGroupIds.includes(group.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                  <span><strong>{{ group.name }}</strong><small>{{ group.course }}<template v-if="group.description"> · {{ group.description }}</template></small></span>
+                </button>
+                <div class="group-room-actions">
+                  <v-btn :aria-label="`Copy invitation for ${group.name}`" color="primary" icon="mdi-content-copy" size="small" variant="text" @click="copyGroupInvite(group)" />
+                  <v-btn :aria-label="group.owner_id === currentUserId ? `Delete ${group.name}` : `Leave ${group.name}`" :color="group.owner_id === currentUserId ? 'error' : 'secondary'" :icon="group.owner_id === currentUserId ? 'mdi-trash-can-outline' : 'mdi-logout'" size="small" variant="text" @click="groupToRemove = group" />
+                </div>
+              </div>
+              <div v-if="expandedGroupIds.includes(group.id)" class="group-room-content">
+                <v-progress-linear v-if="loadingGroupIds.includes(group.id)" class="my-3" color="primary" indeterminate rounded />
+                <div v-else class="group-post-list" aria-live="polite">
+                  <div v-if="!groupPostsById[group.id]?.length" class="group-empty"><v-icon size="26">mdi-chat-processing-outline</v-icon><strong>Start this group’s study session</strong><span>Post a question, assignment, or practice problem for classmates.</span></div>
+                  <article v-for="post in groupPostsById[group.id] || []" :key="post.id" class="group-post" :class="`group-post-${post.post_type}`">
+                    <div class="group-post-meta"><strong>{{ post.sender_name }}</strong><v-chip size="x-small" variant="tonal">{{ groupPostLabels[post.post_type] }}</v-chip><time :datetime="post.created_at">{{ formatTime(post.created_at) }}</time></div>
+                    <p>{{ post.content }}</p>
+                  </article>
+                </div>
+                <v-form class="group-post-form" @submit.prevent="postToGroup(group)">
+                  <v-select v-model="groupPostTypes[group.id]" class="group-post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
+                  <v-textarea v-model="groupDrafts[group.id]" auto-grow class="group-post-text" hide-details label="Share a question, assignment prompt, or practice problem" maxlength="2000" rows="2" />
+                  <v-btn color="primary" :disabled="!(groupDrafts[group.id] || '').trim()" :loading="sendingGroupId === group.id" prepend-icon="mdi-send" rounded="pill" type="submit">Post</v-btn>
+                </v-form>
+              </div>
+            </v-card>
+            <p class="group-safety-note"><v-icon size="16">mdi-shield-check-outline</v-icon> Group posts are visible only to members. Group creators can delete their groups; members can leave.</p>
           </div>
           <div v-else class="group-empty groups-first-empty"><v-icon size="30">mdi-account-multiple-outline</v-icon><strong>Your study groups will appear here</strong><span>Create a group and you’ll be added automatically, or join with a classmate’s invite code.</span></div>
         </v-card>
       </section>
+
+      <v-dialog :model-value="Boolean(groupToRemove)" max-width="440" @update:model-value="value => { if (!value) groupToRemove = null }">
+        <v-card rounded="xl">
+          <v-card-title>{{ groupToRemove?.owner_id === currentUserId ? 'Delete this group?' : 'Leave this group?' }}</v-card-title>
+          <v-card-text>
+            <template v-if="groupToRemove?.owner_id === currentUserId">“{{ groupToRemove?.name }}” and its discussion will be permanently deleted for every member.</template>
+            <template v-else>You will lose access to “{{ groupToRemove?.name }}”. You can rejoin with an invite link.</template>
+          </v-card-text>
+          <v-card-actions class="pa-4 pt-0">
+            <v-spacer />
+            <v-btn rounded="pill" variant="text" @click="groupToRemove = null">Cancel</v-btn>
+            <v-btn :color="groupToRemove?.owner_id === currentUserId ? 'error' : 'primary'" :loading="Boolean(groupToRemove && removingGroupId === groupToRemove.id)" rounded="pill" @click="removeGroup">{{ groupToRemove?.owner_id === currentUserId ? 'Delete group' : 'Leave group' }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <v-row align="start">
         <v-col cols="12" lg="8">
@@ -380,9 +399,10 @@
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
+  import { getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
-  import { createStudyGroup as createGroupRecord, getStudyGroupPosts, getStudyGroups, getStudyMessages, joinStudyGroup, leaveStudyGroup, leaveStudyRoom, sendStudyGroupPost, sendStudyMessage, subscribeToStudyGroup, subscribeToStudyRoom } from '@/services/study'
+  import { createStudyGroup as createGroupRecord, deleteStudyGroup, getStudyGroupPosts, getStudyGroups, getStudyMessages, joinStudyGroup, leaveStudyGroup, leaveStudyGroupMembership, leaveStudyRoom, sendStudyGroupPost, sendStudyMessage, subscribeToStudyGroup, subscribeToStudyRoom } from '@/services/study'
 
   const route = useRoute()
   const activeCourse = ref(typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : '')
@@ -408,9 +428,14 @@
   const resourceError = ref('')
   const messageEnd = ref<HTMLElement | null>(null)
   const groups = ref<StudyGroup[]>([])
-  const activeGroupId = ref('')
-  const activeGroup = computed(() => groups.value.find(group => group.id === activeGroupId.value) ?? null)
-  const groupPosts = ref<StudyGroupPost[]>([])
+  const currentUserId = ref('')
+  const expandedGroupIds = ref<string[]>([])
+  const groupPostsById = ref<Record<string, StudyGroupPost[]>>({})
+  const loadingGroupIds = ref<string[]>([])
+  const groupDrafts = ref<Record<string, string>>({})
+  const groupPostTypes = ref<Record<string, GroupPostType>>({})
+  const groupToRemove = ref<StudyGroup | null>(null)
+  const removingGroupId = ref('')
   const groupError = ref('')
   const groupNotice = ref('')
   const inviteCodeInput = ref(typeof route.query.invite === 'string' ? route.query.invite : '')
@@ -420,10 +445,7 @@
   const newGroupDescription = ref('')
   const creatingGroup = ref(false)
   const joiningGroup = ref(false)
-  const loadingGroupPosts = ref(false)
-  const sendingGroupPost = ref(false)
-  const groupPostText = ref('')
-  const groupPostType = ref<GroupPostType>('discussion')
+  const sendingGroupId = ref('')
   const groupPostOptions = [
     { title: 'Discussion', value: 'discussion' },
     { title: 'Past question', value: 'question' },
@@ -442,14 +464,16 @@
     resourceCategoryFilter.value === 'all' || resource.category === resourceCategoryFilter.value,
   ))
   let roomChannel: RealtimeChannel | null = null
-  let groupChannel: RealtimeChannel | null = null
+  const groupChannels = new Map<string, RealtimeChannel>()
   let connectionVersion = 0
   let focusInterval: ReturnType<typeof globalThis.setInterval> | null = null
 
   async function loadGroups () {
     try {
       groups.value = await getStudyGroups()
-      if (!groups.value.some(group => group.id === activeGroupId.value)) activeGroupId.value = groups.value[0]?.id ?? ''
+      const validIds = new Set(groups.value.map(group => group.id))
+      expandedGroupIds.value = expandedGroupIds.value.filter(id => validIds.has(id))
+      for (const group of groups.value) groupPostTypes.value[group.id] ||= 'discussion'
     } catch (error) {
       groupError.value = getErrorMessage(error, 'Could not load your study groups.')
     }
@@ -464,7 +488,8 @@
     try {
       const group = await createGroupRecord({ name, course, description: newGroupDescription.value.trim() })
       groups.value.unshift(group)
-      activeGroupId.value = group.id
+      groupPostTypes.value[group.id] = 'discussion'
+      await expandGroup(group.id)
       showCreateGroup.value = false
       newGroupName.value = ''
       newGroupDescription.value = ''
@@ -488,7 +513,7 @@
       const joined = await joinStudyGroup(inviteCodeInput.value)
       await loadGroups()
       if (joined) {
-        activeGroupId.value = joined.id
+        await expandGroup(joined.id)
         groupNotice.value = `You joined ${joined.name}. Say hello and agree on a study goal.`
       }
       inviteCodeInput.value = ''
@@ -499,49 +524,104 @@
     }
   }
 
-  async function copyGroupInvite () {
-    if (!activeGroup.value) return
+  async function copyGroupInvite (group: StudyGroup) {
     const inviteUrl = new URL('/study', window.location.origin)
-    inviteUrl.searchParams.set('invite', activeGroup.value.invite_code)
+    inviteUrl.searchParams.set('invite', group.invite_code)
     try {
       await navigator.clipboard.writeText(inviteUrl.toString())
       groupNotice.value = 'Invite link copied. Send it directly to the classmates you want in the group.'
     } catch {
-      groupNotice.value = `Share this invite code with selected classmates: ${activeGroup.value.invite_code}`
+      groupNotice.value = `Share this invite code with selected classmates: ${group.invite_code}`
     }
   }
 
-  async function connectGroup (groupId: string) {
-    if (groupChannel) await leaveStudyGroup(groupChannel)
-    groupChannel = null
-    groupPosts.value = []
-    if (!groupId) return
-    loadingGroupPosts.value = true
+  async function expandGroup (groupId: string) {
+    if (!expandedGroupIds.value.includes(groupId)) expandedGroupIds.value.push(groupId)
+    if (groupPostsById.value[groupId]) {
+      if (!groupChannels.has(groupId)) subscribeGroup(groupId)
+      return
+    }
+    if (loadingGroupIds.value.includes(groupId)) return
+    loadingGroupIds.value.push(groupId)
     try {
-      groupPosts.value = await getStudyGroupPosts(groupId)
-      groupChannel = subscribeToStudyGroup(groupId, post => {
-        if (!groupPosts.value.some(existing => existing.id === post.id)) groupPosts.value.push(post)
-      })
+      groupPostsById.value[groupId] = await getStudyGroupPosts(groupId)
+      if (expandedGroupIds.value.includes(groupId)) subscribeGroup(groupId)
     } catch (error) {
       groupError.value = getErrorMessage(error, 'Could not open this group. Check that you are still a member.')
+      expandedGroupIds.value = expandedGroupIds.value.filter(id => id !== groupId)
     } finally {
-      loadingGroupPosts.value = false
+      loadingGroupIds.value = loadingGroupIds.value.filter(id => id !== groupId)
     }
   }
 
-  async function postToGroup () {
-    if (!activeGroupId.value || !groupPostText.value.trim()) return
-    sendingGroupPost.value = true
+  function subscribeGroup (groupId: string) {
+    groupChannels.set(groupId, subscribeToStudyGroup(groupId, post => {
+      const posts = groupPostsById.value[groupId] || []
+      if (!posts.some(existing => existing.id === post.id)) groupPostsById.value[groupId] = [...posts, post]
+    }))
+  }
+
+  async function toggleGroup (groupId: string) {
+    if (!expandedGroupIds.value.includes(groupId)) {
+      await expandGroup(groupId)
+      return
+    }
+    expandedGroupIds.value = expandedGroupIds.value.filter(id => id !== groupId)
+    const channel = groupChannels.get(groupId)
+    if (channel) {
+      await leaveStudyGroup(channel)
+      groupChannels.delete(groupId)
+    }
+  }
+
+  async function postToGroup (group: StudyGroup) {
+    const content = (groupDrafts.value[group.id] || '').trim()
+    if (!content) return
+    sendingGroupId.value = group.id
     groupError.value = ''
     try {
-      const post = await sendStudyGroupPost(activeGroupId.value, groupPostType.value, groupPostText.value)
-      if (!groupPosts.value.some(existing => existing.id === post.id)) groupPosts.value.push(post)
-      groupPostText.value = ''
+      const post = await sendStudyGroupPost(group.id, groupPostTypes.value[group.id] || 'discussion', content)
+      const posts = groupPostsById.value[group.id] || []
+      if (!posts.some(existing => existing.id === post.id)) groupPostsById.value[group.id] = [...posts, post]
+      groupDrafts.value[group.id] = ''
     } catch (error) {
       groupError.value = getErrorMessage(error, 'Could not post to the study group.')
     } finally {
-      sendingGroupPost.value = false
+      sendingGroupId.value = ''
     }
+  }
+
+  async function removeGroup () {
+    const group = groupToRemove.value
+    if (!group) return
+    removingGroupId.value = group.id
+    groupError.value = ''
+    try {
+      if (group.owner_id === currentUserId.value) await deleteStudyGroup(group.id)
+      else await leaveStudyGroupMembership(group.id)
+      const channel = groupChannels.get(group.id)
+      if (channel) await leaveStudyGroup(channel)
+      groupChannels.delete(group.id)
+      groups.value = groups.value.filter(item => item.id !== group.id)
+      expandedGroupIds.value = expandedGroupIds.value.filter(id => id !== group.id)
+      const nextPosts = { ...groupPostsById.value }
+      delete nextPosts[group.id]
+      groupPostsById.value = nextPosts
+      groupNotice.value = group.owner_id === currentUserId.value
+        ? `${group.name} was deleted.`
+        : `You left ${group.name}.`
+      groupToRemove.value = null
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not update this group. Please try again.')
+    } finally {
+      removingGroupId.value = ''
+    }
+  }
+
+  async function closeGroupChannels () {
+    const channels = [...groupChannels.values()]
+    groupChannels.clear()
+    await Promise.all(channels.map(channel => leaveStudyGroup(channel)))
   }
 
   function formatFocusTime (seconds: number) {
@@ -680,6 +760,7 @@
   }
 
   onMounted(async () => {
+    currentUserId.value = (await getCurrentUser())?.id || ''
     await loadGroups()
     if (inviteCodeInput.value) await joinGroup()
     await loadResources()
@@ -694,12 +775,10 @@
     if (course !== previous) void connectRoom(course)
   })
 
-  watch(activeGroupId, groupId => { void connectGroup(groupId) })
-
   onBeforeUnmount(() => {
     connectionVersion++
     if (focusInterval !== null) globalThis.clearInterval(focusInterval)
-    if (groupChannel) void leaveStudyGroup(groupChannel)
+    void closeGroupChannels()
     void leaveStudyRoom(roomChannel).catch(error => {
       console.error('Could not leave the study room.', error)
     })
@@ -1125,6 +1204,73 @@
     gap: 14px;
   }
 
+  .group-list-hint {
+    margin: 0;
+    color: #718085;
+    font-size: 0.82rem;
+  }
+
+  .group-room-card {
+    overflow: hidden;
+    border-color: #e2e9df;
+    background: #fffefa;
+  }
+
+  .group-room-heading {
+    display: flex;
+    min-height: 68px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  .group-expand-button {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    padding: 4px;
+    background: transparent;
+    color: #294453;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .group-expand-button > span {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .group-expand-button strong,
+  .group-expand-button small {
+    overflow-wrap: anywhere;
+  }
+
+  .group-expand-button strong {
+    font-size: 0.92rem;
+  }
+
+  .group-expand-button small {
+    color: #718085;
+    font-size: 0.75rem;
+  }
+
+  .group-room-actions {
+    display: flex;
+    flex: 0 0 auto;
+  }
+
+  .group-room-content {
+    display: grid;
+    gap: 12px;
+    border-top: 1px solid #e7ece5;
+    padding: 14px;
+  }
+
   .group-picker {
     max-width: 520px;
   }
@@ -1428,6 +1574,20 @@
 
     .group-post-form > :deep(.v-btn) {
       align-self: flex-end;
+    }
+
+    .group-room-heading {
+      align-items: flex-start;
+      padding-inline: 9px;
+    }
+
+    .group-room-content {
+      padding: 10px;
+    }
+
+    .group-room-actions :deep(.v-btn) {
+      min-width: 38px;
+      min-height: 42px;
     }
 
     .active-group-summary {
