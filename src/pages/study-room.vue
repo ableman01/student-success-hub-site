@@ -97,7 +97,7 @@
                 </button>
                 <div class="group-room-actions">
                   <v-btn :aria-label="`Copy invitation for ${group.name}`" color="primary" icon="mdi-content-copy" size="small" variant="text" @click="copyGroupInvite(group)" />
-                  <v-btn :aria-label="group.owner_id === currentUserId ? `Delete ${group.name}` : `Leave ${group.name}`" :color="group.owner_id === currentUserId ? 'error' : 'secondary'" :icon="group.owner_id === currentUserId ? 'mdi-trash-can-outline' : 'mdi-logout'" size="small" variant="text" @click="groupToRemove = group" />
+                  <v-btn :aria-label="group.owner_id === currentUserId ? `Delete ${group.name}` : `Leave ${group.name}`" :color="group.owner_id === currentUserId ? 'error' : 'secondary'" :disabled="!currentUserId" :icon="group.owner_id === currentUserId ? 'mdi-trash-can-outline' : 'mdi-logout'" size="small" variant="text" @click="groupToRemove = group" />
                 </div>
               </div>
               <div v-if="expandedGroupIds.includes(group.id)" class="group-room-content">
@@ -760,7 +760,11 @@
   }
 
   onMounted(async () => {
-    currentUserId.value = (await getCurrentUser())?.id || ''
+    try {
+      currentUserId.value = (await getCurrentUser())?.id || ''
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Your profile could not be checked. Reload or sign in again before managing a group.')
+    }
     await loadGroups()
     if (inviteCodeInput.value) await joinGroup()
     await loadResources()
