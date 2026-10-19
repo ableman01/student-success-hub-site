@@ -13,6 +13,7 @@
 
         <nav aria-label="Main navigation" class="header-actions">
           <a class="header-link" href="#past-questions">Explore resources</a>
+          <a class="header-link" href="#about-app">About</a>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
           <a class="header-link" :href="supportMailto">Customer care</a>
 
@@ -342,7 +343,7 @@
           </div>
         </div>
 
-        <v-row v-else>
+        <v-row v-else class="past-question-grid">
           <v-col
             v-for="resource in filteredPastQuestions"
             :key="resource.id"
@@ -428,6 +429,35 @@
         </v-row>
       </section>
 
+      <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
+        <div class="about-app-heading">
+          <span class="section-eyebrow">A better way to study</span>
+          <h2 id="about-app-heading">About LASU Student Success Hub</h2>
+          <p>
+            A shared academic space that helps LASU students keep study plans,
+            course resources, and conversations together.
+          </p>
+        </div>
+
+        <div class="about-app-grid">
+          <article class="about-app-card">
+            <v-icon color="primary" size="25">mdi-calendar-check-outline</v-icon>
+            <h3>Stay organized</h3>
+            <p>Track assignments and deadlines in one place, so it is easier to decide what to work on next.</p>
+          </article>
+          <article class="about-app-card">
+            <v-icon color="primary" size="25">mdi-book-open-page-variant-outline</v-icon>
+            <h3>Find course materials</h3>
+            <p>Browse shared lecture notes and past questions by course and level when you are ready to revise.</p>
+          </article>
+          <article class="about-app-card">
+            <v-icon color="primary" size="25">mdi-account-group-outline</v-icon>
+            <h3>Learn with classmates</h3>
+            <p>Join study rooms and course discussions to ask questions, exchange ideas, and keep each other motivated.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="closing-banner">
         <div class="closing-icon"><v-icon size="30">mdi-school-outline</v-icon></div>
 
@@ -454,6 +484,7 @@
 
         <span class="footer-links">
           {{ modeMessage }}
+          <a href="#about-app">About this app</a>
           <a :href="supportMailto">Contact customer care</a>
         </span>
       </footer>
@@ -1033,6 +1064,57 @@
     box-shadow: 0 8px 28px rgb(30 53 54 / 4%);
   }
 
+  .about-app-section {
+    scroll-margin-top: 24px;
+    margin: 0 0 70px;
+  }
+
+  .about-app-heading {
+    max-width: 700px;
+    margin-bottom: 22px;
+  }
+
+  .about-app-heading h2 {
+    margin: 7px 0 8px;
+    color: #20394a;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    letter-spacing: -0.04em;
+  }
+
+  .about-app-heading p,
+  .about-app-card p {
+    margin: 0;
+    color: #718087;
+    line-height: 1.65;
+  }
+
+  .section-eyebrow {
+    color: #56816e;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .about-app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .about-app-card {
+    border: 1px solid #e4e9e1;
+    border-radius: 20px;
+    padding: 22px;
+    background: #fffefa;
+  }
+
+  .about-app-card h3 {
+    margin: 12px 0 7px;
+    color: #20394a;
+    font-size: 17px;
+  }
+
   .feature-item {
     display: flex;
     align-items: center;
@@ -1393,7 +1475,26 @@
     background: #fbfdff;
   }
 
+  @media (max-width: 1279px) {
+    .past-question-grid > .v-col {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+
+    .resource-card h3,
+    .resource-card p,
+    .resource-attribution {
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+
+  }
+
   @media (max-width: 900px) {
+    .about-app-grid {
+      grid-template-columns: 1fr;
+    }
+
     .question-tools {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

@@ -13,6 +13,7 @@
 
         <nav aria-label="Dashboard navigation" class="dashboard-actions">
           <v-btn
+            class="notification-button"
             aria-label="Notifications"
             icon
             rounded="circle"
@@ -56,6 +57,9 @@
           </v-btn>
 
           <v-btn
+            class="support-button"
+            aria-label="Customer care"
+            title="Customer care"
             href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
             prepend-icon="mdi-lifebuoy"
             rounded="pill"
@@ -65,6 +69,9 @@
           </v-btn>
 
           <v-btn
+            class="logout-button"
+            aria-label="Log out"
+            title="Log out"
             :loading="signingOut"
             rounded="pill"
             variant="tonal"
@@ -1016,7 +1023,7 @@
     getNotifications,
     getPendingResources,
     getResourceCategoryLabel,
-    isResourceModerator,
+    isResourceModerator as checkResourceModerator,
     markNotificationsRead,
     resourceCategories,
     reviewResource,
@@ -1189,7 +1196,7 @@
       }
 
       user.value = currentUser
-      const moderator = await isResourceModerator(currentUser.id)
+      const moderator = await checkResourceModerator(currentUser.id)
       isResourceModerator.value = moderator
       const [loadedTasks] = await Promise.all([
         getTasks(),
@@ -2603,6 +2610,43 @@
     .dashboard-content > .v-col {
       flex: 0 0 100% !important;
       max-width: 100% !important;
+    }
+
+    .dashboard-header {
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .dashboard-brand {
+      min-width: 0;
+      flex: 1 1 145px;
+    }
+
+    .dashboard-brand strong {
+      white-space: nowrap;
+    }
+
+    .dashboard-actions {
+      min-width: 0;
+      flex: 0 1 auto;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .dashboard-actions .profile-button,
+    .dashboard-actions .support-button,
+    .dashboard-actions .logout-button {
+      min-width: 40px;
+      padding-inline: 9px;
+      font-size: 0;
+    }
+
+    .dashboard-actions .profile-button :deep(.v-icon),
+    .dashboard-actions .support-button :deep(.v-icon),
+    .dashboard-actions .logout-button :deep(.v-icon) {
+      margin-inline: 0;
     }
   }
 
