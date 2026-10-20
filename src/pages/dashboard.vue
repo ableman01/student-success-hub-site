@@ -1015,8 +1015,8 @@
   import type { AppUser } from '@/lib/auth'
   import type { Resource, ResourceCategory } from '@/services/resources'
   import type { Task } from '@/services/tasks'
-  import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
   import {
     academicLevels,
     getAcademicLevelLabel,
@@ -1051,6 +1051,7 @@
   } from '@/services/tasks'
 
   const router = useRouter()
+  const route = useRoute()
   const user = ref<AppUser | null>(null)
   const tasks = ref<Task[]>([])
   const classMaterials = ref<Resource[]>([])
@@ -1396,6 +1397,12 @@
     showProfileDialog.value = true
   }
 
+  function openRequestedProfile () {
+    if (route.query.profile !== '1' || !user.value) return
+    openProfileSettings()
+    void router.replace({ path: '/dashboard', query: { ...route.query, profile: undefined } })
+  }
+
   async function saveProfile () {
     profileError.value = ''
     profileMessage.value = ''
@@ -1509,8 +1516,11 @@
     }
   }
 
+  watch(() => route.query.profile, () => openRequestedProfile())
+
   onMounted(async () => {
     await loadTasks()
+    openRequestedProfile()
     notificationPoll = globalThis.setInterval(() => {
       void refreshDashboardSignals()
       void loadClassMaterials()
