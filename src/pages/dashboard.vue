@@ -118,15 +118,6 @@
       </section>
 
       <v-alert
-        class="connection-status mb-5"
-        density="compact"
-        :type="isSupabaseConfigured ? 'success' : 'info'"
-        variant="tonal"
-      >
-        {{ modeMessage }}
-      </v-alert>
-
-      <v-alert
         v-if="errorMessage && !showAssignmentForm && !showMaterialForm"
         class="mb-5"
         type="error"
@@ -1171,9 +1162,6 @@
   const loadingResources = ref(false)
   const successSnackbar = ref(false)
   const successMessage = ref('')
-  const modeMessage = computed(() => isSupabaseConfigured
-    ? 'Connected to Supabase. Assignments are saved to your account online.'
-    : 'Local test mode. Your account and assignments are stored only in this browser tab.')
   const greeting = computed(() => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good morning'
