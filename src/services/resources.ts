@@ -245,6 +245,59 @@ export async function markNotificationsRead (ids: string[]) {
   if (error) throw new Error(getErrorMessage(error))
 }
 
+const savedResourcesStoragePrefix = 'student-hub-saved-resources:'
+
+export async function getSavedResourceIds () {
+  const user = await getCurrentUser()
+  if (!user) return [] as string[]
+
+  if (!isSupabaseConfigured) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`${savedResourcesStoragePrefix}${user.id}`) || '[]')
+      return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : []
+    } catch {
+      return [] as string[]
+    }
+  }
+
+  const { data, error } = await getSupabaseClient()
+    .from('saved_resources')
+    .select('resource_id')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(getErrorMessage(error))
+  return data.map(item => item.resource_id)
+}
+
+export async function setResourceSaved (resourceId: string, saved: boolean) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to save study materials to your profile.')
+
+  if (!isSupabaseConfigured) {
+    const key = `${savedResourcesStoragePrefix}${user.id}`
+    const current = new Set(await getSavedResourceIds())
+    if (saved) current.add(resourceId)
+    else current.delete(resourceId)
+    localStorage.setItem(key, JSON.stringify([...current]))
+    return
+  }
+
+  if (saved) {
+    const { error } = await getSupabaseClient()
+      .from('saved_resources')
+      .insert({ user_id: user.id, resource_id: resourceId })
+    if (error && error.code !== '23505') throw new Error(getErrorMessage(error))
+    return
+  }
+
+  const { error } = await getSupabaseClient()
+    .from('saved_resources')
+    .delete()
+    .eq('resource_id', resourceId)
+
+  if (error) throw new Error(getErrorMessage(error))
+}
+
 export async function uploadResource (input: NewResource) {
   validateResource(input)
   const user = await getCurrentUser()

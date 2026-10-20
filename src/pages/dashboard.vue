@@ -567,10 +567,25 @@
             variant="outlined"
           />
 
+          <v-select
+            v-model="materialView"
+            class="material-view-filter"
+            density="comfortable"
+            hide-details
+            item-title="title"
+            item-value="value"
+            :items="materialViewOptions"
+            label="Show materials"
+            prepend-inner-icon="mdi-bookmark-outline"
+            variant="outlined"
+          />
+
           <v-chip color="secondary" prepend-icon="mdi-account-school-outline" variant="tonal">
             {{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'All levels' }}
           </v-chip>
         </div>
+
+        <p class="saved-materials-hint">All approved materials are shown by default. Bookmark what matters to you, then choose “Saved first” or “Saved only”.</p>
 
         <v-progress-linear
           v-if="loadingResources"
@@ -600,7 +615,7 @@
 
         <div v-else-if="filteredClassMaterials.length === 0" class="materials-empty">
           <v-icon>mdi-text-search</v-icon>
-          <span>No materials match that search. Try a different title, course, or keyword.</span>
+          <span>{{ materialView === 'saved-only' ? 'You have not saved any matching class materials yet. Bookmark a resource to keep it on your profile.' : 'No materials match that search. Try a different title, course, or keyword.' }}</span>
         </div>
 
         <v-row v-else class="material-grid">
@@ -623,6 +638,17 @@
                     · {{ formatDate(resource.created_at) }}
                   </p>
                 </div>
+                <v-btn
+                  v-if="resource.status === 'approved'"
+                  class="material-save-button"
+                  :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                  :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
+                  :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
+                  :loading="savingResourceId === resource.id"
+                  size="small"
+                  variant="tonal"
+                  @click="toggleSavedMaterial(resource)"
+                />
               </div>
 
               <div class="material-meta">
@@ -860,6 +886,7 @@
 
           <v-tabs v-model="profileTab" class="profile-tabs" color="primary">
             <v-tab prepend-icon="mdi-account-outline" value="profile">Profile</v-tab>
+            <v-tab prepend-icon="mdi-bookmark-outline" value="saved">Saved materials</v-tab>
             <v-tab prepend-icon="mdi-lock-outline" value="security">Password</v-tab>
           </v-tabs>
 
@@ -942,6 +969,21 @@
                     </v-btn>
                   </div>
                 </v-form>
+              </v-window-item>
+
+              <v-window-item value="saved">
+                <div class="saved-profile-content">
+                  <div class="saved-profile-intro"><strong>Your saved study materials</strong><span>Keep your most useful approved PDFs close. You can save or remove items from resource cards.</span></div>
+                  <div v-if="savedProfileMaterials.length" class="saved-profile-list">
+                    <article v-for="resource in savedProfileMaterials" :key="resource.id" class="saved-profile-item">
+                      <v-icon color="error">mdi-file-pdf-box</v-icon>
+                      <div class="saved-profile-copy"><strong>{{ resource.title }}</strong><span>{{ resource.course || 'Course not specified' }} · {{ getResourceCategoryLabel(resource.category) }}</span></div>
+                      <v-btn :aria-label="`Open ${resource.title}`" :href="resource.url" icon="mdi-open-in-new" rel="noopener noreferrer" target="_blank" variant="text" />
+                      <v-btn :aria-label="`Remove ${resource.title} from saved materials`" :loading="savingResourceId === resource.id" color="error" icon="mdi-bookmark-remove-outline" variant="text" @click="toggleSavedMaterial(resource)" />
+                    </article>
+                  </div>
+                  <div v-else class="saved-profile-empty"><v-icon>mdi-bookmark-outline</v-icon><span>You haven’t saved any materials yet. Use the bookmark on a resource card to keep it here.</span></div>
+                </div>
               </v-window-item>
 
               <v-window-item value="security">
@@ -1040,6 +1082,8 @@
     markNotificationsRead,
     resourceCategories,
     reviewResource,
+    getSavedResourceIds,
+    setResourceSaved,
     uploadResource,
     type AppNotification,
   } from '@/services/resources'
@@ -1055,6 +1099,9 @@
   const user = ref<AppUser | null>(null)
   const tasks = ref<Task[]>([])
   const classMaterials = ref<Resource[]>([])
+  const savedProfileMaterials = ref<Resource[]>([])
+  const savedResourceIds = ref<string[]>([])
+  const savingResourceId = ref('')
   const pendingResources = ref<Resource[]>([])
   const notifications = ref<AppNotification[]>([])
   const isResourceModerator = ref(false)
@@ -1068,11 +1115,17 @@
   const unreadNotificationCount = computed(() => notifications.value.filter(item => !item.is_read).length)
   const materialSearch = ref('')
   const materialCategory = ref<ResourceCategory | 'all'>('all')
+  const materialView = ref<'all' | 'saved-first' | 'saved-only'>('all')
   const resourceCategory = ref<ResourceCategory>('lecture_notes')
   const materialCategories = resourceCategories.filter(category => category.value !== 'past_question')
   const materialCategoryFilters = [
     { title: 'All categories', value: 'all' },
     ...materialCategories,
+  ]
+  const materialViewOptions = [
+    { title: 'All materials', value: 'all' },
+    { title: 'Saved first', value: 'saved-first' },
+    { title: 'Saved only', value: 'saved-only' },
   ]
   const filteredClassMaterials = computed(() => {
     const query = materialSearch.value.trim().toLocaleLowerCase()
@@ -1084,6 +1137,10 @@
           .toLocaleLowerCase()
           .includes(query),
       )
+      .filter(resource => materialView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
+      .toSorted((a, b) => (materialView.value === 'saved-first'
+        ? Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id))
+        : 0) || b.created_at.localeCompare(a.created_at))
   })
   const title = ref('')
   const description = ref('')
@@ -1095,7 +1152,7 @@
   const showAssignmentForm = ref(false)
   const showMaterialForm = ref(false)
   const showProfileDialog = ref(false)
-  const profileTab = ref<'profile' | 'security'>('profile')
+  const profileTab = ref<'profile' | 'saved' | 'security'>('profile')
   const profileFirstName = ref('')
   const profileLastName = ref('')
   const profileEmail = ref('')
@@ -1219,6 +1276,7 @@
         refreshDashboardSignals(moderator),
       ])
       tasks.value = loadedTasks
+      await loadSavedProfileMaterials()
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
     } finally {
@@ -1335,6 +1393,39 @@
       errorMessage.value = getErrorMessage(error)
     } finally {
       loadingResources.value = false
+    }
+  }
+
+  async function loadSavedProfileMaterials () {
+    const [questions, savedIds] = await Promise.all([
+      getResources('past_question'),
+      getSavedResourceIds(),
+    ])
+    savedResourceIds.value = savedIds
+    const saved = new Set(savedIds)
+    savedProfileMaterials.value = [...classMaterials.value, ...questions]
+      .filter(resource => saved.has(resource.id) && resource.status === 'approved')
+      .toSorted((a, b) => b.created_at.localeCompare(a.created_at))
+  }
+
+  async function toggleSavedMaterial (resource: Resource) {
+    const isSaved = savedResourceIds.value.includes(resource.id)
+    savingResourceId.value = resource.id
+    errorMessage.value = ''
+    try {
+      await setResourceSaved(resource.id, !isSaved)
+      savedResourceIds.value = isSaved
+        ? savedResourceIds.value.filter(id => id !== resource.id)
+        : [resource.id, ...savedResourceIds.value]
+      savedProfileMaterials.value = isSaved
+        ? savedProfileMaterials.value.filter(item => item.id !== resource.id)
+        : [resource, ...savedProfileMaterials.value.filter(item => item.id !== resource.id)]
+      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your profile for quick access.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not update your saved materials.')
+    } finally {
+      savingResourceId.value = ''
     }
   }
 
@@ -1816,8 +1907,8 @@
 
   .materials-toolbar {
     display: grid;
-    max-width: 1040px;
-    grid-template-columns: minmax(220px, 1fr) minmax(220px, 0.8fr) max-content;
+    max-width: 1280px;
+    grid-template-columns: minmax(220px, 1fr) minmax(200px, 0.8fr) minmax(200px, 0.8fr) max-content;
     align-items: center;
     gap: 14px;
     margin: 18px 0;
@@ -1830,6 +1921,9 @@
   .material-category-filter {
     min-width: 220px;
   }
+
+  .material-view-filter { min-width: 190px; }
+  .saved-materials-hint { margin: -6px 0 18px; color: #7c8982; font-size: 11px; }
 
   .material-meta {
     display: flex;
@@ -1848,6 +1942,17 @@
   .profile-tabs {
     border-bottom: 1px solid #e8ece6;
   }
+
+  .saved-profile-content { display: grid; gap: 16px; }
+  .saved-profile-intro { display: grid; gap: 5px; color: #708078; font-size: 12px; line-height: 1.55; }
+  .saved-profile-intro strong { color: #2c493b; font-size: 15px; }
+  .saved-profile-list { display: grid; gap: 9px; }
+  .saved-profile-item { display: flex; min-width: 0; align-items: center; gap: 9px; border: 1px solid #e3eae2; border-radius: 14px; padding: 9px 10px; }
+  .saved-profile-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
+  .saved-profile-copy strong, .saved-profile-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-profile-copy strong { color: #30493d; font-size: 12px; }
+  .saved-profile-copy span { color: #849088; font-size: 10px; }
+  .saved-profile-empty { display: flex; align-items: center; gap: 10px; border: 1px dashed #d4dfd4; border-radius: 14px; padding: 18px; color: #75847b; font-size: 12px; line-height: 1.5; }
 
   .profile-hint {
     margin: -4px 0 15px;
@@ -2209,6 +2314,8 @@
     align-items: flex-start;
     gap: 12px;
   }
+
+  .material-save-button { margin-left: auto; flex: 0 0 auto; }
 
   .resource-icon {
     display: grid;
@@ -2833,6 +2940,8 @@
     .material-category-filter {
       min-width: 0;
     }
+
+    .material-view-filter { min-width: 0; }
 
     .assignment-heading-actions .v-btn {
       min-width: 0;

@@ -212,6 +212,19 @@
             prepend-inner-icon="mdi-account-school-outline"
             variant="outlined"
           />
+
+          <v-select
+            v-if="currentUser"
+            v-model="savedResourceView"
+            density="comfortable"
+            hide-details
+            item-title="title"
+            item-value="value"
+            :items="savedResourceViewOptions"
+            label="Show materials"
+            prepend-inner-icon="mdi-bookmark-outline"
+            variant="outlined"
+          />
         </div>
 
         <v-alert
@@ -338,8 +351,8 @@
           <div class="empty-icon"><v-icon size="30">mdi-text-search</v-icon></div>
 
           <div>
-            <h3>No past questions match your search.</h3>
-            <p>Try a different title, course, or description.</p>
+            <h3>{{ savedResourceView === 'saved-only' ? 'You have no saved past questions yet.' : 'No past questions match your search.' }}</h3>
+            <p>{{ savedResourceView === 'saved-only' ? 'Bookmark a useful question and it will appear in Saved materials on your profile.' : 'Try a different title, course, or description.' }}</p>
           </div>
         </div>
 
@@ -380,6 +393,16 @@
                     </v-chip>
                   </div>
                 </div>
+                <v-btn
+                  v-if="currentUser && resource.status === 'approved'"
+                  :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                  :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
+                  :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
+                  :loading="savingResourceId === resource.id"
+                  size="small"
+                  variant="tonal"
+                  @click="toggleSavedResource(resource)"
+                />
               </div>
 
               <p v-if="resource.description" class="resource-description my-4 text-body-2">
@@ -519,7 +542,7 @@
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
-  import { deleteResource, getResources, isResourceModerator as checkResourceModerator, uploadResource } from '@/services/resources'
+  import { deleteResource, getResources, getSavedResourceIds, isResourceModerator as checkResourceModerator, setResourceSaved, uploadResource } from '@/services/resources'
 
   const supportMailto = 'mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support'
   const modeMessage = computed(() => isSupabaseConfigured
@@ -540,6 +563,14 @@
   const successMessage = ref('Past question uploaded and shared.')
   const resourceToDelete = ref<Resource | null>(null)
   const deleting = ref(false)
+  const savedResourceIds = ref<string[]>([])
+  const savingResourceId = ref('')
+  const savedResourceView = ref<'all' | 'saved-first' | 'saved-only'>('all')
+  const savedResourceViewOptions = [
+    { title: 'All materials', value: 'all' },
+    { title: 'Saved first', value: 'saved-first' },
+    { title: 'Saved only', value: 'saved-only' },
+  ]
   const showDeleteConfirmation = computed({
     get: () => resourceToDelete.value !== null,
     set: (value: boolean) => {
@@ -578,10 +609,12 @@
         resource.uploaded_by_name || '',
       ].some(value => value.toLocaleLowerCase().includes(query)))
       .toSorted((a, b) =>
-        a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
+        (savedResourceView.value === 'saved-first' ? Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id)) : 0)
+        || a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
         || b.created_at.localeCompare(a.created_at)
         || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
       )
+      .filter(resource => savedResourceView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
   })
 
   function applyQuestionSearch () {
@@ -599,11 +632,30 @@
       ])
       currentUser.value = user
       isResourceModerator.value = user ? await checkResourceModerator(user.id) : false
+      savedResourceIds.value = user ? await getSavedResourceIds() : []
       pastQuestions.value = resources
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not load past questions.')
     } finally {
       loading.value = false
+    }
+  }
+
+  async function toggleSavedResource (resource: Resource) {
+    const isSaved = savedResourceIds.value.includes(resource.id)
+    savingResourceId.value = resource.id
+    errorMessage.value = ''
+    try {
+      await setResourceSaved(resource.id, !isSaved)
+      savedResourceIds.value = isSaved
+        ? savedResourceIds.value.filter(id => id !== resource.id)
+        : [resource.id, ...savedResourceIds.value]
+      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your profile for quick access.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not update your saved materials.')
+    } finally {
+      savingResourceId.value = ''
     }
   }
 
@@ -1169,7 +1221,7 @@
   .question-tools {
     display: grid;
     width: 100%;
-    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(210px, 0.8fr));
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(190px, 0.8fr));
     gap: 14px;
     margin: 22px 0;
   }

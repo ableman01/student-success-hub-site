@@ -93,6 +93,20 @@ export interface Database {
         }
         Relationships: []
       }
+      saved_resources: {
+        Row: {
+          user_id: string
+          resource_id: string
+          created_at: string
+        }
+        Insert: {
+          user_id?: string
+          resource_id: string
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
       study_messages: {
         Row: {
           id: string
