@@ -1,27 +1,118 @@
 <template>
   <v-app :class="{ 'student-shell-authenticated': isAuthenticated }">
-    <header v-if="isAuthenticated" class="student-site-header">
-      <div class="student-site-header-inner">
-        <RouterLink aria-label="LASU Student Success Hub home" class="student-site-brand" to="/">
-          <img alt="" src="/academic-mark.svg">
-          <span><strong>LASU Student Success Hub</strong><small>Your academic space</small></span>
-        </RouterLink>
+    <v-app-bar v-if="isAuthenticated" class="student-topbar" elevation="0">
+      <v-app-bar-nav-icon
+        :aria-label="drawerOpen ? 'Hide navigation' : 'Show navigation'"
+        @click="toggleNavigation"
+      />
+      <RouterLink aria-label="LASU Student Success Hub home" class="student-site-brand" to="/">
+        <img alt="" src="/academic-mark.svg">
+        <span><strong>LASU Student Success Hub</strong><small>Your academic space</small></span>
+      </RouterLink>
+      <v-spacer />
+      <v-btn
+        :aria-label="unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'"
+        class="global-notification-link"
+        icon
+        rounded="circle"
+        variant="tonal"
+        @click="openNotifications"
+      >
+        <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" floating><v-icon>mdi-bell-outline</v-icon></v-badge>
+        <v-icon v-else>mdi-bell-outline</v-icon>
+      </v-btn>
+    </v-app-bar>
 
-        <nav aria-label="Student account navigation" class="student-site-actions">
-          <v-btn aria-label="Dashboard" class="global-dashboard-link" prepend-icon="mdi-view-dashboard-outline" rounded="pill" to="/dashboard" variant="text">Dashboard</v-btn>
-          <v-btn :aria-label="unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'" class="global-notification-link" icon rounded="circle" variant="tonal" @click="openNotifications">
-            <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" floating><v-icon>mdi-bell-outline</v-icon></v-badge>
-            <v-icon v-else>mdi-bell-outline</v-icon>
-          </v-btn>
-          <v-btn prepend-icon="mdi-account-group-outline" rounded="pill" to="/study" variant="text">Study together</v-btn>
-          <v-btn prepend-icon="mdi-file-question-outline" rounded="pill" to="/#past-questions" variant="text">Shared questions</v-btn>
-          <v-btn prepend-icon="mdi-bookmark-outline" rounded="pill" to="/saved-materials" variant="text">Saved materials</v-btn>
-          <v-btn prepend-icon="mdi-account-circle-outline" rounded="pill" to="/dashboard?profile=1" variant="tonal">My profile</v-btn>
-          <v-btn href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support" prepend-icon="mdi-lifebuoy" rounded="pill" variant="text">Customer care</v-btn>
-          <v-btn :loading="signingOut" prepend-icon="mdi-logout" rounded="pill" variant="tonal" @click="logout">Log out</v-btn>
-        </nav>
+    <v-navigation-drawer
+      v-if="isAuthenticated"
+      v-model="drawerOpen"
+      class="student-side-drawer"
+      :temporary="isMobile"
+      :width="264"
+    >
+      <div class="student-drawer-top">
+        <div class="student-drawer-caption">STUDY SPACE</div>
+        <v-btn
+          aria-label="Hide navigation"
+          icon="mdi-close"
+          size="small"
+          variant="text"
+          @click="drawerOpen = false"
+        />
       </div>
-    </header>
+
+      <v-list class="student-drawer-links" nav>
+        <v-list-item
+          prepend-icon="mdi-view-dashboard-outline"
+          rounded="lg"
+          title="Dashboard"
+          to="/dashboard"
+          :active="route.path === '/dashboard' && !route.query.profile"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
+          :active="showNotifications"
+          rounded="lg"
+          title="Notifications"
+          @click="openNotifications"
+        >
+          <template #prepend>
+            <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" dot>
+              <v-icon>mdi-bell-outline</v-icon>
+            </v-badge>
+            <v-icon v-else>mdi-bell-outline</v-icon>
+          </template>
+        </v-list-item>
+        <v-list-item
+          prepend-icon="mdi-account-group-outline"
+          rounded="lg"
+          title="Study together"
+          to="/study"
+          :active="route.path.startsWith('/study')"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
+          prepend-icon="mdi-file-question-outline"
+          rounded="lg"
+          title="Shared questions"
+          to="/#past-questions"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
+          prepend-icon="mdi-bookmark-outline"
+          rounded="lg"
+          title="Saved materials"
+          to="/saved-materials"
+          :active="route.path === '/saved-materials'"
+          @click="closeMobileDrawer"
+        />
+      </v-list>
+
+      <v-divider class="student-drawer-divider" />
+      <v-list class="student-drawer-links student-drawer-account" nav>
+        <v-list-item
+          prepend-icon="mdi-account-circle-outline"
+          rounded="lg"
+          title="My profile"
+          to="/dashboard?profile=1"
+          :active="route.path === '/dashboard' && Boolean(route.query.profile)"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
+          href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
+          prepend-icon="mdi-lifebuoy"
+          rounded="lg"
+          title="Customer care"
+        />
+        <v-list-item
+          :loading="signingOut"
+          prepend-icon="mdi-logout"
+          rounded="lg"
+          title="Log out"
+          @click="logout"
+        />
+      </v-list>
+    </v-navigation-drawer>
 
     <v-main>
       <router-view />
@@ -54,6 +145,7 @@
 <script setup lang="ts">
   import type { AppNotification } from '@/services/resources'
   import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { useDisplay } from 'vuetify'
   import { useRoute, useRouter } from 'vue-router'
   import { getErrorMessage } from '@/lib/errors'
   import { hasAuthSession, signOut } from '@/lib/auth'
@@ -62,7 +154,9 @@
 
   const route = useRoute()
   const router = useRouter()
+  const { mobile: isMobile } = useDisplay()
   const isAuthenticated = ref(false)
+  const drawerOpen = ref(false)
   const signingOut = ref(false)
   const showNotifications = ref(false)
   const loadingNotifications = ref(false)
@@ -81,6 +175,14 @@
     }
   }
 
+  function toggleNavigation () {
+    drawerOpen.value = !drawerOpen.value
+  }
+
+  function closeMobileDrawer () {
+    if (isMobile.value) drawerOpen.value = false
+  }
+
   async function refreshNotificationCount () {
     if (!isAuthenticated.value || !isSupabaseConfigured) {
       unreadNotifications.value = 0
@@ -97,6 +199,7 @@
 
   async function openNotifications () {
     showNotifications.value = true
+    closeMobileDrawer()
     loadingNotifications.value = true
     notificationError.value = ''
     try {
@@ -129,7 +232,19 @@
     }
   }
 
-  watch(() => route.fullPath, () => { void refreshSession() })
+  watch(isAuthenticated, signedIn => {
+    if (signedIn) drawerOpen.value = !isMobile.value
+    else drawerOpen.value = false
+  })
+
+  watch(isMobile, mobile => {
+    drawerOpen.value = !mobile && isAuthenticated.value
+  })
+
+  watch(() => route.fullPath, () => {
+    void refreshSession()
+    closeMobileDrawer()
+  })
 
   onMounted(async () => {
     await refreshSession()
@@ -151,27 +266,7 @@
 </script>
 
 <style>
-  .student-site-header {
-    position: sticky;
-    z-index: 30;
-    top: 0;
-    border-bottom: 1px solid #e5ebe5;
-    background: rgb(255 255 255 / 96%);
-    box-shadow: 0 5px 20px rgb(24 54 39 / 5%);
-    backdrop-filter: blur(18px);
-  }
-
-  .student-site-header-inner {
-    display: flex;
-    width: min(1600px, 100%);
-    min-height: 76px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-inline: auto;
-    padding: 10px clamp(16px, 3.5vw, 48px);
-  }
-
+  .student-topbar { border-bottom: 1px solid #e5ebe5; background: rgb(255 255 255 / 96%); box-shadow: 0 5px 20px rgb(24 54 39 / 5%); backdrop-filter: blur(18px); }
   .student-site-brand {
     display: flex;
     min-width: 210px;
@@ -186,18 +281,14 @@
   .student-site-brand strong { font-size: 14px; }
   .student-site-brand small { color: #7a8980; font-size: 11px; }
 
-  .student-site-actions {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .student-site-actions::-webkit-scrollbar { display: none; }
-  .student-site-actions .v-btn { flex: 0 0 auto; font-size: 13px; font-weight: 650; }
+  .student-side-drawer { border: 0 !important; background: #fff; }
+  .student-drawer-top { display: flex; min-height: 64px; align-items: center; justify-content: space-between; padding: 8px 18px 4px 24px; }
+  .student-drawer-caption { color: #819087; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+  .student-drawer-links { padding: 8px 12px; }
+  .student-drawer-links .v-list-item { min-height: 48px; margin: 4px 0; color: #385247; font-size: 13px; font-weight: 650; }
+  .student-drawer-links .v-list-item--active { color: #244f3a; background: #edf4ee; }
+  .student-drawer-divider { margin: 8px 20px; border-color: #edf1ec; }
+  .student-drawer-account { padding-top: 2px; }
   .global-notification-link { width: 46px !important; height: 46px !important; background: #eef2f0 !important; }
   .global-notification-list { display: grid; gap: 8px; }
   .global-notification-item { display: flex; align-items: flex-start; gap: 12px; border: 1px solid #e5ebe5; border-radius: 14px; padding: 13px; }
@@ -210,19 +301,12 @@
   .student-shell-authenticated .page-header,
   .student-shell-authenticated .home-header { display: none !important; }
 
-  @media (max-width: 980px) {
-    .student-site-header-inner { align-items: flex-start; flex-direction: column; gap: 6px; padding-block: 9px; }
-    .student-site-brand { min-width: 0; }
-    .student-site-actions { width: 100%; justify-content: flex-start; }
-  }
-
   @media (max-width: 600px) {
-    .student-site-header-inner { gap: 4px; padding-inline: 10px; }
+    .student-site-brand { min-width: 0; gap: 8px; }
     .student-site-brand img { width: 34px; height: 34px; }
     .student-site-brand strong { font-size: 12px; }
     .student-site-brand small { font-size: 10px; }
-    .student-site-actions { gap: 0; }
-    .student-site-actions .v-btn { min-width: 40px; padding-inline: 9px; font-size: 11px; }
-    .student-site-actions .v-btn { white-space: nowrap; }
+    .student-topbar .v-toolbar__content { padding-inline: 4px 12px; }
+    .global-notification-link { width: 40px !important; height: 40px !important; }
   }
 </style>
