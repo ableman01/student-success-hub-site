@@ -507,7 +507,7 @@
 
         <span class="footer-links">
           <a href="#about-app">About this app</a>
-          <a :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp customer care: {{ customerCarePhone }}</a>
+          <a :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">Questions? DM our customer care representative on WhatsApp.</a>
         </span>
       </footer>
     </div>
@@ -543,7 +543,7 @@
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { deleteResource, getResources, getSavedResourceIds, isResourceModerator as checkResourceModerator, setResourceSaved, uploadResource } from '@/services/resources'
 
-  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
+  import { customerCareWhatsAppUrl } from '@/lib/support'
   const currentUser = ref<AppUser | null>(null)
   const isResourceModerator = ref(false)
   const pastQuestions = ref<Resource[]>([])

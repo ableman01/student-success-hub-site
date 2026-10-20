@@ -100,12 +100,12 @@
         />
         <v-list-item
           :href="customerCareWhatsAppUrl"
-          :subtitle="customerCarePhone"
+          subtitle="Questions? DM our customer care representative."
           prepend-icon="mdi-whatsapp"
           rounded="lg"
           target="_blank"
           rel="noopener noreferrer"
-          title="WhatsApp customer care"
+          title="Customer care"
         />
         <v-list-item
           :loading="signingOut"
@@ -154,7 +154,7 @@
   import { hasAuthSession, signOut } from '@/lib/auth'
   import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
   import { getNotifications, markNotificationsRead } from '@/services/resources'
-  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
+  import { customerCareWhatsAppUrl } from '@/lib/support'
 
   const route = useRoute()
   const router = useRouter()

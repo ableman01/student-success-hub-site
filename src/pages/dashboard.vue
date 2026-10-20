@@ -59,7 +59,7 @@
           <v-btn
             class="support-button"
             aria-label="WhatsApp customer care"
-            :title="`WhatsApp customer care: ${customerCarePhone}`"
+            title="Questions? DM our customer care representative on WhatsApp."
             :href="customerCareWhatsAppUrl"
             target="_blank"
             rel="noopener noreferrer"
@@ -1053,7 +1053,7 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
-  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
+  import { customerCareWhatsAppUrl } from '@/lib/support'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import {
     deleteResource,
