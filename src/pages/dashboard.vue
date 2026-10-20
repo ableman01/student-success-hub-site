@@ -997,7 +997,7 @@
         <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
       </footer>
 
-      <nav aria-label="Quick dashboard navigation" class="mobile-dashboard-nav">
+      <nav aria-label="Dashboard shortcuts" class="dashboard-quick-nav">
         <a href="#dashboard-top"><v-icon>mdi-view-dashboard-outline</v-icon><span>Home</span></a>
         <a href="#assignments-heading"><v-icon>mdi-checkbox-marked-circle-outline</v-icon><span>Tasks</span></a>
         <a href="#materials-heading"><v-icon>mdi-bookshelf</v-icon><span>Resources</span></a>
@@ -1533,6 +1533,7 @@
   .dashboard-width {
     max-width: 1420px;
     margin-inline: auto;
+    padding-bottom: 104px;
   }
 
   .dashboard-header {
@@ -2257,47 +2258,49 @@
     font-size: 10px;
   }
 
-  .mobile-dashboard-nav {
-    display: none;
+  .dashboard-quick-nav {
+    position: fixed;
+    z-index: 20;
+    right: 50%;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    display: grid;
+    width: min(720px, calc(100vw - 32px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    transform: translateX(50%);
+    border: 1px solid #e3e9e1;
+    border-radius: 18px;
+    padding: 8px 5px;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
+    backdrop-filter: blur(14px);
+  }
+
+  .dashboard-quick-nav a {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    border-radius: 12px;
+    padding: 4px 6px;
+    color: #68746f;
+    font-size: 11px;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background-color .18s ease, color .18s ease;
+  }
+
+  .dashboard-quick-nav a:hover,
+  .dashboard-quick-nav a:focus-visible {
+    background: #f0f4ef;
+    color: #3e6b55;
+  }
+
+  .dashboard-quick-nav .v-icon {
+    color: #5146ea;
+    font-size: 20px;
   }
 
   @media (max-width: 1279px) {
-    .mobile-dashboard-nav {
-      position: fixed;
-      z-index: 20;
-      right: 12px;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      left: 12px;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 4px;
-      border: 1px solid #e3e9e1;
-      border-radius: 18px;
-      padding: 8px 5px;
-      background: rgb(255 255 255 / 96%);
-      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
-      backdrop-filter: blur(14px);
-    }
-
-    .mobile-dashboard-nav a {
-      display: grid;
-      justify-items: center;
-      gap: 2px;
-      color: #68746f;
-      font-size: 10px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-
-    .mobile-dashboard-nav .v-icon {
-      color: #5146ea;
-      font-size: 20px;
-    }
-
-    .dashboard-width {
-      padding-bottom: 92px;
-    }
-
     .dashboard-actions .shared-link {
       display: none;
     }
@@ -2694,41 +2697,8 @@
   }
 
   @media (max-width: 760px) {
-    .mobile-dashboard-nav {
-      position: fixed;
-      z-index: 20;
-      right: 12px;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      left: 12px;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 4px;
-      border: 1px solid #e3e9e1;
-      border-radius: 18px;
-      padding: 8px 5px;
-      background: rgb(255 255 255 / 96%);
-      box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
-      backdrop-filter: blur(14px);
-    }
-
-    .mobile-dashboard-nav a {
-      display: grid;
-      justify-items: center;
-      gap: 2px;
-      color: #68746f;
-      font-size: 10px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-
-    .mobile-dashboard-nav .v-icon {
-      color: #5146ea;
-      font-size: 20px;
-    }
-
-    .dashboard-width {
-      padding-bottom: 92px;
-    }
+    .dashboard-quick-nav { width: calc(100vw - 24px); }
+    .dashboard-quick-nav a { font-size: 10px; }
     .dashboard-header {
       margin-bottom: 26px;
     }
