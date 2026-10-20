@@ -5,6 +5,7 @@
         <img alt="" src="/academic-mark.svg">
         <strong>LASU Student Success Hub</strong>
       </RouterLink>
+      <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
 
     </header>
 

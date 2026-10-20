@@ -5,7 +5,10 @@
         <img alt="" src="/academic-mark.svg">
         <strong>LASU Student Success Hub</strong>
       </RouterLink>
-      <v-btn class="signup-login-link" rounded="pill" to="/login" variant="text">Already a member? Log in</v-btn>
+      <div class="signup-header-actions">
+        <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
+        <v-btn class="signup-login-link" rounded="pill" to="/login" variant="text">Already a member? Log in</v-btn>
+      </div>
     </header>
 
     <v-card

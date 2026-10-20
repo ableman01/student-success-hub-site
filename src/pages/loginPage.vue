@@ -9,6 +9,7 @@
 
         <div class="auth-header-actions">
           <span class="header-prompt">New to the hub?</span>
+          <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
           <v-btn rounded="pill" to="/signup" variant="text">Create account</v-btn>
         </div>
       </header>
