@@ -15,6 +15,7 @@
           </v-btn>
           <v-btn prepend-icon="mdi-account-group-outline" rounded="pill" to="/study" variant="text">Study together</v-btn>
           <v-btn prepend-icon="mdi-file-question-outline" rounded="pill" to="/#past-questions" variant="text">Shared questions</v-btn>
+          <v-btn prepend-icon="mdi-bookmark-outline" rounded="pill" to="/saved-materials" variant="text">Saved materials</v-btn>
           <v-btn prepend-icon="mdi-account-circle-outline" rounded="pill" to="/dashboard?profile=1" variant="tonal">My profile</v-btn>
           <v-btn href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support" prepend-icon="mdi-lifebuoy" rounded="pill" variant="text">Customer care</v-btn>
           <v-btn :loading="signingOut" prepend-icon="mdi-logout" rounded="pill" variant="tonal" @click="logout">Log out</v-btn>
