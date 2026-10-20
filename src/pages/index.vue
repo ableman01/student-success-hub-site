@@ -478,6 +478,11 @@
             <h3>Learn with classmates</h3>
             <p>Join study rooms and course discussions to ask questions, exchange ideas, and keep each other motivated.</p>
           </article>
+          <article class="about-app-card">
+            <v-icon color="primary" size="25">mdi-cloud-check-outline</v-icon>
+            <h3>Access saved materials anywhere</h3>
+            <p>Save course materials to your account and sign in on another device to find them if you lose or replace your phone. Materials remain available while they are stored in the Hub.</p>
+          </article>
         </div>
       </section>
 
