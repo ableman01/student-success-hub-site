@@ -6,6 +6,7 @@ import HomePage from '@/pages/index.vue'
 import LoginPage from '@/pages/loginPage.vue'
 import SignupPage from '@/pages/signup.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
+import StudyGroupsPage from '@/pages/study-groups.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,6 +22,11 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/study-groups',
+      component: StudyGroupsPage,
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/dashboard',
       component: DashboardPage,
       meta: { requiresAuth: true },
@@ -30,6 +36,10 @@ const router = createRouter({
 
 router.beforeEach(async to => {
   const isAuthPage = to.path === '/login' || to.path === '/signup'
+
+  if (to.path === '/study' && typeof to.query.invite === 'string') {
+    return { path: '/study-groups', query: { ...to.query, invite: to.query.invite } }
+  }
 
   try {
     const isSignedIn = await hasAuthSession()
