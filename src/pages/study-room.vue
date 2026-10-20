@@ -108,6 +108,11 @@
                 :key="message.id"
                 class="study-message"
                 :class="{ 'assignment-message': message.message_type === 'assignment' }"
+                :style="{
+                  '--message-tint': senderColors[message.user_id]?.background || '#f7f9f5',
+                  '--message-border': senderColors[message.user_id]?.border || '#e4e9e1',
+                  '--sender-name-color': senderColors[message.user_id]?.name || '#294453',
+                }"
               >
                 <div class="message-topline">
                   <strong>{{ message.sender_name }}</strong>
@@ -340,6 +345,29 @@
   const activeCourse = ref(typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : '')
   const courseResources = ref<Resource[]>([])
   const messages = ref<StudyMessage[]>([])
+  const senderPalette = [
+    { background: '#edf5ff', border: '#c8dcf7', name: '#245b98' },
+    { background: '#eff8f0', border: '#c9e3cc', name: '#2f7040' },
+    { background: '#fff3e9', border: '#f0d4bb', name: '#9a5424' },
+    { background: '#f5efff', border: '#d8c9f3', name: '#6b48a3' },
+    { background: '#fff0f2', border: '#f0cbd2', name: '#a33e59' },
+    { background: '#eaf8f7', border: '#bfe4e0', name: '#23716b' },
+    { background: '#fff7e8', border: '#ebd9ad', name: '#8d681b' },
+    { background: '#f0f1ff', border: '#d0d2f5', name: '#5055a1' },
+    { background: '#f8eff7', border: '#e6cce0', name: '#8b4e7a' },
+    { background: '#eef4f4', border: '#ccdddd', name: '#3c6b70' },
+    { background: '#f5f4ec', border: '#dedbc4', name: '#716b39' },
+    { background: '#f1f2f5', border: '#d5d8e0', name: '#596276' },
+  ]
+  const senderColors = computed(() => {
+    const colors: Record<string, typeof senderPalette[number]> = {}
+    for (const message of messages.value) {
+      if (!(message.user_id in colors)) {
+        colors[message.user_id] = senderPalette[Object.keys(colors).length % senderPalette.length]
+      }
+    }
+    return colors
+  })
   const messageText = ref('')
   const roomImage = ref<File | File[] | null>(null)
   const messageType = ref<StudyMessageType>('discussion')
@@ -793,15 +821,14 @@
   .study-message {
     max-width: min(94%, 680px);
     align-self: flex-start;
-    border: 1px solid #e4e9e1;
+    border: 1px solid var(--message-border, #e4e9e1);
     border-radius: 15px;
     padding: 13px 15px;
-    background: #f7f9f5;
+    background: var(--message-tint, #f7f9f5);
   }
 
   .assignment-message {
-    border-color: #ead9ad;
-    background: #fcf8eb;
+    box-shadow: inset 3px 0 0 var(--message-border, #ead9ad);
   }
 
   .message-topline {
@@ -813,7 +840,7 @@
   }
 
   .message-topline strong {
-    color: #294453;
+    color: var(--sender-name-color, #294453);
     font-size: 0.88rem;
   }
 
