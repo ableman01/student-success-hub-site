@@ -11,12 +11,14 @@
           <v-btn rounded="pill" to="/dashboard" variant="text">My dashboard</v-btn>
 
           <v-btn
-            href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
-            prepend-icon="mdi-lifebuoy"
+            :href="customerCareWhatsAppUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            prepend-icon="mdi-whatsapp"
             rounded="pill"
             variant="tonal"
           >
-            Customer care
+            WhatsApp support
           </v-btn>
         </nav>
       </header>
@@ -338,6 +340,7 @@
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { getErrorMessage } from '@/lib/errors'
+  import { customerCareWhatsAppUrl } from '@/lib/support'
   import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
   import { getStudyMessages, leaveStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
 

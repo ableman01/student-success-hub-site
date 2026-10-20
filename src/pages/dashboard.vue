@@ -58,14 +58,16 @@
 
           <v-btn
             class="support-button"
-            aria-label="Customer care"
-            title="Customer care"
-            href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
-            prepend-icon="mdi-lifebuoy"
+            aria-label="WhatsApp customer care"
+            :title="`WhatsApp customer care: ${customerCarePhone}`"
+            :href="customerCareWhatsAppUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            prepend-icon="mdi-whatsapp"
             rounded="pill"
             variant="text"
           >
-            Customer care
+            WhatsApp support
           </v-btn>
 
           <v-btn
@@ -1060,6 +1062,7 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import {
     deleteResource,

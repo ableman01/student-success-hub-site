@@ -15,7 +15,7 @@
           <a class="header-link" href="#past-questions">Explore resources</a>
           <a class="header-link" href="#about-app">About</a>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
-          <a class="header-link" :href="supportMailto">Customer care</a>
+          <a class="header-link" :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp support</a>
 
           <v-btn
             v-if="currentUser"
@@ -508,7 +508,7 @@
         <span class="footer-links">
           {{ modeMessage }}
           <a href="#about-app">About this app</a>
-          <a :href="supportMailto">Contact customer care</a>
+          <a :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp customer care: {{ customerCarePhone }}</a>
         </span>
       </footer>
     </div>
@@ -544,7 +544,7 @@
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { deleteResource, getResources, getSavedResourceIds, isResourceModerator as checkResourceModerator, setResourceSaved, uploadResource } from '@/services/resources'
 
-  const supportMailto = 'mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support'
+  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
   const modeMessage = computed(() => isSupabaseConfigured
     ? 'Connected to Supabase'
     : 'Local test mode')

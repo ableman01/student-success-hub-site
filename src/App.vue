@@ -99,10 +99,13 @@
           @click="closeMobileDrawer"
         />
         <v-list-item
-          href="mailto:noreply@mail2student.com?subject=LASU%20Student%20Success%20Hub%20support"
-          prepend-icon="mdi-lifebuoy"
+          :href="customerCareWhatsAppUrl"
+          :subtitle="customerCarePhone"
+          prepend-icon="mdi-whatsapp"
           rounded="lg"
-          title="Customer care"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="WhatsApp customer care"
         />
         <v-list-item
           :loading="signingOut"
@@ -151,6 +154,7 @@
   import { hasAuthSession, signOut } from '@/lib/auth'
   import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
   import { getNotifications, markNotificationsRead } from '@/services/resources'
+  import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
 
   const route = useRoute()
   const router = useRouter()
