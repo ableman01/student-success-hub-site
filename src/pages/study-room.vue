@@ -112,7 +112,7 @@
                 </div>
                 <v-form class="group-post-form" @submit.prevent="postToGroup(group)">
                   <v-select v-model="groupPostTypes[group.id]" class="group-post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
-                  <v-textarea v-model="groupDrafts[group.id]" auto-grow class="group-post-text" hide-details label="Share a question, assignment prompt, or practice problem" maxlength="2000" rows="2" />
+                  <v-textarea v-model="groupDrafts[group.id]" auto-grow class="group-post-text" hide-details label="Write your message or question" maxlength="2000" rows="3" />
                   <v-file-input v-model="groupImages[group.id]" accept="image/jpeg,image/png,image/webp,image/gif" class="chat-image-input" density="compact" hide-details label="Attach image (max 5 MB)" prepend-icon="mdi-image-plus" show-size />
                   <v-btn color="primary" :disabled="!(groupDrafts[group.id] || '').trim() && !groupImages[group.id]" :loading="sendingGroupId === group.id" prepend-icon="mdi-send" rounded="pill" type="submit">Post</v-btn>
                 </v-form>
@@ -233,7 +233,7 @@
                 hide-details
                 label="Write a comment or assignment question"
                 maxlength="2000"
-                rows="2"
+                rows="3"
               />
 
               <v-file-input v-model="roomImage" accept="image/jpeg,image/png,image/webp,image/gif" class="chat-image-input" density="compact" hide-details label="Attach image (max 5 MB)" prepend-icon="mdi-image-plus" show-size />
@@ -1080,6 +1080,9 @@
   }
 
   .message-topline {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
     flex-wrap: wrap;
     gap: 8px;
   }
@@ -1091,8 +1094,10 @@
 
   .message-topline time {
     margin-left: auto;
+    flex: 0 0 auto;
     color: #78868a;
     font-size: 0.72rem;
+    white-space: nowrap;
   }
 
   .study-message p {
@@ -1105,20 +1110,34 @@
 
   .chat-image-link { display: inline-block; max-width: min(100%, 420px); margin-top: 10px; }
   .chat-image { display: block; max-width: 100%; max-height: 320px; border: 1px solid #e4e9e1; border-radius: 12px; object-fit: contain; }
-  .chat-image-input { min-width: 180px; max-width: 240px; }
+  .chat-image-input { grid-area: image; width: min(100%, 320px); min-width: 0; max-width: 320px; }
 
   .message-form {
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type type"
+      "message message"
+      "image send";
+    align-items: end;
     gap: 12px;
   }
 
   .message-type {
-    max-width: 210px;
-    flex: 0 0 210px;
+    grid-area: type;
+    width: 100%;
+    max-width: 280px;
   }
 
   .message-input {
-    flex: 1;
+    grid-area: message;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .message-form > :deep(.v-btn) {
+    grid-area: send;
+    justify-self: end;
   }
 
   .room-guideline {
@@ -1432,6 +1451,9 @@
   }
 
   .group-post-meta {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
     flex-wrap: wrap;
     gap: 8px;
   }
@@ -1443,8 +1465,10 @@
 
   .group-post-meta time {
     margin-left: auto;
+    flex: 0 0 auto;
     color: #78868a;
     font-size: 0.7rem;
+    white-space: nowrap;
   }
 
   .group-post p {
@@ -1456,22 +1480,35 @@
   }
 
   .group-post-form {
-    display: flex;
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type type"
+      "message message"
+      "image send";
+    align-items: end;
     gap: 11px;
     border-top: 1px solid #e7ece5;
     padding-top: 14px;
   }
 
-  .group-post-form .chat-image-input { flex: 0 1 230px; }
+  .group-post-form .chat-image-input { width: min(100%, 320px); }
 
   .group-post-type {
-    max-width: 180px;
-    flex: 0 0 180px;
+    grid-area: type;
+    width: 100%;
+    max-width: 280px;
   }
 
   .group-post-text {
-    flex: 1;
+    grid-area: message;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .group-post-form > :deep(.v-btn) {
+    grid-area: send;
+    justify-self: end;
   }
 
   .group-safety-note {
@@ -1668,21 +1705,6 @@
     }
 
     .course-picker,
-    .message-type {
-      width: 100%;
-      max-width: none;
-      flex-basis: auto;
-    }
-
-    .message-form {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .message-form > :deep(.v-btn) {
-      align-self: flex-end;
-    }
-
     .groups-heading-row {
       padding: 18px;
     }
@@ -1690,21 +1712,6 @@
     .group-art {
       width: 96px;
       height: 90px;
-    }
-
-    .group-post-form {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .group-post-type {
-      width: 100%;
-      max-width: none;
-      flex-basis: auto;
-    }
-
-    .group-post-form > :deep(.v-btn) {
-      align-self: flex-end;
     }
 
     .group-room-heading {
