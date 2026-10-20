@@ -79,6 +79,14 @@
           @click="closeMobileDrawer"
         />
         <v-list-item
+          prepend-icon="mdi-bullhorn-outline"
+          rounded="lg"
+          title="LASU updates"
+          to="/lasu-updates"
+          :active="route.path === '/lasu-updates'"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
           prepend-icon="mdi-bookmark-outline"
           rounded="lg"
           title="Saved materials"

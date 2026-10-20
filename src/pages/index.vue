@@ -13,6 +13,7 @@
 
         <nav aria-label="Main navigation" class="header-actions">
           <a class="header-link" href="#past-questions">Explore resources</a>
+          <RouterLink class="header-link" to="/lasu-updates">LASU updates</RouterLink>
           <a class="header-link" href="#about-app">About</a>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
           <a class="header-link" :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp support</a>
@@ -92,6 +93,10 @@
             <RouterLink class="hero-secondary" to="/study">
               Join a live study room
               <v-icon end size="18">mdi-account-group-outline</v-icon>
+            </RouterLink>
+            <RouterLink class="hero-secondary" to="/lasu-updates">
+              View LASU updates
+              <v-icon end size="18">mdi-bullhorn-outline</v-icon>
             </RouterLink>
           </div>
 

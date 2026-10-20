@@ -8,6 +8,7 @@ import SignupPage from '@/pages/signup.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
 import StudyGroupsPage from '@/pages/study-groups.vue'
 import SavedMaterialsPage from '@/pages/saved-materials.vue'
+import LasuUpdatesPage from '@/pages/lasu-updates.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +18,7 @@ const router = createRouter({
     { path: '/loginPage', redirect: '/login' },
     { path: '/signup', component: SignupPage },
     { path: '/auth/confirm', component: EmailConfirmationPage },
+    { path: '/lasu-updates', component: LasuUpdatesPage },
     {
       path: '/study',
       component: StudyRoomPage,
