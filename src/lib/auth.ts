@@ -247,13 +247,12 @@ export async function signIn (email: string, password: string) {
 export async function updateProfile (input: {
   firstName: string
   lastName: string
-  email: string
   academicLevel: string
   program: string
+  currentPassword: string
 }) {
-  const email = input.email.trim().toLowerCase()
-  if (!email || !input.firstName.trim() || !input.lastName.trim() || !input.academicLevel) {
-    throw new Error('Enter your first name, last name, email, and academic level.')
+  if (!input.firstName.trim() || !input.lastName.trim() || !input.academicLevel || !input.currentPassword) {
+    throw new Error('Enter your name and academic level, then confirm with your current password.')
   }
 
   if (!isSupabaseConfigured) {
@@ -261,12 +260,14 @@ export async function updateProfile (input: {
     if (!account) {
       throw new Error('No local account was found.')
     }
+    if (account.passwordHash !== await hashPassword(input.currentPassword)) {
+      throw new Error('Your current password is incorrect. Profile changes require confirmation.')
+    }
 
     const updatedAccount: DemoAccount = {
       ...account,
       firstName: input.firstName.trim(),
       lastName: input.lastName.trim(),
-      email,
       academicLevel: input.academicLevel,
       program: input.program.trim(),
     }
@@ -282,6 +283,19 @@ export async function updateProfile (input: {
     throw new Error('Your session has expired. Please sign in again.')
   }
 
+  const currentEmail = currentData.user.email
+  if (!currentEmail) {
+    throw new Error('Your account does not have a confirmed sign-in email.')
+  }
+
+  const { error: verificationError } = await getSupabaseClient().auth.signInWithPassword({
+    email: currentEmail,
+    password: input.currentPassword,
+  })
+  if (verificationError) {
+    throw new Error('Your current password is incorrect. Profile changes require confirmation.')
+  }
+
   const metadata = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
@@ -290,16 +304,7 @@ export async function updateProfile (input: {
     academic_level: input.academicLevel,
     program: input.program.trim(),
   }
-  const attributes: {
-    email?: string
-    data: typeof metadata
-  } = { data: metadata }
-
-  if (email !== (currentData.user.email || '').toLowerCase()) {
-    attributes.email = email
-  }
-
-  const { data, error } = await getSupabaseClient().auth.updateUser(attributes)
+  const { data, error } = await getSupabaseClient().auth.updateUser({ data: metadata })
   if (error) {
     throw error
   }

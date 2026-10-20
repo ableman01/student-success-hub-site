@@ -915,6 +915,7 @@
                         v-model="profileFirstName"
                         autocomplete="given-name"
                         label="First name"
+                        :readonly="!isEditingProfile"
                         required
                       />
                     </v-col>
@@ -924,6 +925,7 @@
                         v-model="profileLastName"
                         autocomplete="family-name"
                         label="Last name"
+                        :readonly="!isEditingProfile"
                         required
                       />
                     </v-col>
@@ -931,9 +933,10 @@
 
                   <v-text-field
                     v-model="profileEmail"
-                    autocomplete="email"
+                    append-inner-icon="mdi-lock-outline"
+                    autocomplete="username"
                     label="Email address"
-                    required
+                    readonly
                     type="email"
                   />
 
@@ -941,6 +944,7 @@
                     v-model="profileAcademicLevel"
                     :items="academicLevels"
                     label="Current academic level"
+                    :disabled="!isEditingProfile"
                     required
                   />
 
@@ -948,22 +952,44 @@
                     v-model="profileProgram"
                     label="Programme or department"
                     placeholder="e.g. Environmental Management"
+                    :readonly="!isEditingProfile"
                   />
 
-                  <p class="profile-hint">
-                    Changing your email may require confirmation from your new email inbox.
-                  </p>
+                  <p class="profile-hint">Profile details stay locked until you choose Edit profile details. Your email address is permanently locked after account creation. Confirm your current password to save other changes.</p>
+
+                  <v-text-field
+                    v-if="isEditingProfile"
+                    v-model="profileCurrentPassword"
+                    autocomplete="current-password"
+                    label="Current password to confirm changes"
+                    prepend-inner-icon="mdi-lock-check-outline"
+                    required
+                    type="password"
+                  />
 
                   <div class="dialog-actions">
                     <v-btn
+                      v-if="!isEditingProfile"
                       color="primary"
-                      :loading="savingProfile"
-                      prepend-icon="mdi-content-save-outline"
+                      prepend-icon="mdi-pencil-outline"
                       rounded="pill"
-                      type="submit"
+                      @click="beginProfileEdit"
                     >
-                      Save profile
+                      Edit profile details
                     </v-btn>
+                    <template v-else>
+                      <v-btn rounded="pill" variant="text" @click="cancelProfileEdit">Cancel</v-btn>
+                      <v-btn
+                        color="primary"
+                        :disabled="!profileCurrentPassword.trim()"
+                        :loading="savingProfile"
+                        prepend-icon="mdi-content-save-outline"
+                        rounded="pill"
+                        type="submit"
+                      >
+                        Save changes
+                      </v-btn>
+                    </template>
                   </div>
                 </v-form>
               </v-window-item>
@@ -1132,12 +1158,14 @@
   const showAssignmentForm = ref(false)
   const showMaterialForm = ref(false)
   const showProfileDialog = ref(false)
+  const isEditingProfile = ref(false)
   const profileTab = ref<'profile' | 'security'>('profile')
   const profileFirstName = ref('')
   const profileLastName = ref('')
   const profileEmail = ref('')
   const profileAcademicLevel = ref('')
   const profileProgram = ref('')
+  const profileCurrentPassword = ref('')
   const currentPassword = ref('')
   const newPassword = ref('')
   const confirmPassword = ref('')
@@ -1448,7 +1476,26 @@
     profileEmail.value = user.value?.email || ''
     profileAcademicLevel.value = user.value?.academicLevel || ''
     profileProgram.value = user.value?.program || ''
+    profileCurrentPassword.value = ''
+    isEditingProfile.value = false
     showProfileDialog.value = true
+  }
+
+  function beginProfileEdit () {
+    profileError.value = ''
+    profileMessage.value = ''
+    isEditingProfile.value = true
+  }
+
+  function cancelProfileEdit () {
+    profileFirstName.value = user.value?.firstName || ''
+    profileLastName.value = user.value?.lastName || ''
+    profileEmail.value = user.value?.email || ''
+    profileAcademicLevel.value = user.value?.academicLevel || ''
+    profileProgram.value = user.value?.program || ''
+    profileCurrentPassword.value = ''
+    profileError.value = ''
+    isEditingProfile.value = false
   }
 
   function openRequestedProfile () {
@@ -1462,20 +1509,19 @@
     profileMessage.value = ''
 
     if (!profileFirstName.value.trim() || !profileLastName.value.trim()
-      || !profileEmail.value.trim() || !profileAcademicLevel.value) {
-      profileError.value = 'Complete your name, email, and academic level.'
+      || !profileAcademicLevel.value || !profileCurrentPassword.value) {
+      profileError.value = 'Complete your name and academic level, then confirm with your current password.'
       return
     }
 
-    const requestedEmail = profileEmail.value.trim().toLowerCase()
     savingProfile.value = true
     try {
       const updatedUser = await updateProfile({
         firstName: profileFirstName.value,
         lastName: profileLastName.value,
-        email: requestedEmail,
         academicLevel: profileAcademicLevel.value,
         program: profileProgram.value,
+        currentPassword: profileCurrentPassword.value,
       })
       user.value = updatedUser
       profileFirstName.value = updatedUser.firstName
@@ -1484,11 +1530,14 @@
       profileAcademicLevel.value = updatedUser.academicLevel
       profileProgram.value = updatedUser.program
 
-      profileMessage.value = requestedEmail !== updatedUser.email.toLowerCase() && isSupabaseConfigured ? 'Profile saved. Confirm the email change using the message sent to your new address.' : 'Your profile has been updated.'
+      profileCurrentPassword.value = ''
+      isEditingProfile.value = false
+      profileMessage.value = 'Your profile details have been updated. Your email address remains locked.'
 
       await loadClassMaterials()
     } catch (error) {
       profileError.value = getErrorMessage(error, 'Could not update your profile.')
+      profileCurrentPassword.value = ''
     } finally {
       savingProfile.value = false
     }
@@ -1571,6 +1620,9 @@
   }
 
   watch(() => route.query.profile, () => openRequestedProfile())
+  watch(showProfileDialog, isOpen => {
+    if (!isOpen) profileCurrentPassword.value = ''
+  })
 
   onMounted(async () => {
     await loadTasks()
