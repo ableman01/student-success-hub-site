@@ -565,10 +565,9 @@
   const deleting = ref(false)
   const savedResourceIds = ref<string[]>([])
   const savingResourceId = ref('')
-  const savedResourceView = ref<'all' | 'saved-first' | 'saved-only'>('all')
+  const savedResourceView = ref<'all' | 'saved-only'>('all')
   const savedResourceViewOptions = [
     { title: 'All materials', value: 'all' },
-    { title: 'Saved first', value: 'saved-first' },
     { title: 'Saved only', value: 'saved-only' },
   ]
   const showDeleteConfirmation = computed({
@@ -609,7 +608,7 @@
         resource.uploaded_by_name || '',
       ].some(value => value.toLocaleLowerCase().includes(query)))
       .toSorted((a, b) =>
-        (savedResourceView.value === 'saved-first' ? Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id)) : 0)
+        (Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id)))
         || a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
         || b.created_at.localeCompare(a.created_at)
         || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
@@ -650,7 +649,7 @@
       savedResourceIds.value = isSaved
         ? savedResourceIds.value.filter(id => id !== resource.id)
         : [resource.id, ...savedResourceIds.value]
-      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your profile for quick access.'
+      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your personal study library.'
       successSnackbar.value = true
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not update your saved materials.')

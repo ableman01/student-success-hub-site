@@ -590,7 +590,7 @@
           </v-chip>
         </div>
 
-        <p class="saved-materials-hint">All approved materials are shown by default. Bookmark what matters to you, then choose “Saved first” or “Saved only”.</p>
+        <p class="saved-materials-hint">All approved materials are shown by default, with your bookmarks at the top. You can switch to saved items only at any time.</p>
 
         <v-progress-linear
           v-if="loadingResources"
@@ -1103,7 +1103,7 @@
   const unreadNotificationCount = computed(() => notifications.value.filter(item => !item.is_read).length)
   const materialSearch = ref('')
   const materialCategory = ref<ResourceCategory | 'all'>('all')
-  const materialView = ref<'all' | 'saved-first' | 'saved-only'>('all')
+  const materialView = ref<'all' | 'saved-only'>('all')
   const resourceCategory = ref<ResourceCategory>('lecture_notes')
   const materialCategories = resourceCategories.filter(category => category.value !== 'past_question')
   const materialCategoryFilters = [
@@ -1112,7 +1112,6 @@
   ]
   const materialViewOptions = [
     { title: 'All materials', value: 'all' },
-    { title: 'Saved first', value: 'saved-first' },
     { title: 'Saved only', value: 'saved-only' },
   ]
   const filteredClassMaterials = computed(() => {
@@ -1126,9 +1125,8 @@
           .includes(query),
       )
       .filter(resource => materialView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
-      .toSorted((a, b) => (materialView.value === 'saved-first'
-        ? Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id))
-        : 0) || b.created_at.localeCompare(a.created_at))
+      .toSorted((a, b) => Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id))
+        || b.created_at.localeCompare(a.created_at))
   })
   const title = ref('')
   const description = ref('')
@@ -1394,7 +1392,7 @@
       savedResourceIds.value = isSaved
         ? savedResourceIds.value.filter(id => id !== resource.id)
         : [resource.id, ...savedResourceIds.value]
-      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your profile for quick access.'
+      successMessage.value = isSaved ? 'Removed from your saved materials.' : 'Saved to your personal study library.'
       successSnackbar.value = true
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not update your saved materials.')
