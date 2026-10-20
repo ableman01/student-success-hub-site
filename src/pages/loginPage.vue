@@ -85,7 +85,7 @@
             type="info"
             variant="tonal"
           >
-            {{ modeMessage }}
+            Local test mode. Log in to a demo account created in this browser tab.
           </v-alert>
 
           <v-form class="login-form" @submit.prevent="login">
@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { signIn } from '@/lib/auth'
   import { isSupabaseConfigured } from '@/lib/supabase'
@@ -172,10 +172,6 @@
   const password = ref('')
   const loading = ref(false)
   const errorMessage = ref('')
-  const modeMessage = computed(() => isSupabaseConfigured
-    ? 'Connected to Supabase. Log in using your online account.'
-    : 'Local test mode. Log in to a demo account created in this browser tab.')
-
   function getErrorMessage (error: unknown) {
     return error instanceof Error
       ? error.message

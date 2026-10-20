@@ -506,7 +506,6 @@
         </RouterLink>
 
         <span class="footer-links">
-          {{ modeMessage }}
           <a href="#about-app">About this app</a>
           <a :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp customer care: {{ customerCarePhone }}</a>
         </span>
@@ -545,9 +544,6 @@
   import { deleteResource, getResources, getSavedResourceIds, isResourceModerator as checkResourceModerator, setResourceSaved, uploadResource } from '@/services/resources'
 
   import { customerCarePhone, customerCareWhatsAppUrl } from '@/lib/support'
-  const modeMessage = computed(() => isSupabaseConfigured
-    ? 'Connected to Supabase'
-    : 'Local test mode')
   const currentUser = ref<AppUser | null>(null)
   const isResourceModerator = ref(false)
   const pastQuestions = ref<Resource[]>([])
