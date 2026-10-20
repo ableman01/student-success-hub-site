@@ -3,6 +3,9 @@ import { getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
+const studyImageBucket = 'study-chat-images'
+const maxStudyImageSize = 5 * 1024 * 1024
+
 export type StudyMessageType = 'discussion' | 'assignment'
 export type GroupPostType = 'discussion' | 'question' | 'assignment' | 'practice'
 
@@ -22,6 +25,8 @@ export interface StudyGroupPost {
   sender_name: string
   post_type: GroupPostType
   content: string
+  image_path: string | null
+  image_url?: string | null
   created_at: string
 }
 
@@ -32,6 +37,8 @@ export interface StudyMessage {
   sender_name: string
   message_type: StudyMessageType
   content: string
+  image_path: string | null
+  image_url?: string | null
   created_at: string
 }
 
@@ -112,20 +119,22 @@ async function getFunctionError (error: unknown) {
 export async function getStudyGroupPosts (groupId: string) {
   const { data, error } = await requireSupabase().from('study_group_posts').select('*').eq('group_id', groupId).order('created_at', { ascending: true }).limit(100)
   if (error) throw getSchemaError(error)
-  return data as StudyGroupPost[]
+  return addStudyImageUrls(data as StudyGroupPost[])
 }
 
-export async function sendStudyGroupPost (groupId: string, postType: GroupPostType, content: string) {
+export async function sendStudyGroupPost (groupId: string, postType: GroupPostType, content: string, image?: File | null) {
   const text = content.trim()
-  if (!text || text.length > maxMessageLength) throw new Error('Write a message of 1–2,000 characters before sending.')
-  const { data, error } = await requireSupabase().from('study_group_posts').insert({ group_id: groupId, post_type: postType, content: text }).select('*').single()
+  if ((!text && !image) || text.length > maxMessageLength) throw new Error('Write a message or attach an image. Messages can be up to 2,000 characters.')
+  const imagePath = image ? await uploadStudyImage(image, `groups/${groupId}`) : null
+  const { data, error } = await requireSupabase().from('study_group_posts').insert({ group_id: groupId, post_type: postType, content: text, image_path: imagePath }).select('*').single()
+  if (error && imagePath) await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
   if (error) throw getSchemaError(error)
-  return data as StudyGroupPost
+  return addStudyImageUrls([data as StudyGroupPost]).then(posts => posts[0])
 }
 
 export function subscribeToStudyGroup (groupId: string, onPost: (post: StudyGroupPost) => void) {
   return requireSupabase().channel(`study-group:${groupId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_posts', filter: `group_id=eq.${groupId}` }, payload => onPost(payload.new as StudyGroupPost))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_posts', filter: `group_id=eq.${groupId}` }, async payload => onPost((await addStudyImageUrls([payload.new as StudyGroupPost]))[0]))
     .subscribe()
 }
 
@@ -166,37 +175,66 @@ export async function getStudyMessages (course: string) {
     throw getSchemaError(error)
   }
 
-  return data
+  return addStudyImageUrls(data as StudyMessage[])
 }
 
 export async function sendStudyMessage (
   course: string,
   messageType: StudyMessageType,
   content: string,
+  image?: File | null,
 ) {
   const text = content.trim()
-  if (!text) {
-    throw new Error('Write a message before sending.')
+  if (!text && !image) {
+    throw new Error('Write a message or attach an image.')
   }
   if (text.length > maxMessageLength) {
     throw new Error(`Messages must be ${maxMessageLength} characters or fewer.`)
   }
 
+  const imagePath = image ? await uploadStudyImage(image, 'rooms') : null
   const { data, error } = await requireSupabase()
     .from('study_messages')
     .insert({
       course,
       message_type: messageType,
       content: text,
+      image_path: imagePath,
     })
     .select('*')
     .single()
 
   if (error) {
+    if (imagePath) await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
     throw getSchemaError(error)
   }
 
-  return data
+  return (await addStudyImageUrls([data as StudyMessage]))[0]
+}
+
+export function validateStudyImage (file: File) {
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new Error('Choose a JPG, PNG, WebP, or GIF image.')
+  if (file.size > maxStudyImageSize) throw new Error('Images must be 5 MB or smaller.')
+}
+
+async function uploadStudyImage (file: File, scope: string) {
+  validateStudyImage(file)
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to upload an image.')
+  const safeName = file.name.replace(/[^\w.-]/g, '_').slice(-100) || 'solution-image'
+  const path = `${scope}/${user.id}/${globalThis.crypto.randomUUID()}-${safeName}`
+  const { error } = await requireSupabase().storage.from(studyImageBucket).upload(path, file, { contentType: file.type, upsert: false })
+  if (error) throw new Error(getErrorMessage(error, 'Could not upload this image.'))
+  return path
+}
+
+async function addStudyImageUrls<T extends { image_path?: string | null }> (items: T[]) {
+  const client = requireSupabase()
+  return Promise.all(items.map(async item => {
+    if (!item.image_path) return { ...item, image_url: null }
+    const { data, error } = await client.storage.from(studyImageBucket).createSignedUrl(item.image_path, 60 * 60)
+    return { ...item, image_url: error ? null : data.signedUrl }
+  }))
 }
 
 export async function subscribeToStudyRoom (
@@ -219,7 +257,7 @@ export async function subscribeToStudyRoom (
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_messages' }, payload => {
       const message = payload.new as StudyMessage
       if (message.course === course) {
-        onMessage(message)
+        void addStudyImageUrls([message]).then(items => onMessage(items[0]))
       }
     })
     .on('presence', { event: 'sync' }, () => {

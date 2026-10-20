@@ -52,6 +52,9 @@ export interface Database {
           file_path: string
           uploaded_by: string
           uploaded_by_name: string
+          status: 'pending' | 'approved' | 'rejected'
+          reviewed_at: string | null
+          review_comment: string | null
           created_at: string
         }
         Insert: {
@@ -66,6 +69,9 @@ export interface Database {
           file_path: string
           uploaded_by?: string
           uploaded_by_name?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          reviewed_at?: string | null
+          review_comment?: string | null
           created_at?: string
         }
         Update: {
@@ -80,6 +86,9 @@ export interface Database {
           file_path?: string
           uploaded_by?: string
           uploaded_by_name?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          reviewed_at?: string | null
+          review_comment?: string | null
           created_at?: string
         }
         Relationships: []
@@ -92,6 +101,7 @@ export interface Database {
           sender_name: string
           message_type: 'discussion' | 'assignment'
           content: string
+          image_path: string | null
           created_at: string
         }
         Insert: {
@@ -101,6 +111,7 @@ export interface Database {
           sender_name?: string
           message_type?: 'discussion' | 'assignment'
           content: string
+          image_path?: string | null
           created_at?: string
         }
         Update: never

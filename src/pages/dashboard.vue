@@ -156,10 +156,11 @@
               <strong>{{ resource.title }}</strong>
               <span>{{ resource.course || 'Course not specified' }} · {{ resource.uploaded_by_name }} · {{ formatDate(resource.created_at) }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
+              <v-textarea v-model="reviewComments[resource.id]" class="review-comment-input mt-2" auto-grow counter="400" density="compact" hide-details="auto" label="Reviewer note (required to reject, shown to uploader)" maxlength="400" rows="2" />
             </div>
             <div class="moderation-actions">
               <v-btn :href="resource.url" prepend-icon="mdi-file-eye-outline" rounded="pill" target="_blank" variant="tonal">Preview PDF</v-btn>
-              <v-btn color="error" :disabled="reviewingResourceId === resource.id" :loading="reviewingResourceId === resource.id && reviewAction === 'rejected'" rounded="pill" variant="text" @click="moderateResource(resource, 'rejected')">Reject</v-btn>
+              <v-btn color="error" :disabled="reviewingResourceId === resource.id || !(reviewComments[resource.id] || '').trim()" :loading="reviewingResourceId === resource.id && reviewAction === 'rejected'" rounded="pill" variant="text" @click="moderateResource(resource, 'rejected')">Reject</v-btn>
               <v-btn color="success" :disabled="reviewingResourceId === resource.id" :loading="reviewingResourceId === resource.id && reviewAction === 'approved'" rounded="pill" @click="moderateResource(resource, 'approved')">Approve</v-btn>
             </div>
           </article>
@@ -1061,6 +1062,7 @@
   const deletingResource = ref(false)
   const reviewingResourceId = ref<string | null>(null)
   const reviewAction = ref<'approved' | 'rejected' | null>(null)
+  const reviewComments = ref<Record<string, string>>({})
   let notificationPoll: ReturnType<typeof globalThis.setInterval> | null = null
   const unreadNotificationCount = computed(() => notifications.value.filter(item => !item.is_read).length)
   const materialSearch = ref('')
@@ -1255,8 +1257,9 @@
     reviewAction.value = status
     errorMessage.value = ''
     try {
-      await reviewResource(resource.id, status)
+      await reviewResource(resource.id, status, reviewComments.value[resource.id] || '')
       pendingResources.value = pendingResources.value.filter(item => item.id !== resource.id)
+      delete reviewComments.value[resource.id]
       await refreshDashboardSignals()
       successMessage.value = status === 'approved'
         ? `${resource.title} approved and shared with students.`

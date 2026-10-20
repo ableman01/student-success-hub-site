@@ -107,12 +107,14 @@
                   <article v-for="post in groupPostsById[group.id] || []" :key="post.id" class="group-post" :class="`group-post-${post.post_type}`">
                     <div class="group-post-meta"><strong>{{ post.sender_name }}</strong><v-chip size="x-small" variant="tonal">{{ groupPostLabels[post.post_type] }}</v-chip><time :datetime="post.created_at">{{ formatTime(post.created_at) }}</time></div>
                     <p>{{ post.content }}</p>
+                    <a v-if="post.image_url" :href="post.image_url" target="_blank" rel="noopener noreferrer" class="chat-image-link"><img :src="post.image_url" alt="Image shared in the group chat" class="chat-image"></a>
                   </article>
                 </div>
                 <v-form class="group-post-form" @submit.prevent="postToGroup(group)">
                   <v-select v-model="groupPostTypes[group.id]" class="group-post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
                   <v-textarea v-model="groupDrafts[group.id]" auto-grow class="group-post-text" hide-details label="Share a question, assignment prompt, or practice problem" maxlength="2000" rows="2" />
-                  <v-btn color="primary" :disabled="!(groupDrafts[group.id] || '').trim()" :loading="sendingGroupId === group.id" prepend-icon="mdi-send" rounded="pill" type="submit">Post</v-btn>
+                  <v-file-input v-model="groupImages[group.id]" accept="image/jpeg,image/png,image/webp,image/gif" class="chat-image-input" density="compact" hide-details label="Attach image (max 5 MB)" prepend-icon="mdi-image-plus" show-size />
+                  <v-btn color="primary" :disabled="!(groupDrafts[group.id] || '').trim() && !groupImages[group.id]" :loading="sendingGroupId === group.id" prepend-icon="mdi-send" rounded="pill" type="submit">Post</v-btn>
                 </v-form>
               </div>
             </v-card>
@@ -202,6 +204,7 @@
                 </div>
 
                 <p>{{ message.content }}</p>
+                <a v-if="message.image_url" :href="message.image_url" target="_blank" rel="noopener noreferrer" class="chat-image-link"><img :src="message.image_url" alt="Image shared in the study room" class="chat-image"></a>
               </article>
 
               <div ref="messageEnd" />
@@ -233,9 +236,11 @@
                 rows="2"
               />
 
+              <v-file-input v-model="roomImage" accept="image/jpeg,image/png,image/webp,image/gif" class="chat-image-input" density="compact" hide-details label="Attach image (max 5 MB)" prepend-icon="mdi-image-plus" show-size />
+
               <v-btn
                 color="primary"
-                :disabled="!activeCourse.trim() || !messageText.trim()"
+                :disabled="!activeCourse.trim() || (!messageText.trim() && !roomImage)"
                 :loading="sending"
                 prepend-icon="mdi-send"
                 rounded="pill"
@@ -416,6 +421,7 @@
   const courseResources = ref<Resource[]>([])
   const messages = ref<StudyMessage[]>([])
   const messageText = ref('')
+  const roomImage = ref<File | File[] | null>(null)
   const messageType = ref<StudyMessageType>('discussion')
   const resourceCategoryFilter = ref<ResourceCategory | 'all'>('all')
   const roomCategoryOptions = [
@@ -440,6 +446,7 @@
   const groupPostsById = ref<Record<string, StudyGroupPost[]>>({})
   const loadingGroupIds = ref<string[]>([])
   const groupDrafts = ref<Record<string, string>>({})
+  const groupImages = ref<Record<string, File | File[] | null>>({})
   const groupPostTypes = ref<Record<string, GroupPostType>>({})
   const groupToRemove = ref<StudyGroup | null>(null)
   const removingGroupId = ref('')
@@ -583,14 +590,17 @@
 
   async function postToGroup (group: StudyGroup) {
     const content = (groupDrafts.value[group.id] || '').trim()
-    if (!content) return
+    const selected = groupImages.value[group.id]
+    const image = Array.isArray(selected) ? selected[0] : selected
+    if (!content && !image) return
     sendingGroupId.value = group.id
     groupError.value = ''
     try {
-      const post = await sendStudyGroupPost(group.id, groupPostTypes.value[group.id] || 'discussion', content)
+      const post = await sendStudyGroupPost(group.id, groupPostTypes.value[group.id] || 'discussion', content, image)
       const posts = groupPostsById.value[group.id] || []
       if (!posts.some(existing => existing.id === post.id)) groupPostsById.value[group.id] = [...posts, post]
       groupDrafts.value[group.id] = ''
+      groupImages.value[group.id] = null
     } catch (error) {
       groupError.value = getErrorMessage(error, 'Could not post to the study group.')
     } finally {
@@ -741,11 +751,14 @@
 
     sending.value = true
     try {
-      const message = await sendStudyMessage(course, messageType.value, messageText.value)
+      const selected = roomImage.value
+      const image = Array.isArray(selected) ? selected[0] : selected
+      const message = await sendStudyMessage(course, messageType.value, messageText.value, image)
       if (!messages.value.some(item => item.id === message.id)) {
         messages.value.push(message)
       }
       messageText.value = ''
+      roomImage.value = null
       await scrollToLatest()
     } catch (error) {
       roomError.value = getErrorMessage(error, 'Could not post your message.')
@@ -1089,6 +1102,10 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
+
+  .chat-image-link { display: inline-block; max-width: min(100%, 420px); margin-top: 10px; }
+  .chat-image { display: block; max-width: 100%; max-height: 320px; border: 1px solid #e4e9e1; border-radius: 12px; object-fit: contain; }
+  .chat-image-input { min-width: 180px; max-width: 240px; }
 
   .message-form {
     align-items: flex-end;
@@ -1445,6 +1462,8 @@
     border-top: 1px solid #e7ece5;
     padding-top: 14px;
   }
+
+  .group-post-form .chat-image-input { flex: 0 1 230px; }
 
   .group-post-type {
     max-width: 180px;

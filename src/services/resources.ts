@@ -33,6 +33,7 @@ export interface Resource {
   uploaded_by_name: string
   status: ResourceStatus
   reviewed_at: string | null
+  review_comment: string | null
   created_at: string
   url: string
 }
@@ -146,6 +147,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
         ...resource,
         status: resource.status || 'approved',
         reviewed_at: resource.reviewed_at || null,
+        review_comment: resource.review_comment || null,
         category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
         uploaded_by_name: resource.uploaded_by_name || 'LASU student',
         url: URL.createObjectURL(blob),
@@ -174,11 +176,10 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
     throw new Error(getErrorMessage(error))
   }
 
-  const resources = await Promise.all(data.map(row => normalizeResource(row)))
+  const resources = await Promise.all(data.filter(row => row.status !== 'rejected').map(row => normalizeResource(row)))
 
-  return kind === 'class_material' && academicLevel
-    ? resources.filter(resource => matchesAcademicLevel(resource, academicLevel))
-    : resources
+  return resources
+    .filter(resource => kind !== 'class_material' || !academicLevel || matchesAcademicLevel(resource, academicLevel))
 }
 
 export async function isResourceModerator (userId: string) {
@@ -205,10 +206,13 @@ export async function getPendingResources () {
   return Promise.all(data.map(row => normalizeResource(row)))
 }
 
-export async function reviewResource (resourceId: string, status: Exclude<ResourceStatus, 'pending'>) {
+export async function reviewResource (resourceId: string, status: Exclude<ResourceStatus, 'pending'>, reviewComment: string) {
+  const comment = reviewComment.trim()
+  if (status === 'rejected' && !comment) throw new Error('Add a reason before rejecting this upload.')
+  if (comment.length > 400) throw new Error('Review comments must be 400 characters or fewer.')
   const { data, error } = await getSupabaseClient()
     .from('resources')
-    .update({ status, reviewed_at: new Date().toISOString() })
+    .update({ status, reviewed_at: new Date().toISOString(), review_comment: comment || null })
     .eq('id', resourceId)
     .eq('status', 'pending')
     .select('*')
@@ -265,6 +269,7 @@ export async function uploadResource (input: NewResource) {
       uploaded_by_name: getContributorName(user),
       status: 'approved',
       reviewed_at: null,
+      review_comment: null,
       created_at: new Date().toISOString(),
       url: '',
     }
