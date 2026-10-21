@@ -107,6 +107,51 @@ export interface Database {
         Update: never
         Relationships: []
       }
+      timetable_entries: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          course: string
+          location: string
+          notes: string
+          repeats_weekly: boolean
+          day_of_week: number | null
+          event_date: string | null
+          start_time: string
+          end_time: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          title: string
+          course?: string
+          location?: string
+          notes?: string
+          repeats_weekly?: boolean
+          day_of_week?: number | null
+          event_date?: string | null
+          start_time: string
+          end_time: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          course?: string
+          location?: string
+          notes?: string
+          repeats_weekly?: boolean
+          day_of_week?: number | null
+          event_date?: string | null
+          start_time?: string
+          end_time?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       study_messages: {
         Row: {
           id: string

@@ -79,6 +79,14 @@
           @click="closeMobileDrawer"
         />
         <v-list-item
+          prepend-icon="mdi-calendar-clock-outline"
+          rounded="lg"
+          title="Timetable"
+          to="/timetable"
+          :active="route.path === '/timetable'"
+          @click="closeMobileDrawer"
+        />
+        <v-list-item
           prepend-icon="mdi-bullhorn-outline"
           rounded="lg"
           title="LASU updates"

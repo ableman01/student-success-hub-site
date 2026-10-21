@@ -9,6 +9,7 @@ import StudyRoomPage from '@/pages/study-room.vue'
 import StudyGroupsPage from '@/pages/study-groups.vue'
 import SavedMaterialsPage from '@/pages/saved-materials.vue'
 import LasuUpdatesPage from '@/pages/lasu-updates.vue'
+import TimetablePage from '@/pages/timetable.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/signup', component: SignupPage },
     { path: '/auth/confirm', component: EmailConfirmationPage },
     { path: '/lasu-updates', component: LasuUpdatesPage },
+    { path: '/timetable', component: TimetablePage, meta: { requiresAuth: true } },
     {
       path: '/study',
       component: StudyRoomPage,
