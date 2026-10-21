@@ -28,6 +28,19 @@ export default createVuetify({
           info: '#527e91',
         },
       },
+      academicDark: {
+        dark: true,
+        colors: {
+          background: '#0f172a',
+          surface: '#1e293b',
+          primary: '#64b5f6',
+          secondary: '#81c784',
+          success: '#4caf50',
+          warning: '#ffb74d',
+          error: '#e57373',
+          info: '#64b5f6',
+        },
+      },
     },
   },
 })

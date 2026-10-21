@@ -2,21 +2,24 @@
   <main class="updates-page">
     <v-container class="updates-container">
       <div class="updates-kicker"><v-icon size="17">mdi-check-decagram-outline</v-icon> OFFICIAL LASU SOURCES</div>
+
       <div class="updates-heading">
         <div>
           <h1>LASU updates</h1>
           <p>Important notices collected from the university’s official news board. Open the source link to confirm dates, requirements, and any later changes.</p>
-          <p v-if="updates.length" class="last-checked">Latest source check: {{ formatDate(updates[0].last_seen_at) }}</p>
+          <p v-if="updates.length > 0" class="last-checked">Latest source check: {{ formatDate(updates[0].last_seen_at) }}</p>
         </div>
+
         <div class="updates-heading-actions">
           <v-btn prepend-icon="mdi-home-outline" rounded="pill" to="/" variant="text">Home</v-btn>
+
           <v-btn
-            :href="calendarUrl"
             append-icon="mdi-open-in-new"
             color="primary"
+            :href="calendarUrl"
+            rel="noopener noreferrer"
             rounded="pill"
             target="_blank"
-            rel="noopener noreferrer"
             variant="tonal"
           >Academic calendar</v-btn>
         </div>
@@ -30,7 +33,7 @@
       <div v-if="loading" class="updates-loading"><v-progress-circular color="primary" indeterminate /><span>Loading official updates…</span></div>
 
       <template v-else>
-        <div class="updates-filters" role="group" aria-label="Filter LASU updates">
+        <div aria-label="Filter LASU updates" class="updates-filters" role="group">
           <v-btn
             v-for="option in categories"
             :key="option.value"
@@ -43,28 +46,38 @@
           >{{ option.label }}</v-btn>
         </div>
 
-        <div v-if="visibleUpdates.length" class="updates-list">
-          <v-card v-for="update in visibleUpdates" :key="update.id" class="update-card" elevation="0" rounded="xl">
+        <div v-if="visibleUpdates.length > 0" class="updates-list">
+          <v-card
+            v-for="update in visibleUpdates"
+            :key="update.id"
+            class="update-card"
+            elevation="0"
+            rounded="xl"
+          >
             <div class="update-icon" :class="`update-icon-${update.category}`">
               <v-icon>{{ categoryIcon(update.category) }}</v-icon>
             </div>
+
             <div class="update-content">
               <div class="update-meta">
                 <v-chip :color="categoryColor(update.category)" size="x-small" variant="tonal">{{ categoryLabel(update.category) }}</v-chip>
                 <span>{{ formatDate(update.published_at || update.first_seen_at) }}</span>
               </div>
+
               <h2>{{ update.title }}</h2>
               <p v-if="update.summary">{{ update.summary }}</p>
+
               <div class="update-footer">
                 <span><v-icon size="15">mdi-check-decagram</v-icon>{{ update.source_label }}</span>
+
                 <v-btn
-                  :href="update.official_url"
                   append-icon="mdi-open-in-new"
                   color="primary"
+                  :href="update.official_url"
+                  rel="noopener noreferrer"
                   rounded="pill"
                   size="small"
                   target="_blank"
-                  rel="noopener noreferrer"
                   variant="tonal"
                 >Read on LASU</v-btn>
               </div>
@@ -74,9 +87,9 @@
 
         <div v-else class="updates-empty">
           <v-icon color="primary" size="34">mdi-bell-check-outline</v-icon>
-          <h2>{{ updates.length ? 'No updates in this category' : 'No official updates have synced yet' }}</h2>
-          <p>{{ updates.length ? 'Choose another category to see more LASU notices.' : 'The automatic checker will add notices as they appear on LASU’s official news page.' }}</p>
-          <v-btn v-if="updates.length" rounded="pill" variant="tonal" @click="activeCategory = 'all'">Show all updates</v-btn>
+          <h2>{{ updates.length > 0 ? 'No updates in this category' : 'No official updates have synced yet' }}</h2>
+          <p>{{ updates.length > 0 ? 'Choose another category to see more LASU notices.' : 'The automatic checker will add notices as they appear on LASU’s official news page.' }}</p>
+          <v-btn v-if="updates.length > 0" rounded="pill" variant="tonal" @click="activeCategory = 'all'">Show all updates</v-btn>
         </div>
       </template>
     </v-container>

@@ -13,8 +13,8 @@
 
         <nav aria-label="Dashboard navigation" class="dashboard-actions">
           <v-btn
-            class="notification-button"
             aria-label="Notifications"
+            class="notification-button"
             icon
             rounded="circle"
             variant="tonal"
@@ -23,6 +23,7 @@
             <v-badge v-if="unreadNotificationCount" color="error" :content="unreadNotificationCount" floating>
               <v-icon>mdi-bell-outline</v-icon>
             </v-badge>
+
             <v-icon v-else>mdi-bell-outline</v-icon>
           </v-btn>
 
@@ -57,25 +58,25 @@
           </v-btn>
 
           <v-btn
-            class="support-button"
             aria-label="WhatsApp customer care"
-            title="Questions? DM our customer care representative on WhatsApp."
+            class="support-button"
             :href="customerCareWhatsAppUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             prepend-icon="mdi-whatsapp"
+            rel="noopener noreferrer"
             rounded="pill"
+            target="_blank"
+            title="Questions? DM our customer care representative on WhatsApp."
             variant="text"
           >
             WhatsApp support
           </v-btn>
 
           <v-btn
-            class="logout-button"
             aria-label="Log out"
-            title="Log out"
+            class="logout-button"
             :loading="signingOut"
             rounded="pill"
+            title="Log out"
             variant="tonal"
             @click="logout"
           >
@@ -133,6 +134,7 @@
             <h2 id="moderation-heading">Upload approvals</h2>
             <p>Review new past questions and course PDFs before students can access them.</p>
           </div>
+
           <v-chip color="warning" prepend-icon="mdi-clock-outline" variant="tonal">
             {{ pendingResources.length }} waiting
           </v-chip>
@@ -149,12 +151,45 @@
               <strong>{{ resource.title }}</strong>
               <span>{{ resource.course || 'Course not specified' }} · {{ resource.uploaded_by_name }} · {{ formatDate(resource.created_at) }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
-              <v-textarea v-model="reviewComments[resource.id]" class="review-comment-input mt-2" auto-grow counter="400" density="compact" hide-details="auto" label="Reviewer note (required to reject, shown to uploader)" maxlength="400" rows="2" />
+
+              <v-textarea
+                v-model="reviewComments[resource.id]"
+                auto-grow
+                class="review-comment-input mt-2"
+                counter="400"
+                density="compact"
+                hide-details="auto"
+                label="Reviewer note (required to reject, shown to uploader)"
+                maxlength="400"
+                rows="2"
+              />
             </div>
+
             <div class="moderation-actions">
-              <v-btn :href="resource.url" prepend-icon="mdi-file-eye-outline" rounded="pill" target="_blank" variant="tonal">Preview PDF</v-btn>
-              <v-btn color="error" :disabled="reviewingResourceId === resource.id || !(reviewComments[resource.id] || '').trim()" :loading="reviewingResourceId === resource.id && reviewAction === 'rejected'" rounded="pill" variant="text" @click="moderateResource(resource, 'rejected')">Reject</v-btn>
-              <v-btn color="success" :disabled="reviewingResourceId === resource.id" :loading="reviewingResourceId === resource.id && reviewAction === 'approved'" rounded="pill" @click="moderateResource(resource, 'approved')">Approve</v-btn>
+              <v-btn
+                :href="resource.url"
+                prepend-icon="mdi-file-eye-outline"
+                rounded="pill"
+                target="_blank"
+                variant="tonal"
+              >Preview PDF</v-btn>
+
+              <v-btn
+                color="error"
+                :disabled="reviewingResourceId === resource.id || !(reviewComments[resource.id] || '').trim()"
+                :loading="reviewingResourceId === resource.id && reviewAction === 'rejected'"
+                rounded="pill"
+                variant="text"
+                @click="moderateResource(resource, 'rejected')"
+              >Reject</v-btn>
+
+              <v-btn
+                color="success"
+                :disabled="reviewingResourceId === resource.id"
+                :loading="reviewingResourceId === resource.id && reviewAction === 'approved'"
+                rounded="pill"
+                @click="moderateResource(resource, 'approved')"
+              >Approve</v-btn>
             </div>
           </article>
         </div>
@@ -348,6 +383,15 @@
                 </div>
 
                 <v-btn
+                  v-if="!isResourceModerator || task.user_id === user?.id"
+                  aria-label="Edit assignment"
+                  icon="mdi-pencil-outline"
+                  size="small"
+                  variant="text"
+                  @click="openEditTask(task)"
+                />
+
+                <v-btn
                   v-if="isResourceModerator"
                   aria-label="Delete assignment"
                   color="error"
@@ -513,6 +557,109 @@
         </v-card>
       </v-dialog>
 
+      <v-dialog
+        v-model="editTaskId !== null"
+        aria-labelledby="edit-assignment-dialog-title"
+        max-width="620"
+        scrollable
+      >
+        <v-card class="assignment-dialog-card" rounded="xl">
+          <div class="dialog-heading">
+            <div class="form-icon"><v-icon>mdi-pencil-box-outline</v-icon></div>
+
+            <div>
+              <div class="section-kicker">EDIT ASSIGNMENT</div>
+              <h2 id="edit-assignment-dialog-title">Edit assignment</h2>
+              <p>Update the title, course, instructions, or deadline.</p>
+            </div>
+
+            <v-btn
+              aria-label="Close edit assignment form"
+              class="dialog-close"
+              icon="mdi-close"
+              variant="text"
+              @click="editTaskId = null"
+            />
+          </div>
+
+          <v-card-text class="dialog-form-content">
+            <v-form @submit.prevent="saveEditTask">
+              <v-alert
+                v-if="errorMessage"
+                class="mb-4"
+                type="error"
+                variant="tonal"
+              >
+                {{ errorMessage }}
+              </v-alert>
+
+              <v-text-field
+                v-model="editTaskTitle"
+                label="Assignment title"
+                placeholder="e.g. Prepare surveying notes"
+                required
+              />
+
+              <v-textarea
+                v-model="editTaskDescription"
+                auto-grow
+                label="Instructions and notes"
+                placeholder="Write the full assignment question and requirements."
+                rows="3"
+              />
+
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="editTaskCourse"
+                    label="Course"
+                    placeholder="e.g. SVG 202"
+                  />
+                </v-col>
+
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="editTaskDueDate"
+                    label="Due date"
+                    type="date"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-select
+                v-model="editTaskPriority"
+                :items="[
+                  { title: 'Low priority', value: 'low' },
+                  { title: 'Medium priority', value: 'medium' },
+                  { title: 'High priority', value: 'high' },
+                ]"
+                label="Priority"
+              />
+
+              <div class="dialog-actions">
+                <v-btn
+                  rounded="pill"
+                  variant="text"
+                  @click="editTaskId = null"
+                >
+                  Cancel
+                </v-btn>
+
+                <v-btn
+                  color="primary"
+                  :loading="saving"
+                  prepend-icon="mdi-content-save-outline"
+                  rounded="pill"
+                  type="submit"
+                >
+                  Save changes
+                </v-btn>
+              </div>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
       <section aria-labelledby="materials-heading" class="materials-section">
         <div class="section-title-row materials-title-row">
           <div>
@@ -534,7 +681,14 @@
             >
               Add new material
             </v-btn>
-            <v-btn color="secondary" prepend-icon="mdi-bookmark-outline" rounded="pill" to="/saved-materials" variant="tonal">
+
+            <v-btn
+              color="secondary"
+              prepend-icon="mdi-bookmark-outline"
+              rounded="pill"
+              to="/saved-materials"
+              variant="tonal"
+            >
               Saved materials
             </v-btn>
           </div>
@@ -636,10 +790,11 @@
                     · {{ formatDate(resource.created_at) }}
                   </p>
                 </div>
+
                 <v-btn
                   v-if="resource.status === 'approved'"
-                  class="material-save-button"
                   :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                  class="material-save-button"
                   :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
                   :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
                   :loading="savingResourceId === resource.id"
@@ -653,6 +808,7 @@
                 <v-chip color="primary" size="x-small" variant="tonal">
                   {{ getResourceCategoryLabel(resource.category) }}
                 </v-chip>
+
                 <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
               </div>
 
@@ -696,6 +852,16 @@
               </v-btn>
 
               <v-btn
+                v-if="!isResourceModerator || resource.uploaded_by === user?.id"
+                block
+                class="mt-2"
+                icon="mdi-pencil-outline"
+                rounded="pill"
+                variant="text"
+                @click="openEditResource(resource)"
+              />
+
+              <v-btn
                 v-if="isResourceModerator"
                 block
                 class="mt-2"
@@ -713,13 +879,14 @@
       </section>
 
       <v-dialog
-        :model-value="Boolean(resourceToDelete)"
         max-width="440"
+        :model-value="Boolean(resourceToDelete)"
         @update:model-value="value => { if (!value) resourceToDelete = null }"
       >
         <v-card rounded="xl">
           <v-card-title>Delete this shared resource?</v-card-title>
           <v-card-text>“{{ resourceToDelete?.title }}” and its PDF will be removed from the library.</v-card-text>
+
           <v-card-actions class="pa-4 pt-0">
             <v-spacer />
             <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
@@ -734,15 +901,18 @@
             <span>Notifications</span>
             <v-btn aria-label="Close notifications" icon="mdi-close" variant="text" @click="showNotifications = false" />
           </v-card-title>
+
           <v-card-text>
-            <div v-if="notifications.length" class="notification-list">
+            <div v-if="notifications.length > 0" class="notification-list">
               <article v-for="notification in notifications" :key="notification.id" class="notification-item" :class="{ 'notification-unread': !notification.is_read }">
                 <v-icon :color="notification.type === 'resource_rejected' ? 'error' : notification.type === 'resource_approved' ? 'success' : 'primary'">
                   {{ notification.type === 'resource_uploaded' ? 'mdi-file-upload-outline' : notification.type === 'resource_approved' ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}
                 </v-icon>
+
                 <div><p>{{ notification.message }}</p><small>{{ formatDate(notification.created_at) }}</small></div>
               </article>
             </div>
+
             <v-alert v-else type="info" variant="tonal">No notifications yet. Upload reviews and decisions will show here.</v-alert>
           </v-card-text>
         </v-card>
@@ -858,6 +1028,106 @@
       </v-dialog>
 
       <v-dialog
+        v-model="editResourceId !== null"
+        aria-labelledby="edit-resource-dialog-title"
+        max-width="680"
+        scrollable
+      >
+        <v-card class="material-dialog-card" rounded="xl">
+          <div class="dialog-heading">
+            <div class="form-icon"><v-icon>mdi-pencil-box-outline</v-icon></div>
+
+            <div>
+              <div class="section-kicker">EDIT CLASS MATERIAL</div>
+              <h2 id="edit-resource-dialog-title">Edit material</h2>
+              <p>Update the title, course, description, category, or academic level.</p>
+            </div>
+
+            <v-btn
+              aria-label="Close edit material form"
+              class="dialog-close"
+              icon="mdi-close"
+              variant="text"
+              @click="editResourceId = null"
+            />
+          </div>
+
+          <v-card-text class="dialog-form-content">
+            <v-form @submit.prevent="saveEditResource">
+              <v-alert
+                v-if="errorMessage"
+                class="mb-4"
+                type="error"
+                variant="tonal"
+              >
+                {{ errorMessage }}
+              </v-alert>
+
+              <v-text-field
+                v-model="editResourceTitle"
+                label="PDF title"
+                placeholder="e.g. Week 4 lecture notes"
+                required
+              />
+
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="editResourceCourse"
+                    label="Course"
+                    placeholder="e.g. BIO 201"
+                  />
+                </v-col>
+
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    label="Academic level"
+                    :model-value="editResourceAcademicLevel
+                      ? getAcademicLevelLabel(editResourceAcademicLevel)
+                      : 'Not specified'"
+                    readonly
+                  />
+                </v-col>
+              </v-row>
+
+              <v-select
+                v-model="editResourceCategory"
+                item-title="title"
+                item-value="value"
+                :items="materialCategories"
+                label="Resource category"
+                prepend-inner-icon="mdi-shape-outline"
+                required
+              />
+
+              <v-textarea
+                v-model="editResourceDescription"
+                auto-grow
+                label="What should classmates know?"
+                rows="2"
+              />
+
+              <div class="dialog-actions">
+                <v-btn rounded="pill" variant="text" @click="editResourceId = null">
+                  Cancel
+                </v-btn>
+
+                <v-btn
+                  color="primary"
+                  :loading="uploadingResource"
+                  prepend-icon="mdi-content-save-outline"
+                  rounded="pill"
+                  type="submit"
+                >
+                  Save changes
+                </v-btn>
+              </div>
+            </v-form>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog
         v-model="showProfileDialog"
         aria-labelledby="profile-dialog-title"
         max-width="700"
@@ -942,9 +1212,9 @@
 
                   <v-select
                     v-model="profileAcademicLevel"
+                    :disabled="!isEditingProfile"
                     :items="academicLevels"
                     label="Current academic level"
-                    :disabled="!isEditingProfile"
                     required
                   />
 
@@ -977,8 +1247,10 @@
                     >
                       Edit profile details
                     </v-btn>
+
                     <template v-else>
                       <v-btn rounded="pill" variant="text" @click="cancelProfileEdit">Cancel</v-btn>
+
                       <v-btn
                         color="primary"
                         :disabled="!profileCurrentPassword.trim()"
@@ -1063,7 +1335,7 @@
 
 <script setup lang="ts">
   import type { AppUser } from '@/lib/auth'
-  import type { Resource, ResourceCategory } from '@/services/resources'
+  import type { AppNotification, Resource, ResourceCategory } from '@/services/resources'
   import type { Task } from '@/services/tasks'
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
@@ -1079,26 +1351,13 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
-  import { customerCareWhatsAppUrl } from '@/lib/support'
   import { isSupabaseConfigured } from '@/lib/supabase'
-  import {
-    deleteResource,
-    getResources,
-    getNotifications,
-    getPendingResources,
-    getResourceCategoryLabel,
-    isResourceModerator as checkResourceModerator,
-    markNotificationsRead,
-    resourceCategories,
-    reviewResource,
-    getSavedResourceIds,
-    setResourceSaved,
-    uploadResource,
-    type AppNotification,
-  } from '@/services/resources'
+  import { customerCareWhatsAppUrl } from '@/lib/support'
+  import { isResourceModerator as checkResourceModerator, deleteResource, deduplicateAndSortResources, getNotifications, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, resourceCategories, reviewResource, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
   import {
     createTask,
     deleteTask,
+    deduplicateAndSortTasks,
     getTasks,
     updateTask,
   } from '@/services/tasks'
@@ -1137,16 +1396,28 @@
   const filteredClassMaterials = computed(() => {
     const query = materialSearch.value.trim().toLocaleLowerCase()
 
-    return classMaterials.value
+    let materials = classMaterials.value
       .filter(resource => materialCategory.value === 'all' || resource.category === materialCategory.value)
-      .filter(resource => !query ||
-        `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)} ${resource.uploaded_by_name}`
+      .filter(resource => !query
+        || `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)} ${resource.uploaded_by_name}`
           .toLocaleLowerCase()
           .includes(query),
       )
       .filter(resource => materialView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
-      .toSorted((a, b) => Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id))
-        || b.created_at.localeCompare(a.created_at))
+
+    return deduplicateAndSortResources(materials)
+  })
+
+  const filteredTasks = computed(() => {
+    const query = searchQuery.value.trim().toLocaleLowerCase()
+
+    let taskList = tasks.value
+      .filter(task => taskFilter.value === 'all' || (taskFilter.value === 'completed' ? task.completed : !task.completed))
+      .filter(task => !query
+        || `${task.title} ${task.description} ${task.course}`.toLocaleLowerCase().includes(query),
+      )
+
+    return deduplicateAndSortTasks(taskList)
   })
   const title = ref('')
   const description = ref('')
@@ -1157,6 +1428,18 @@
   const taskFilter = ref<'all' | 'pending' | 'completed'>('all')
   const showAssignmentForm = ref(false)
   const showMaterialForm = ref(false)
+  const editTaskId = ref<string | null>(null)
+  const editTaskTitle = ref('')
+  const editTaskDescription = ref('')
+  const editTaskCourse = ref('')
+  const editTaskDueDate = ref('')
+  const editTaskPriority = ref<'low' | 'medium' | 'high'>('medium')
+  const editResourceId = ref<string | null>(null)
+  const editResourceTitle = ref('')
+  const editResourceCourse = ref('')
+  const editResourceDescription = ref('')
+  const editResourceCategory = ref<ResourceCategory>('lecture_notes')
+  const editResourceAcademicLevel = ref<string | null>(null)
   const showProfileDialog = ref(false)
   const isEditingProfile = ref(false)
   const profileTab = ref<'profile' | 'security'>('profile')
@@ -1308,7 +1591,7 @@
     showNotifications.value = true
     await refreshDashboardSignals()
     const unread = notifications.value.filter(item => !item.is_read).map(item => item.id)
-    if (!unread.length) return
+    if (unread.length === 0) return
     try {
       await markNotificationsRead(unread)
       notifications.value = notifications.value.map(item => unread.includes(item.id) ? { ...item, is_read: true } : item)
@@ -1467,6 +1750,46 @@
     }
   }
 
+  function openEditResource (resource: Resource) {
+    editResourceId.value = resource.id
+    editResourceTitle.value = resource.title
+    editResourceCourse.value = resource.course
+    editResourceDescription.value = resource.description
+    editResourceCategory.value = resource.category
+    editResourceAcademicLevel.value = resource.academic_level
+  }
+
+  async function saveEditResource () {
+    if (!editResourceId.value) return
+
+    errorMessage.value = ''
+    uploadingResource.value = true
+
+    try {
+      const updated = await updateResource(editResourceId.value, {
+        title: editResourceTitle.value,
+        course: editResourceCourse.value,
+        description: editResourceDescription.value,
+        category: editResourceCategory.value,
+        academic_level: editResourceAcademicLevel.value,
+      })
+
+      const index = classMaterials.value.findIndex(item => item.id === editResourceId.value)
+
+      if (index !== -1) {
+        classMaterials.value[index] = updated
+      }
+
+      editResourceId.value = null
+      successMessage.value = 'Material updated successfully.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error)
+    } finally {
+      uploadingResource.value = false
+    }
+  }
+
   function openProfileSettings () {
     profileError.value = ''
     profileMessage.value = ''
@@ -1592,6 +1915,45 @@
       }
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
+    }
+  }
+
+  function openEditTask (task: Task) {
+    editTaskId.value = task.id
+    editTaskTitle.value = task.title
+    editTaskDescription.value = task.description
+    editTaskCourse.value = task.course
+    editTaskDueDate.value = task.due_date || ''
+    editTaskPriority.value = task.priority
+  }
+
+  async function saveEditTask () {
+    if (!editTaskId.value) return
+
+    errorMessage.value = ''
+    saving.value = true
+
+    try {
+      const updated = await updateTask(editTaskId.value, {
+        title: editTaskTitle.value,
+        description: editTaskDescription.value,
+        course: editTaskCourse.value,
+        due_date: editTaskDueDate.value || null,
+        priority: editTaskPriority.value,
+      })
+      const index = tasks.value.findIndex(item => item.id === editTaskId.value)
+
+      if (index !== -1) {
+        tasks.value[index] = updated
+      }
+
+      editTaskId.value = null
+      successMessage.value = 'Assignment updated successfully.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error)
+    } finally {
+      saving.value = false
     }
   }
 
@@ -1957,7 +2319,6 @@
   .profile-tabs {
     border-bottom: 1px solid #e8ece6;
   }
-
 
   .profile-hint {
     margin: -4px 0 15px;

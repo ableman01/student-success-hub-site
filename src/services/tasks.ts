@@ -107,7 +107,7 @@ export async function createTask (task: NewTask) {
 
 export async function updateTask (
   id: Task['id'],
-  changes: Partial<Pick<Task, 'completed'>>,
+  changes: Partial<Pick<Task, 'title' | 'description' | 'course' | 'due_date' | 'priority' | 'completed'>>
 ) {
   if (!isSupabaseConfigured) {
     const user = await getCurrentUser()
@@ -143,6 +143,24 @@ export async function updateTask (
   }
 
   return data
+}
+
+export function deduplicateAndSortTasks (tasks: Task[]): Task[] {
+  const seen = new Set<string>()
+  return tasks
+    .filter(task => {
+      const key = `${task.course.trim().toLowerCase()}::${task.title.trim().toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => {
+      const courseCompare = a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
+      if (courseCompare !== 0) return courseCompare
+      const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
+      const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
+      return aDate - bDate
+    })
 }
 
 export async function deleteTask (id: Task['id']) {

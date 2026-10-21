@@ -409,3 +409,48 @@ export async function deleteResource (resource: Resource) {
     throw new Error(getErrorMessage(error))
   }
 }
+
+export async function updateResource (
+  resourceId: string,
+  changes: Partial<Pick<Resource, 'title' | 'course' | 'description' | 'category' | 'academic_level'>>
+) {
+  const user = await getCurrentUser()
+  if (!user) {
+    throw new Error('Sign in before updating a resource.')
+  }
+
+  const client = getSupabaseClient()
+  const updateData: Record<string, unknown> = {}
+  if (changes.title !== undefined) updateData.title = changes.title.trim()
+  if (changes.course !== undefined) updateData.course = changes.course.trim()
+  if (changes.description !== undefined) updateData.description = changes.description.trim()
+  if (changes.category !== undefined) updateData.category = changes.category
+  if (changes.academic_level !== undefined) updateData.academic_level = changes.academic_level
+
+  const { data, error } = await client
+    .from('resources')
+    .update(updateData)
+    .eq('id', resourceId)
+    .eq('uploaded_by', user.id)
+    .select('*')
+    .single()
+
+  if (error) throw new Error(getErrorMessage(error))
+  return normalizeResource(data)
+}
+
+export function deduplicateAndSortResources (resources: Resource[]): Resource[] {
+  const seen = new Set<string>()
+  return resources
+    .filter(resource => {
+      const key = `${resource.course.trim().toLowerCase()}::${resource.title.trim().toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => {
+      const courseCompare = a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
+      if (courseCompare !== 0) return courseCompare
+      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+    })
+}

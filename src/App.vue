@@ -5,11 +5,14 @@
         :aria-label="drawerOpen ? 'Hide navigation' : 'Show navigation'"
         @click="toggleNavigation"
       />
+
       <RouterLink aria-label="LASU Student Success Hub home" class="student-site-brand" to="/">
         <img alt="" src="/academic-mark.svg">
         <span><strong>LASU Student Success Hub</strong><small>Your academic space</small></span>
       </RouterLink>
+
       <v-spacer />
+
       <v-btn
         :aria-label="unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'"
         class="global-notification-link"
@@ -20,6 +23,16 @@
       >
         <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" floating><v-icon>mdi-bell-outline</v-icon></v-badge>
         <v-icon v-else>mdi-bell-outline</v-icon>
+      </v-btn>
+
+      <v-btn
+        :aria-label="theme === 'academicLight' ? 'Switch to moon mode' : 'Switch to sun mode'"
+        icon
+        rounded="circle"
+        variant="tonal"
+        @click="toggleTheme"
+      >
+        <v-icon>{{ theme === 'academicLight' ? 'mdi-weather-night' : 'mdi-weather-sunny' }}</v-icon>
       </v-btn>
     </v-app-bar>
 
@@ -32,6 +45,7 @@
     >
       <div class="student-drawer-top">
         <div class="student-drawer-caption">STUDY SPACE</div>
+
         <v-btn
           aria-label="Hide navigation"
           icon="mdi-close"
@@ -43,13 +57,14 @@
 
       <v-list class="student-drawer-links" nav>
         <v-list-item
+          :active="route.path === '/dashboard' && !route.query.profile"
           prepend-icon="mdi-view-dashboard-outline"
           rounded="lg"
           title="Dashboard"
           to="/dashboard"
-          :active="route.path === '/dashboard' && !route.query.profile"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
           :active="showNotifications"
           rounded="lg"
@@ -60,17 +75,20 @@
             <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" dot>
               <v-icon>mdi-bell-outline</v-icon>
             </v-badge>
+
             <v-icon v-else>mdi-bell-outline</v-icon>
           </template>
         </v-list-item>
+
         <v-list-item
+          :active="route.path.startsWith('/study')"
           prepend-icon="mdi-account-group-outline"
           rounded="lg"
           title="Study together"
           to="/study"
-          :active="route.path.startsWith('/study')"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
           prepend-icon="mdi-file-question-outline"
           rounded="lg"
@@ -78,51 +96,57 @@
           to="/#past-questions"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
+          :active="route.path === '/timetable'"
           prepend-icon="mdi-calendar-clock-outline"
           rounded="lg"
           title="Timetable"
           to="/timetable"
-          :active="route.path === '/timetable'"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
+          :active="route.path === '/lasu-updates'"
           prepend-icon="mdi-bullhorn-outline"
           rounded="lg"
           title="LASU updates"
           to="/lasu-updates"
-          :active="route.path === '/lasu-updates'"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
+          :active="route.path === '/saved-materials'"
           prepend-icon="mdi-bookmark-outline"
           rounded="lg"
           title="Saved materials"
           to="/saved-materials"
-          :active="route.path === '/saved-materials'"
           @click="closeMobileDrawer"
         />
       </v-list>
 
       <v-divider class="student-drawer-divider" />
+
       <v-list class="student-drawer-links student-drawer-account" nav>
         <v-list-item
+          :active="route.path === '/dashboard' && Boolean(route.query.profile)"
           prepend-icon="mdi-account-circle-outline"
           rounded="lg"
           title="My profile"
           to="/dashboard?profile=1"
-          :active="route.path === '/dashboard' && Boolean(route.query.profile)"
           @click="closeMobileDrawer"
         />
+
         <v-list-item
           :href="customerCareWhatsAppUrl"
-          subtitle="Questions? DM our customer care representative."
           prepend-icon="mdi-whatsapp"
-          rounded="lg"
-          target="_blank"
           rel="noopener noreferrer"
+          rounded="lg"
+          subtitle="Questions? DM our customer care representative."
+          target="_blank"
           title="Customer care"
         />
+
         <v-list-item
           :loading="signingOut"
           prepend-icon="mdi-logout"
@@ -143,17 +167,28 @@
           <span>Notifications</span>
           <v-btn aria-label="Close notifications" icon="mdi-close" variant="text" @click="showNotifications = false" />
         </v-card-title>
+
         <v-card-text>
           <v-alert v-if="notificationError" class="mb-4" type="error" variant="tonal">{{ notificationError }}</v-alert>
-          <v-progress-linear v-if="loadingNotifications" class="mb-4" color="primary" indeterminate rounded />
-          <div v-if="notifications.length" class="global-notification-list">
+
+          <v-progress-linear
+            v-if="loadingNotifications"
+            class="mb-4"
+            color="primary"
+            indeterminate
+            rounded
+          />
+
+          <div v-if="notifications.length > 0" class="global-notification-list">
             <article v-for="notification in notifications" :key="notification.id" class="global-notification-item" :class="{ 'global-notification-unread': !notification.is_read }">
               <v-icon :color="notification.type === 'resource_rejected' ? 'error' : notification.type === 'resource_approved' ? 'success' : 'primary'">
                 {{ notification.type === 'resource_uploaded' ? 'mdi-file-upload-outline' : notification.type === 'resource_approved' ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}
               </v-icon>
+
               <div><p>{{ notification.message }}</p><small>{{ formatDate(notification.created_at) }}</small></div>
             </article>
           </div>
+
           <v-alert v-else-if="!loadingNotifications && !notificationError" type="info" variant="tonal">No notifications yet. Upload reviews and decisions will show here.</v-alert>
         </v-card-text>
       </v-card>
@@ -164,13 +199,13 @@
 <script setup lang="ts">
   import type { AppNotification } from '@/services/resources'
   import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-  import { useDisplay } from 'vuetify'
   import { useRoute, useRouter } from 'vue-router'
-  import { getErrorMessage } from '@/lib/errors'
+  import { useDisplay } from 'vuetify'
   import { hasAuthSession, signOut } from '@/lib/auth'
+  import { getErrorMessage } from '@/lib/errors'
   import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
-  import { getNotifications, markNotificationsRead } from '@/services/resources'
   import { customerCareWhatsAppUrl } from '@/lib/support'
+  import { getNotifications, markNotificationsRead } from '@/services/resources'
 
   const route = useRoute()
   const router = useRouter()
@@ -178,6 +213,28 @@
   const isAuthenticated = ref(false)
   const drawerOpen = ref(false)
   const signingOut = ref(false)
+
+  // Theme state management
+  const THEME_KEY = 'lasu-theme-preference'
+  const theme = ref<'academicLight' | 'academicDark'>(() => {
+    const saved = localStorage.getItem(THEME_KEY)
+    return (saved === 'academicDark' ? 'academicDark' : 'academicLight') as 'academicLight' | 'academicDark'
+  })()
+
+  function toggleTheme () {
+    theme.value = theme.value === 'academicLight' ? 'academicDark' : 'academicLight'
+    localStorage.setItem(THEME_KEY, theme.value)
+    applyTheme(theme.value)
+  }
+
+  function applyTheme (themeName: 'academicLight' | 'academicDark') {
+    document.documentElement.dataset.theme = themeName
+    document.documentElement.classList.toggle('v-theme--dark', themeName === 'academicDark')
+  }
+
+  onMounted(() => {
+    applyTheme(theme.value)
+  })
   const showNotifications = ref(false)
   const loadingNotifications = ref(false)
   const notifications = ref<AppNotification[]>([])
@@ -225,7 +282,7 @@
     try {
       notifications.value = isSupabaseConfigured ? await getNotifications() : []
       const unreadIds = notifications.value.filter(item => !item.is_read).map(item => item.id)
-      if (unreadIds.length) await markNotificationsRead(unreadIds)
+      if (unreadIds.length > 0) await markNotificationsRead(unreadIds)
       notifications.value = notifications.value.map(item => unreadIds.includes(item.id) ? { ...item, is_read: true } : item)
       unreadNotifications.value = 0
     } catch (error) {
@@ -253,8 +310,7 @@
   }
 
   watch(isAuthenticated, signedIn => {
-    if (signedIn) drawerOpen.value = !isMobile.value
-    else drawerOpen.value = false
+    drawerOpen.value = signedIn ? !isMobile.value : false
   })
 
   watch(isMobile, mobile => {
@@ -275,7 +331,9 @@
         else unreadNotifications.value = 0
       })
       authSubscription = data.subscription
-      refreshTimer = globalThis.setInterval(() => { void refreshNotificationCount() }, 60_000)
+      refreshTimer = globalThis.setInterval(() => {
+        void refreshNotificationCount()
+      }, 60_000)
     }
   })
 
@@ -310,6 +368,7 @@
   .student-drawer-divider { margin: 8px 20px; border-color: #edf1ec; }
   .student-drawer-account { padding-top: 2px; }
   .global-notification-link { width: 46px !important; height: 46px !important; background: #eef2f0 !important; }
+  .theme-toggle-btn { width: 46px !important; height: 46px !important; background: #eef2f0 !important; }
   .global-notification-list { display: grid; gap: 8px; }
   .global-notification-item { display: flex; align-items: flex-start; gap: 12px; border: 1px solid #e5ebe5; border-radius: 14px; padding: 13px; }
   .global-notification-item p { margin: 0; color: #344a42; }
