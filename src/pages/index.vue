@@ -464,13 +464,8 @@
 
       <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
         <div class="about-study-hero">
-          <img alt="LASU students studying together in a library" src="/about-study-group.jpg">
+          <img alt="LASU students studying together in a library with LASU Student Success Hub text overlay" src="/about-study-group.jpg">
           <div class="about-study-shade" />
-
-          <div class="about-study-title">
-            <span>Learn together. Go further.</span>
-            <strong>LASU STUDENT SUCCESS HUB</strong>
-          </div>
         </div>
 
         <div class="about-app-heading">
