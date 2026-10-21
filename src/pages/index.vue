@@ -16,7 +16,7 @@
           <RouterLink class="header-link" to="/lasu-updates">LASU updates</RouterLink>
           <a class="header-link" href="#about-app">About</a>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
-          <a class="header-link" :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">WhatsApp support</a>
+          <a class="header-link" :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">WhatsApp support</a>
 
           <v-btn
             v-if="currentUser"
@@ -94,6 +94,7 @@
               Join a live study room
               <v-icon end size="18">mdi-account-group-outline</v-icon>
             </RouterLink>
+
             <RouterLink class="hero-secondary" to="/lasu-updates">
               View LASU updates
               <v-icon end size="18">mdi-bullhorn-outline</v-icon>
@@ -384,6 +385,7 @@
 
                   <div class="resource-attribution">
                     <v-chip color="primary" size="x-small" variant="tonal">Past question</v-chip>
+
                     <v-chip
                       v-if="resource.status !== 'approved' && currentUser?.id === resource.uploaded_by"
                       :color="resource.status === 'pending' ? 'warning' : 'error'"
@@ -392,12 +394,15 @@
                     >
                       {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved · see notifications' }}
                     </v-chip>
+
                     <span>Shared by <strong>{{ resource.uploaded_by_name || 'LASU student' }}</strong></span>
+
                     <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">
                       {{ getAcademicLevelLabel(getQuestionLevel(resource)) }}
                     </v-chip>
                   </div>
                 </div>
+
                 <v-btn
                   v-if="currentUser && resource.status === 'approved'"
                   :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
@@ -458,36 +463,69 @@
       </section>
 
       <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
+        <div class="about-study-hero">
+          <img alt="LASU students studying together in a library" src="/about-study-group.jpg">
+          <div class="about-study-shade" />
+
+          <div class="about-study-title">
+            <span>Learn together. Go further.</span>
+            <strong>LASU STUDENT SUCCESS HUB</strong>
+          </div>
+        </div>
+
         <div class="about-app-heading">
-          <span class="section-eyebrow">A better way to study</span>
-          <h2 id="about-app-heading">About LASU Student Success Hub</h2>
+          <span class="section-eyebrow">One simple, reliable student experience</span>
+          <h2 id="about-app-heading">Helping every LASU student move forward</h2>
+
           <p>
-            A shared academic space that helps LASU students keep study plans,
-            course resources, and conversations together.
+            Our mission is to empower every student with the information, tools, opportunities, skills, and support they need to succeed academically, personally, and professionally.
           </p>
         </div>
 
-        <div class="about-app-grid">
+        <div class="success-pillars">
           <article class="about-app-card">
+            <span class="pillar-number">01</span>
+            <v-icon color="primary" size="25">mdi-bullhorn-outline</v-icon>
+            <h3>What do I need to know?</h3>
+            <p>Find important announcements, deadlines, registration information, academic updates, and verified opportunities in one trusted place.</p>
+          </article>
+
+          <article class="about-app-card">
+            <span class="pillar-number">02</span>
             <v-icon color="primary" size="25">mdi-calendar-check-outline</v-icon>
-            <h3>Stay organized</h3>
-            <p>Track assignments and deadlines in one place, so it is easier to decide what to work on next.</p>
+            <h3>What should I do next?</h3>
+            <p>Use your dashboard and timetable to keep tasks, upcoming deadlines, study plans, and your progress in view.</p>
           </article>
+
           <article class="about-app-card">
+            <span class="pillar-number">03</span>
             <v-icon color="primary" size="25">mdi-book-open-page-variant-outline</v-icon>
-            <h3>Find course materials</h3>
-            <p>Browse shared lecture notes and past questions by course and level when you are ready to revise.</p>
+            <h3>How can I improve?</h3>
+            <p>Build confidence with study resources, tutorials, peer learning, practical skills, and career development.</p>
           </article>
+
           <article class="about-app-card">
+            <span class="pillar-number">04</span>
+            <v-icon color="primary" size="25">mdi-briefcase-search-outline</v-icon>
+            <h3>Where can I find opportunities?</h3>
+            <p>Discover scholarships, internships, competitions, volunteering, mentorship, and student projects.</p>
+          </article>
+
+          <article class="about-app-card">
+            <span class="pillar-number">05</span>
             <v-icon color="primary" size="25">mdi-account-group-outline</v-icon>
-            <h3>Learn with classmates</h3>
-            <p>Join study rooms and course discussions to ask questions, exchange ideas, and keep each other motivated.</p>
+            <h3>Who can help me?</h3>
+            <p>Connect with a trusted student community, peer mentors, academic support, and appropriate campus services.</p>
           </article>
-          <article class="about-app-card">
-            <v-icon color="primary" size="25">mdi-cloud-check-outline</v-icon>
-            <h3>Access saved materials anywhere</h3>
-            <p>Save course materials to your account and sign in on another device to find them if you lose or replace your phone. Materials remain available while they are stored in the Hub.</p>
-          </article>
+        </div>
+
+        <div class="about-app-footer">
+          <p>The Hub brings these five needs together, so every student can find the next useful step in one welcoming place.</p>
+
+          <v-btn color="primary" rounded="pill" :to="currentUser ? '/timetable' : '/signup'">
+            {{ currentUser ? 'Build my study week' : 'Join the student hub' }}
+            <v-icon end>mdi-arrow-right</v-icon>
+          </v-btn>
         </div>
       </section>
 
@@ -517,7 +555,7 @@
 
         <span class="footer-links">
           <a href="#about-app">About this app</a>
-          <a :href="customerCareWhatsAppUrl" target="_blank" rel="noopener noreferrer">Questions? DM our customer care representative on WhatsApp.</a>
+          <a :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">Questions? DM our customer care representative on WhatsApp.</a>
         </span>
       </footer>
     </div>
@@ -529,12 +567,15 @@
     <v-dialog v-model="showDeleteConfirmation" max-width="440">
       <v-card class="pa-2" rounded="xl">
         <v-card-title class="text-h6 font-weight-bold">Delete this shared resource?</v-card-title>
+
         <v-card-text>
           “{{ resourceToDelete?.title }}” and its PDF will be removed from the shared library. This cannot be undone.
         </v-card-text>
+
         <v-card-actions class="px-5 pb-4">
           <v-spacer />
           <v-btn rounded="pill" variant="text" @click="resourceToDelete = null">Cancel</v-btn>
+
           <v-btn color="error" :loading="deleting" rounded="pill" @click="confirmDeleteResource">
             Delete resource
           </v-btn>
@@ -545,15 +586,14 @@
 </template>
 
 <script setup lang="ts">
-  import { getCurrentUser, type AppUser } from '@/lib/auth'
   import type { Resource } from '@/services/resources'
   import { computed, onMounted, ref } from 'vue'
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
+  import { type AppUser, getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
-  import { deleteResource, getResources, getSavedResourceIds, isResourceModerator as checkResourceModerator, setResourceSaved, uploadResource } from '@/services/resources'
-
   import { customerCareWhatsAppUrl } from '@/lib/support'
+  import { isResourceModerator as checkResourceModerator, deleteResource, getResources, getSavedResourceIds, setResourceSaved, uploadResource } from '@/services/resources'
   const currentUser = ref<AppUser | null>(null)
   const isResourceModerator = ref(false)
   const pastQuestions = ref<Resource[]>([])
@@ -595,7 +635,8 @@
   }
   const questionCourses = computed(() =>
     [...new Set(pastQuestions.value.map(resource => resource.course.trim()).filter(Boolean))]
-      .toSorted((a, b) => a.localeCompare(b))
+      .slice()
+      .toSorted((a: string, b: string) => a.localeCompare(b))
       .map(course => ({ title: course, value: course })),
   )
   const filteredPastQuestions = computed(() => {
@@ -613,13 +654,14 @@
         resource.description,
         resource.uploaded_by_name || '',
       ].some(value => value.toLocaleLowerCase().includes(query)))
-      .toSorted((a, b) =>
+      .slice()
+      .toSorted((a: Resource, b: Resource) =>
         (Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id)))
         || a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
         || b.created_at.localeCompare(a.created_at)
         || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
       )
-      .filter(resource => savedResourceView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
+      .filter((resource: Resource) => savedResourceView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
   })
 
   function applyQuestionSearch () {
@@ -1128,6 +1170,40 @@
     margin: 0 0 70px;
   }
 
+  .about-study-hero {
+    position: relative;
+    min-height: clamp(220px, 36vw, 430px);
+    overflow: hidden;
+    margin-bottom: 34px;
+    border-radius: 26px;
+    background: #193d35;
+  }
+
+  .about-study-hero img,
+  .about-study-shade {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .about-study-hero img { object-fit: cover; object-position: center 48%; }
+
+  .about-study-shade {
+    background: linear-gradient(90deg, rgb(14 39 43 / 78%), rgb(14 39 43 / 27%) 58%, rgb(14 39 43 / 5%)), linear-gradient(0deg, rgb(14 39 43 / 20%), transparent 56%);
+  }
+
+  .about-study-title {
+    position: absolute;
+    inset: 32px auto auto 34px;
+    display: grid;
+    gap: 9px;
+    color: #fff;
+  }
+
+  .about-study-title span { color: #d3e5d7; font-size: 13px; font-weight: 650; letter-spacing: .06em; }
+  .about-study-title strong { max-width: 760px; font-size: clamp(1.55rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: .025em; line-height: 1.1; text-shadow: 0 2px 12px rgb(0 0 0 / 20%); }
+
   .about-app-heading {
     max-width: 700px;
     margin-bottom: 22px;
@@ -1147,6 +1223,8 @@
     line-height: 1.65;
   }
 
+  .success-pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
   .section-eyebrow {
     color: #56816e;
     font-size: 11px;
@@ -1162,17 +1240,24 @@
   }
 
   .about-app-card {
+    position: relative;
+    min-height: 210px;
     border: 1px solid #e4e9e1;
     border-radius: 20px;
     padding: 22px;
     background: #fffefa;
   }
 
+  .pillar-number { position: absolute; top: 18px; right: 20px; color: #a7b7aa; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+
   .about-app-card h3 {
     margin: 12px 0 7px;
     color: #20394a;
     font-size: 17px;
   }
+
+  .about-app-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; border: 1px solid #e4e9e1; border-radius: 18px; padding: 18px 22px; background: #f6f8f3; }
+  .about-app-footer p { max-width: 640px; margin: 0; color: #596b61; line-height: 1.65; }
 
   .feature-item {
     display: flex;
@@ -1550,8 +1635,8 @@
   }
 
   @media (max-width: 900px) {
-    .about-app-grid {
-      grid-template-columns: 1fr;
+    .success-pillars {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .question-tools {
@@ -1588,6 +1673,13 @@
     .home-page {
       padding: 0 15px 20px;
     }
+
+    .success-pillars { grid-template-columns: 1fr; }
+    .about-study-hero { min-height: 240px; margin-bottom: 25px; border-radius: 20px; }
+    .about-study-title { inset: auto 18px 22px; }
+    .about-study-title strong { font-size: clamp(1.4rem, 7vw, 2rem); }
+    .about-app-footer { align-items: stretch; flex-direction: column; padding: 17px; }
+    .about-app-footer .v-btn { width: 100%; }
 
     .home-header {
       min-height: 72px;
