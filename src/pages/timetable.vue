@@ -423,4 +423,69 @@ h1 { margin: 9px 0 6px; color: #1e3c2e; font-size: clamp(2rem, 4vw, 2.8rem); let
   .week-toolbar { padding-inline: 7px; }
 }
 @media (max-width: 400px) { .week-grid { grid-template-columns: 1fr; } .day-column { min-height: 130px; } }
+
+.v-theme--academicDark .timetable-page {
+  color: #e2ebeb;
+  background:
+    radial-gradient(ellipse at 4% 0%, rgb(40 78 69 / 24%), transparent 31rem),
+    #101a21;
+}
+
+.v-theme--academicDark h1,
+.v-theme--academicDark .week-navigation strong,
+.v-theme--academicDark .day-heading strong,
+.v-theme--academicDark .schedule-entry > strong {
+  color: #e0eae8;
+}
+
+.v-theme--academicDark .timetable-heading p,
+.v-theme--academicDark .week-navigation span,
+.v-theme--academicDark .day-heading,
+.v-theme--academicDark .entry-detail,
+.v-theme--academicDark .entry-notes,
+.v-theme--academicDark .planner-hint,
+.v-theme--academicDark .timetable-footnote,
+.v-theme--academicDark .timetable-loading {
+  color: #a3b1b4;
+}
+
+.v-theme--academicDark .timetable-eyebrow,
+.v-theme--academicDark .entry-time {
+  color: #9bc9ad;
+}
+
+.v-theme--academicDark .week-toolbar,
+.v-theme--academicDark .day-column,
+.v-theme--academicDark .planner-hint {
+  border-color: #30414a;
+  background: #1b2932;
+}
+
+.v-theme--academicDark .day-heading {
+  border-bottom-color: #30414a;
+}
+
+.v-theme--academicDark .day-column-today {
+  border-color: #4a6558;
+}
+
+.v-theme--academicDark .day-column-today .day-heading {
+  background: #23352f;
+}
+
+.v-theme--academicDark .schedule-entry {
+  background: #17242b;
+}
+
+.v-theme--academicDark .day-empty {
+  border-color: #2f4049;
+  background: #151f26;
+  color: #8b9a9d;
+}
+
+.v-theme--academicDark .day-empty:hover {
+  border-color: #4a6558;
+  background: #1b2932;
+  color: #cfe3d8;
+}
 </style>

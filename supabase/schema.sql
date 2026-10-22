@@ -138,6 +138,18 @@ create policy "Signed-in users can upload resources"
 grant select on public.resources to anon, authenticated;
 grant insert on public.resources to authenticated;
 
+drop policy if exists "Users can update their own resources" on public.resources;
+create policy "Users can update their own resources"
+  on public.resources for update
+  to authenticated
+  using ((select auth.uid()) = uploaded_by)
+  with check ((select auth.uid()) = uploaded_by);
+
+revoke update on public.resources from anon;
+revoke update on public.resources from authenticated;
+grant update (title, course, description, category, academic_level)
+  on public.resources to authenticated;
+
 drop policy if exists "Users can delete their own resources" on public.resources;
 create policy "Users can delete their own resources"
   on public.resources for delete
@@ -521,6 +533,65 @@ create policy "Resource moderators can delete resources"
     select 1 from public.resource_moderators as moderator
     where moderator.user_id = (select auth.uid())
   ));
+
+drop policy if exists "Resource moderators can update any task" on public.tasks;
+create policy "Resource moderators can update any task"
+  on public.tasks for update
+  to authenticated
+  using (exists (
+    select 1 from public.resource_moderators as moderator
+    where moderator.user_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.resource_moderators as moderator
+    where moderator.user_id = (select auth.uid())
+  ));
+
+drop policy if exists "Resource moderators can update any resource" on public.resources;
+create policy "Resource moderators can update any resource"
+  on public.resources for update
+  to authenticated
+  using (exists (
+    select 1 from public.resource_moderators as moderator
+    where moderator.user_id = (select auth.uid())
+  ))
+  with check (exists (
+    select 1 from public.resource_moderators as moderator
+    where moderator.user_id = (select auth.uid())
+  ));
+
+grant update (title, course, description, category, academic_level, status, reviewed_at, review_comment)
+  on public.resources to authenticated;
+
+create or replace function public.enforce_resource_review_scope()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if exists (
+    select 1 from public.resource_moderators as moderator
+    where moderator.user_id = (select auth.uid())
+  ) then
+    return new;
+  end if;
+
+  if new.uploaded_by is distinct from old.uploaded_by
+     or new.status is distinct from old.status
+     or new.reviewed_at is distinct from old.reviewed_at
+     or new.review_comment is distinct from old.review_comment then
+    raise exception 'Only the site creator can review a shared resource.';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_resource_review_scope() from public, anon, authenticated;
+drop trigger if exists enforce_resource_review_scope on public.resources;
+create trigger enforce_resource_review_scope
+  before update on public.resources
+  for each row execute function public.enforce_resource_review_scope();
 
 drop policy if exists "Users can delete their own resource PDFs" on storage.objects;
 drop policy if exists "Resource moderators can delete resource PDFs" on storage.objects;

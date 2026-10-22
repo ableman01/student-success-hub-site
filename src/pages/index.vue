@@ -19,6 +19,17 @@
           <a class="header-link" :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">WhatsApp support</a>
 
           <v-btn
+            :aria-label="themeLabel"
+            icon
+            rounded="circle"
+            :title="themeLabel"
+            variant="tonal"
+            @click="toggleTheme"
+          >
+            <v-icon>{{ themeIcon }}</v-icon>
+          </v-btn>
+
+          <v-btn
             v-if="currentUser"
             color="primary"
             rounded="pill"
@@ -583,13 +594,25 @@
 <script setup lang="ts">
   import type { Resource } from '@/services/resources'
   import { computed, onMounted, ref } from 'vue'
+  import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { isResourceModerator as checkResourceModerator, deleteResource, getResources, getSavedResourceIds, setResourceSaved, uploadResource } from '@/services/resources'
+  import {
+    isResourceModerator as checkResourceModerator,
+    deduplicateAndSortResources,
+    deleteResource,
+    getResources,
+    getSavedResourceIds,
+    setResourceSaved,
+    uploadResource,
+  } from '@/services/resources'
   const currentUser = ref<AppUser | null>(null)
+
+  // Sun / moon mode, shared with the rest of the app and remembered between visits.
+  const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const isResourceModerator = ref(false)
   const pastQuestions = ref<Resource[]>([])
   const resourceTitle = ref('')
@@ -637,7 +660,7 @@
   const filteredPastQuestions = computed(() => {
     const query = questionSearch.value.trim().toLocaleLowerCase()
 
-    return pastQuestions.value
+    const rawFiltered = pastQuestions.value
       .filter(resource =>
         !questionCourse.value
         || resource.course.trim().toLocaleLowerCase() === questionCourse.value.toLocaleLowerCase(),
@@ -649,14 +672,15 @@
         resource.description,
         resource.uploaded_by_name || '',
       ].some(value => value.toLocaleLowerCase().includes(query)))
-      .slice()
+      .filter((resource: Resource) => savedResourceView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
+
+    return deduplicateAndSortResources(rawFiltered)
       .toSorted((a: Resource, b: Resource) =>
         (Number(savedResourceIds.value.includes(b.id)) - Number(savedResourceIds.value.includes(a.id)))
         || a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
         || b.created_at.localeCompare(a.created_at)
         || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
       )
-      .filter((resource: Resource) => savedResourceView.value !== 'saved-only' || savedResourceIds.value.includes(resource.id))
   })
 
   function applyQuestionSearch () {
@@ -1521,7 +1545,7 @@
     font-size: 12px;
   }
 
-  :global(.v-theme--academicDark) .home-page {
+  .v-theme--academicDark .home-page {
     color: #e0e9e7;
     background:
       radial-gradient(ellipse at 6% 8%, rgb(41 83 73 / 24%), transparent 32rem),
@@ -1529,45 +1553,88 @@
       #101a21;
   }
 
-  :global(.v-theme--academicDark) .brand,
-  :global(.v-theme--academicDark) .feature-item h2,
-  :global(.v-theme--academicDark) .section-heading h2,
-  :global(.v-theme--academicDark) .empty-library h3,
-  :global(.v-theme--academicDark) .resource-card h3 {
+  .v-theme--academicDark .brand,
+  .v-theme--academicDark .feature-item h2,
+  .v-theme--academicDark .section-heading h2,
+  .v-theme--academicDark .empty-library h3,
+  .v-theme--academicDark .resource-card h3 {
     color: #e0eae8;
   }
 
-  :global(.v-theme--academicDark) .brand-copy > span,
-  :global(.v-theme--academicDark) .header-link,
-  :global(.v-theme--academicDark) .feature-item p,
-  :global(.v-theme--academicDark) .section-heading p,
-  :global(.v-theme--academicDark) .empty-library p,
-  :global(.v-theme--academicDark) .resource-card .text-medium-emphasis,
-  :global(.v-theme--academicDark) .resource-description,
-  :global(.v-theme--academicDark) .home-footer {
+  .v-theme--academicDark .brand-copy > span,
+  .v-theme--academicDark .header-link,
+  .v-theme--academicDark .feature-item p,
+  .v-theme--academicDark .section-heading p,
+  .v-theme--academicDark .empty-library p,
+  .v-theme--academicDark .resource-card .text-medium-emphasis,
+  .v-theme--academicDark .resource-description,
+  .v-theme--academicDark .home-footer {
     color: #a5b3b4;
   }
 
-  :global(.v-theme--academicDark) .feature-strip,
-  :global(.v-theme--academicDark) .upload-card,
-  :global(.v-theme--academicDark) .resource-card,
-  :global(.v-theme--academicDark) .empty-library {
+  .v-theme--academicDark .feature-strip,
+  .v-theme--academicDark .upload-card,
+  .v-theme--academicDark .resource-card,
+  .v-theme--academicDark .empty-library {
     border-color: #30414a;
     background: #1b2932;
   }
 
-  :global(.v-theme--academicDark) .footer-brand {
+  .v-theme--academicDark .footer-brand {
     color: #adc0bb;
   }
 
-  :global(.v-theme--campusGreen) .home-page {
+  .v-theme--academicDark .about-app-card {
+    border-color: #30414a;
+    background: #1b2932;
+  }
+
+  .v-theme--academicDark .about-app-card h3 {
+    color: #e0eae8;
+  }
+
+  .v-theme--academicDark .about-app-footer {
+    border-color: #30414a;
+    background: #17242b;
+  }
+
+  .v-theme--academicDark .about-app-footer p {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .feature-icon-blue {
+    color: #9ac5d0;
+    background: #22333d;
+  }
+
+  .v-theme--academicDark .feature-icon-gold {
+    color: #dcc38b;
+    background: #352e1f;
+  }
+
+  .v-theme--academicDark .feature-icon-green {
+    color: #9bc9ad;
+    background: #23352f;
+  }
+
+  .v-theme--academicDark .empty-icon {
+    color: #9bc9ad;
+    background: #23352f;
+  }
+
+  .v-theme--academicDark .closing-icon {
+    color: #ecdda9;
+    background: rgb(255 255 255 / 12%);
+  }
+
+  .v-theme--campusGreen .home-page {
     background:
       radial-gradient(ellipse at 6% 8%, #d8e9dc, transparent 32rem),
       radial-gradient(ellipse at 95% 27%, #e7e9d5, transparent 28rem),
       #edf4ee;
   }
 
-  :global(.v-theme--libraryWarm) .home-page {
+  .v-theme--libraryWarm .home-page {
     color: #49382b;
     background:
       radial-gradient(ellipse at 6% 8%, #eee0cc, transparent 32rem),
@@ -1575,41 +1642,41 @@
       #f7f0e6;
   }
 
-  :global(.v-theme--libraryWarm) .brand,
-  :global(.v-theme--libraryWarm) .feature-item h2,
-  :global(.v-theme--libraryWarm) .section-heading h2,
-  :global(.v-theme--libraryWarm) .empty-library h3,
-  :global(.v-theme--libraryWarm) .resource-card h3 {
+  .v-theme--libraryWarm .brand,
+  .v-theme--libraryWarm .feature-item h2,
+  .v-theme--libraryWarm .section-heading h2,
+  .v-theme--libraryWarm .empty-library h3,
+  .v-theme--libraryWarm .resource-card h3 {
     color: #57412f;
   }
 
-  :global(.v-theme--libraryWarm) .feature-strip,
-  :global(.v-theme--libraryWarm) .upload-card,
-  :global(.v-theme--libraryWarm) .resource-card,
-  :global(.v-theme--libraryWarm) .empty-library {
+  .v-theme--libraryWarm .feature-strip,
+  .v-theme--libraryWarm .upload-card,
+  .v-theme--libraryWarm .resource-card,
+  .v-theme--libraryWarm .empty-library {
     border-color: #e9ddcd;
     background: #fffaf2;
   }
 
-  :global(.v-theme--scholarBlue) .home-page {
+  .v-theme--scholarBlue .home-page {
     background:
       radial-gradient(ellipse at 6% 8%, #d8e6f1, transparent 32rem),
       radial-gradient(ellipse at 95% 27%, #e6e9ef, transparent 28rem),
       #eef3f8;
   }
 
-  :global(.v-theme--scholarBlue) .brand,
-  :global(.v-theme--scholarBlue) .feature-item h2,
-  :global(.v-theme--scholarBlue) .section-heading h2,
-  :global(.v-theme--scholarBlue) .empty-library h3,
-  :global(.v-theme--scholarBlue) .resource-card h3 {
+  .v-theme--scholarBlue .brand,
+  .v-theme--scholarBlue .feature-item h2,
+  .v-theme--scholarBlue .section-heading h2,
+  .v-theme--scholarBlue .empty-library h3,
+  .v-theme--scholarBlue .resource-card h3 {
     color: #294766;
   }
 
-  :global(.v-theme--scholarBlue) .feature-strip,
-  :global(.v-theme--scholarBlue) .upload-card,
-  :global(.v-theme--scholarBlue) .resource-card,
-  :global(.v-theme--scholarBlue) .empty-library {
+  .v-theme--scholarBlue .feature-strip,
+  .v-theme--scholarBlue .upload-card,
+  .v-theme--scholarBlue .resource-card,
+  .v-theme--scholarBlue .empty-library {
     border-color: #dbe5ee;
     background: #fbfdff;
   }

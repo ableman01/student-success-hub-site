@@ -17,7 +17,9 @@ export interface LasuOfficialUpdate {
 }
 
 export async function getLasuOfficialUpdates () {
-  if (!isSupabaseConfigured) throw new Error('Official LASU updates are unavailable while the online service is disconnected.')
+  if (!isSupabaseConfigured) {
+    throw new Error('Official LASU updates are unavailable while the online service is disconnected.')
+  }
 
   const { data, error } = await getSupabaseClient()
     .from('lasu_official_updates')
@@ -26,6 +28,8 @@ export async function getLasuOfficialUpdates () {
     .order('first_seen_at', { ascending: false })
     .limit(100)
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
   return data as LasuOfficialUpdate[]
 }

@@ -14,6 +14,18 @@
       <v-spacer />
 
       <v-btn
+        :aria-label="themeLabel"
+        class="theme-toggle-btn"
+        icon
+        rounded="circle"
+        :title="themeLabel"
+        variant="tonal"
+        @click="toggleTheme"
+      >
+        <v-icon>{{ themeIcon }}</v-icon>
+      </v-btn>
+
+      <v-btn
         :aria-label="unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'"
         class="global-notification-link"
         icon
@@ -23,16 +35,6 @@
       >
         <v-badge v-if="unreadNotifications" color="error" :content="unreadNotifications" floating><v-icon>mdi-bell-outline</v-icon></v-badge>
         <v-icon v-else>mdi-bell-outline</v-icon>
-      </v-btn>
-
-      <v-btn
-        :aria-label="theme === 'academicLight' ? 'Switch to moon mode' : 'Switch to sun mode'"
-        icon
-        rounded="circle"
-        variant="tonal"
-        @click="toggleTheme"
-      >
-        <v-icon>{{ theme === 'academicLight' ? 'mdi-weather-night' : 'mdi-weather-sunny' }}</v-icon>
       </v-btn>
     </v-app-bar>
 
@@ -125,6 +127,18 @@
         />
       </v-list>
 
+      <div class="student-drawer-theme">
+        <v-switch
+          color="primary"
+          density="compact"
+          hide-details
+          :label="isDark ? 'Moon mode' : 'Sun mode'"
+          :model-value="isDark"
+          prepend-icon="mdi-weather-night"
+          @update:model-value="toggleTheme"
+        />
+      </div>
+
       <v-divider class="student-drawer-divider" />
 
       <v-list class="student-drawer-links student-drawer-account" nav>
@@ -201,6 +215,7 @@
   import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useDisplay } from 'vuetify'
+  import { useAppTheme } from '@/composables/useAppTheme'
   import { hasAuthSession, signOut } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
@@ -210,31 +225,10 @@
   const route = useRoute()
   const router = useRouter()
   const { mobile: isMobile } = useDisplay()
+  const { isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const isAuthenticated = ref(false)
   const drawerOpen = ref(false)
   const signingOut = ref(false)
-
-  // Theme state management
-  const THEME_KEY = 'lasu-theme-preference'
-  const theme = ref<'academicLight' | 'academicDark'>(() => {
-    const saved = localStorage.getItem(THEME_KEY)
-    return (saved === 'academicDark' ? 'academicDark' : 'academicLight') as 'academicLight' | 'academicDark'
-  })()
-
-  function toggleTheme () {
-    theme.value = theme.value === 'academicLight' ? 'academicDark' : 'academicLight'
-    localStorage.setItem(THEME_KEY, theme.value)
-    applyTheme(theme.value)
-  }
-
-  function applyTheme (themeName: 'academicLight' | 'academicDark') {
-    document.documentElement.dataset.theme = themeName
-    document.documentElement.classList.toggle('v-theme--dark', themeName === 'academicDark')
-  }
-
-  onMounted(() => {
-    applyTheme(theme.value)
-  })
   const showNotifications = ref(false)
   const loadingNotifications = ref(false)
   const notifications = ref<AppNotification[]>([])
@@ -369,6 +363,20 @@
   .student-drawer-account { padding-top: 2px; }
   .global-notification-link { width: 46px !important; height: 46px !important; background: #eef2f0 !important; }
   .theme-toggle-btn { width: 46px !important; height: 46px !important; background: #eef2f0 !important; }
+  .student-drawer-theme { margin: 4px 16px 10px; border: 1px solid #e6ece5; border-radius: 12px; padding: 0 12px; background: #f7f9f5; }
+  .student-drawer-theme .v-switch { font-size: 12px; font-weight: 650; }
+
+  .v-theme--academicDark .student-topbar { border-bottom-color: #26343d; background: rgb(20 32 40 / 96%); }
+  .v-theme--academicDark .student-site-brand { color: #e0eae8; }
+  .v-theme--academicDark .student-site-brand small { color: #93a3a4; }
+  .v-theme--academicDark .student-side-drawer { background: #142028; }
+  .v-theme--academicDark .student-drawer-caption { color: #8fa0a1; }
+  .v-theme--academicDark .student-drawer-links .v-list-item { color: #c3d1cd; }
+  .v-theme--academicDark .student-drawer-links .v-list-item--active { color: #cfe3d8; background: #23352f; }
+  .v-theme--academicDark .student-drawer-divider { border-color: #26343d; }
+  .v-theme--academicDark .student-drawer-theme { border-color: #2b3a43; background: #1b2932; }
+  .v-theme--academicDark .global-notification-link,
+  .v-theme--academicDark .theme-toggle-btn { background: #24343c !important; }
   .global-notification-list { display: grid; gap: 8px; }
   .global-notification-item { display: flex; align-items: flex-start; gap: 12px; border: 1px solid #e5ebe5; border-radius: 14px; padding: 13px; }
   .global-notification-item p { margin: 0; color: #344a42; }

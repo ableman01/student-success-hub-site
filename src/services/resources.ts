@@ -1,6 +1,7 @@
 import { getCourseAcademicLevel } from '@/lib/academics'
-import { getCurrentUser, type AppUser } from '@/lib/auth'
+import { type AppUser, getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
+import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
@@ -111,7 +112,9 @@ async function normalizeResource (
     .from(bucketName)
     .createSignedUrl(row.file_path, 60 * 60)
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
 
   return { ...row, url: data.signedUrl }
 }
@@ -120,7 +123,9 @@ function validateResource (resource: NewResource) {
   if (!resource.title.trim()) {
     throw new Error('Add a title for this PDF.')
   }
-  if (resource.file.type !== 'application/pdf' && !resource.file.name.toLowerCase().endsWith('.pdf')) {
+  const fileExtension = resource.file.name.toLowerCase().split('.').pop()
+  const isPdf = resource.file.type === 'application/pdf' || fileExtension === 'pdf'
+  if (!isPdf) {
     throw new Error('Only PDF documents can be uploaded.')
   }
   if (resource.file.size > maxFileSize) {
@@ -183,7 +188,9 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
 }
 
 export async function isResourceModerator (userId: string) {
-  if (!isSupabaseConfigured) return false
+  if (!isSupabaseConfigured) {
+    return false
+  }
 
   const { data, error } = await getSupabaseClient()
     .from('resource_moderators')
@@ -191,7 +198,9 @@ export async function isResourceModerator (userId: string) {
     .eq('user_id', userId)
     .maybeSingle()
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
   return Boolean(data)
 }
 
@@ -202,14 +211,20 @@ export async function getPendingResources () {
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
   return Promise.all(data.map(row => normalizeResource(row)))
 }
 
 export async function reviewResource (resourceId: string, status: Exclude<ResourceStatus, 'pending'>, reviewComment: string) {
   const comment = reviewComment.trim()
-  if (status === 'rejected' && !comment) throw new Error('Add a reason before rejecting this upload.')
-  if (comment.length > 400) throw new Error('Review comments must be 400 characters or fewer.')
+  if (status === 'rejected' && !comment) {
+    throw new Error('Add a reason before rejecting this upload.')
+  }
+  if (comment.length > 400) {
+    throw new Error('Review comments must be 400 characters or fewer.')
+  }
   const { data, error } = await getSupabaseClient()
     .from('resources')
     .update({ status, reviewed_at: new Date().toISOString(), review_comment: comment || null })
@@ -218,8 +233,12 @@ export async function reviewResource (resourceId: string, status: Exclude<Resour
     .select('*')
     .maybeSingle()
 
-  if (error) throw new Error(getErrorMessage(error))
-  if (!data) throw new Error('This upload was already reviewed or is no longer available.')
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
+  if (!data) {
+    throw new Error('This upload was already reviewed or is no longer available.')
+  }
   return normalizeResource(data)
 }
 
@@ -230,26 +249,34 @@ export async function getNotifications () {
     .order('created_at', { ascending: false })
     .limit(30)
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
   return data as AppNotification[]
 }
 
 export async function markNotificationsRead (ids: string[]) {
-  if (!ids.length) return
+  if (ids.length === 0) {
+    return
+  }
   const { error } = await getSupabaseClient()
     .from('app_notifications')
     .update({ is_read: true })
     .in('id', ids)
     .eq('is_read', false)
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
 }
 
 const savedResourcesStoragePrefix = 'student-hub-saved-resources:'
 
 export async function getSavedResourceIds () {
   const user = await getCurrentUser()
-  if (!user) return [] as string[]
+  if (!user) {
+    return [] as string[]
+  }
 
   if (!isSupabaseConfigured) {
     try {
@@ -265,19 +292,26 @@ export async function getSavedResourceIds () {
     .select('resource_id')
     .order('created_at', { ascending: false })
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
   return data.map(item => item.resource_id)
 }
 
 export async function setResourceSaved (resourceId: string, saved: boolean) {
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to save study materials to your profile.')
+  if (!user) {
+    throw new Error('Sign in to save study materials to your profile.')
+  }
 
   if (!isSupabaseConfigured) {
     const key = `${savedResourcesStoragePrefix}${user.id}`
     const current = new Set(await getSavedResourceIds())
-    if (saved) current.add(resourceId)
-    else current.delete(resourceId)
+    if (saved) {
+      current.add(resourceId)
+    } else {
+      current.delete(resourceId)
+    }
     localStorage.setItem(key, JSON.stringify([...current]))
     return
   }
@@ -286,7 +320,9 @@ export async function setResourceSaved (resourceId: string, saved: boolean) {
     const { error } = await getSupabaseClient()
       .from('saved_resources')
       .insert({ user_id: user.id, resource_id: resourceId })
-    if (error && error.code !== '23505') throw new Error(getErrorMessage(error))
+    if (error && error.code !== '23505') {
+      throw new Error(getErrorMessage(error))
+    }
     return
   }
 
@@ -295,7 +331,9 @@ export async function setResourceSaved (resourceId: string, saved: boolean) {
     .delete()
     .eq('resource_id', resourceId)
 
-  if (error) throw new Error(getErrorMessage(error))
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
 }
 
 export async function uploadResource (input: NewResource) {
@@ -303,6 +341,17 @@ export async function uploadResource (input: NewResource) {
   const user = await getCurrentUser()
   if (!user) {
     throw new Error('Sign in before uploading a PDF.')
+  }
+
+  const existingResources = await getResources(input.kind, input.academic_level || undefined)
+  const duplicate = existingResources.find(resource =>
+    inSameLibrary(resource, input.kind, input.academic_level)
+    && getResourceIdentityKey(resource.course, resource.title) === getResourceIdentityKey(input.course, input.title),
+  )
+  if (duplicate) {
+    throw new Error(
+      `“${duplicate.title}” for ${duplicate.course || 'this course'} is already in the library. You can edit that material instead of uploading it again.`,
+    )
   }
 
   const fileName = input.file.name
@@ -412,45 +461,149 @@ export async function deleteResource (resource: Resource) {
 
 export async function updateResource (
   resourceId: string,
-  changes: Partial<Pick<Resource, 'title' | 'course' | 'description' | 'category' | 'academic_level'>>
+  changes: Partial<Pick<Resource, 'title' | 'course' | 'description' | 'category' | 'academic_level'>>,
 ) {
   const user = await getCurrentUser()
   if (!user) {
     throw new Error('Sign in before updating a resource.')
   }
 
+  const moderator = await isResourceModerator(user.id)
+
+  if (!isSupabaseConfigured) {
+    const existing = await localTransaction<Resource & { blob: Blob } | undefined>(
+      'readonly',
+      store => store.get(resourceId),
+    )
+    if (!existing) {
+      throw new Error('Material not found.')
+    }
+    if (existing.uploaded_by !== user.id && !moderator) {
+      throw new Error('You can only edit the class materials you shared.')
+    }
+
+    const updated: Resource & { blob: Blob } = {
+      ...existing,
+      title: changes.title === undefined ? existing.title : changes.title.trim(),
+      course: changes.course === undefined ? existing.course : changes.course.trim(),
+      description: changes.description === undefined ? existing.description : changes.description.trim(),
+      category: changes.category === undefined ? existing.category : changes.category,
+      academic_level: changes.academic_level === undefined ? existing.academic_level : changes.academic_level,
+    }
+    await localTransaction<IDBValidKey>('readwrite', store => store.put(updated))
+    return {
+      ...updated,
+      url: URL.createObjectURL(updated.blob),
+    }
+  }
+
   const client = getSupabaseClient()
   const updateData: Record<string, unknown> = {}
-  if (changes.title !== undefined) updateData.title = changes.title.trim()
-  if (changes.course !== undefined) updateData.course = changes.course.trim()
-  if (changes.description !== undefined) updateData.description = changes.description.trim()
-  if (changes.category !== undefined) updateData.category = changes.category
-  if (changes.academic_level !== undefined) updateData.academic_level = changes.academic_level
+  if (changes.title !== undefined) {
+    updateData.title = changes.title.trim()
+  }
+  if (changes.course !== undefined) {
+    updateData.course = changes.course.trim()
+  }
+  if (changes.description !== undefined) {
+    updateData.description = changes.description.trim()
+  }
+  if (changes.category !== undefined) {
+    updateData.category = changes.category
+  }
+  if (changes.academic_level !== undefined) {
+    updateData.academic_level = changes.academic_level
+  }
 
-  const { data, error } = await client
+  const query = client
     .from('resources')
     .update(updateData)
     .eq('id', resourceId)
-    .eq('uploaded_by', user.id)
-    .select('*')
-    .single()
 
-  if (error) throw new Error(getErrorMessage(error))
+  // Only the uploader owns a material, unless the site creator is reviewing it.
+  if (!moderator) {
+    query.eq('uploaded_by', user.id)
+  }
+
+  const { data, error } = await query.select('*').single()
+
+  if (error) {
+    if (error.code === '42501') {
+      throw new Error('Your account cannot edit this material yet. Ask the site creator to run the shared-resource edit migration.')
+    }
+    throw new Error(getErrorMessage(error))
+  }
   return normalizeResource(data)
 }
 
+function inSameLibrary (resource: Resource, kind: ResourceKind, academicLevel: string | null | undefined) {
+  return resource.kind === kind
+    && (!academicLevel || resource.academic_level === academicLevel || matchesAcademicLevel(resource, academicLevel))
+}
+
+function getResourceGroupKey (resource: Resource) {
+  return `${resource.kind}::${getResourceIdentityKey(resource.course, resource.title)}`
+}
+
+/**
+ * Orders shared materials so the most useful copy of a duplicate wins:
+ * an approved material beats a pending one, then the newest upload.
+ */
+function compareResources (a: Resource, b: Resource) {
+  const statusRank: Record<ResourceStatus, number> = { approved: 3, pending: 2, rejected: 1 }
+  return (statusRank[a.status] ?? 0) - (statusRank[b.status] ?? 0)
+    || b.created_at.localeCompare(a.created_at)
+    || a.id.localeCompare(b.id)
+}
+
 export function deduplicateAndSortResources (resources: Resource[]): Resource[] {
-  const seen = new Set<string>()
-  return resources
-    .filter(resource => {
-      const key = `${resource.course.trim().toLowerCase()}::${resource.title.trim().toLowerCase()}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .sort((a, b) => {
-      const courseCompare = a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
-      if (courseCompare !== 0) return courseCompare
-      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
-    })
+  const groups = new Map<string, Resource[]>()
+
+  for (const resource of resources) {
+    const key = getResourceGroupKey(resource)
+    const group = groups.get(key)
+    if (group) {
+      group.push(resource)
+    } else {
+      groups.set(key, [resource])
+    }
+  }
+
+  return [...groups.values()]
+    .map(group => group.toSorted(compareResources)[0]!)
+    .toSorted((a, b) => a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
+      || a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }))
+}
+
+/**
+ * The ids of the repeated class materials inside a library.
+ * A past question and a class material never count as duplicates of each other.
+ */
+export function findDuplicateResourceIds (resources: Resource[]) {
+  return findDuplicateIds(
+    resources,
+    getResourceGroupKey,
+    compareResources,
+  )
+}
+
+/** Permanently removes the repeated copies of a shared material. */
+export async function removeDuplicateResources (resources: Resource[]) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser || !await isResourceModerator(currentUser.id)) {
+    throw new Error('Only the site creator can clear duplicate materials.')
+  }
+
+  const duplicateIds = findDuplicateResourceIds(resources)
+  if (duplicateIds.length === 0) {
+    return []
+  }
+
+  const duplicates = resources.filter(resource => duplicateIds.includes(resource.id))
+
+  for (const duplicate of duplicates) {
+    await deleteResource(duplicate)
+  }
+
+  return duplicateIds
 }

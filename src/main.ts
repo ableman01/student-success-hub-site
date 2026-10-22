@@ -7,6 +7,7 @@
 // Composables
 import { createApp } from 'vue'
 
+import { getStoredTheme } from '@/lib/theme'
 // Plugins
 import { registerPlugins } from '@/plugins'
 
@@ -17,6 +18,11 @@ import App from './App.vue'
 import 'unfonts.css'
 import 'virtual:uno.css'
 import './styles/main.scss'
+
+// Apply the saved sun / moon preference before the first paint to avoid a flash.
+const savedTheme = getStoredTheme()
+document.documentElement.dataset.theme = savedTheme
+document.documentElement.style.colorScheme = savedTheme === 'academicDark' ? 'dark' : 'light'
 
 const app = createApp(App)
 

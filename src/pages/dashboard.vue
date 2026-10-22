@@ -13,6 +13,18 @@
 
         <nav aria-label="Dashboard navigation" class="dashboard-actions">
           <v-btn
+            :aria-label="themeLabel"
+            class="theme-button"
+            icon
+            rounded="circle"
+            :title="themeLabel"
+            variant="tonal"
+            @click="toggleTheme"
+          >
+            <v-icon>{{ themeIcon }}</v-icon>
+          </v-btn>
+
+          <v-btn
             aria-label="Notifications"
             class="notification-button"
             icon
@@ -221,7 +233,7 @@
 
           <div class="stat-copy">
             <span>Class resources</span>
-            <strong>{{ classMaterials.length }}</strong>
+            <strong>{{ sortedClassMaterials.length }}</strong>
             <small>Shared lecture PDFs</small>
           </div>
         </v-card>
@@ -269,7 +281,7 @@
             >
               <v-tab value="all">
                 All
-                <span class="tab-count">{{ tasks.length }}</span>
+                <span class="tab-count">{{ sortedTasks.length }}</span>
               </v-tab>
 
               <v-tab value="pending">
@@ -304,7 +316,31 @@
               rounded
             />
 
-            <div v-else-if="tasks.length === 0" class="assignment-empty">
+            <div v-if="duplicateTaskCount > 0" class="dedupe-row mt-2">
+              <v-chip
+                class="dedupe-note"
+                color="secondary"
+                prepend-icon="mdi-content-duplicate"
+                size="small"
+                variant="tonal"
+              >
+                {{ duplicateTaskCount }} duplicate {{ duplicateTaskCount === 1 ? 'assignment was' : 'assignments were' }} merged automatically
+              </v-chip>
+
+              <v-btn
+                v-if="isResourceModerator"
+                color="secondary"
+                :loading="clearingDuplicateTasks"
+                prepend-icon="mdi-broom"
+                size="small"
+                variant="text"
+                @click="clearDuplicateTasks"
+              >
+                Clear duplicates
+              </v-btn>
+            </div>
+
+            <div v-if="!loading && tasks.length === 0" class="assignment-empty">
               <div class="empty-symbol"><v-icon>mdi-notebook-plus-outline</v-icon></div>
               <h3>Your plan starts with one assignment.</h3>
               <p>Add your coursework and deadlines to keep everything in view.</p>
@@ -320,7 +356,7 @@
               </v-btn>
             </div>
 
-            <div v-else-if="filteredTasks.length === 0" class="assignment-empty compact-empty">
+            <div v-else-if="!loading && filteredTasks.length === 0" class="assignment-empty compact-empty">
               <div class="empty-symbol"><v-icon>mdi-text-search</v-icon></div>
               <h3>No assignments match this view.</h3>
               <p>Try a different search or status filter.</p>
@@ -508,12 +544,32 @@
               <v-row>
                 <v-col cols="12" sm="6">
                   <v-text-field
-                    v-model="course"
-                    label="Course"
+                    v-model="courseCode"
+                    label="Course code"
                     placeholder="e.g. SVG 202"
+                    prepend-inner-icon="mdi-pound"
                   />
                 </v-col>
 
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="course"
+                    label="Course title (optional)"
+                    placeholder="e.g. Surveying"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-alert
+                class="mb-4"
+                density="compact"
+                type="info"
+                variant="tonal"
+              >
+                Assignments with the same course code and title are merged automatically, so nothing is posted twice.
+              </v-alert>
+
+              <v-row>
                 <v-col cols="12" sm="6">
                   <v-text-field
                     v-model="dueDate"
@@ -521,17 +577,19 @@
                     type="date"
                   />
                 </v-col>
-              </v-row>
 
-              <v-select
-                v-model="priority"
-                :items="[
-                  { title: 'Low priority', value: 'low' },
-                  { title: 'Medium priority', value: 'medium' },
-                  { title: 'High priority', value: 'high' },
-                ]"
-                label="Priority"
-              />
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="priority"
+                    :items="[
+                      { title: 'Low priority', value: 'low' },
+                      { title: 'Medium priority', value: 'medium' },
+                      { title: 'High priority', value: 'high' },
+                    ]"
+                    label="Priority"
+                  />
+                </v-col>
+              </v-row>
 
               <div class="dialog-actions">
                 <v-btn
@@ -558,10 +616,11 @@
       </v-dialog>
 
       <v-dialog
-        v-model="editTaskId !== null"
         aria-labelledby="edit-assignment-dialog-title"
         max-width="620"
+        :model-value="editTaskId !== null"
         scrollable
+        @update:model-value="value => { if (!value) editTaskId = null }"
       >
         <v-card class="assignment-dialog-card" rounded="xl">
           <div class="dialog-heading">
@@ -739,6 +798,30 @@
 
         <p class="saved-materials-hint">All approved materials are shown by default, with your bookmarks at the top. You can switch to saved items only at any time.</p>
 
+        <div v-if="duplicateMaterialCount > 0" class="dedupe-row mb-4">
+          <v-chip
+            class="dedupe-note"
+            color="secondary"
+            prepend-icon="mdi-content-duplicate"
+            size="small"
+            variant="tonal"
+          >
+            {{ duplicateMaterialCount }} duplicate {{ duplicateMaterialCount === 1 ? 'material was' : 'materials were' }} merged automatically
+          </v-chip>
+
+          <v-btn
+            v-if="isResourceModerator"
+            color="secondary"
+            :loading="clearingDuplicateMaterials"
+            prepend-icon="mdi-broom"
+            size="small"
+            variant="text"
+            @click="clearDuplicateMaterials"
+          >
+            Clear duplicates
+          </v-btn>
+        </div>
+
         <v-progress-linear
           v-if="loadingResources"
           class="mb-4"
@@ -770,112 +853,133 @@
           <span>{{ materialView === 'saved-only' ? 'You have not saved any matching class materials yet. Bookmark a resource to keep it on your profile.' : 'No materials match that search. Try a different title, course, or keyword.' }}</span>
         </div>
 
-        <v-row v-else class="material-grid">
-          <v-col
-            v-for="resource in filteredClassMaterials"
-            :key="resource.id"
-            cols="12"
-            md="6"
-            xl="4"
+        <div v-else class="material-groups">
+          <section
+            v-for="group in groupedClassMaterials"
+            :key="group.courseKey"
+            class="material-group"
           >
-            <v-card class="material-card fill-height pa-5" rounded="xl">
-              <div class="material-heading">
-                <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
+            <div class="material-group-heading">
+              <v-icon size="18">mdi-book-outline</v-icon>
+              <strong>{{ group.courseLabel }}</strong>
 
-                <div class="min-width-0">
-                  <h3>{{ resource.title }}</h3>
+              <v-chip color="secondary" size="x-small" variant="tonal">
+                {{ group.items.length }} {{ group.items.length === 1 ? 'item' : 'items' }}
+              </v-chip>
+            </div>
 
-                  <p>
-                    {{ resource.course || 'Course not specified' }}
-                    · {{ formatDate(resource.created_at) }}
+            <v-row class="material-grid">
+              <v-col
+                v-for="resource in group.items"
+                :key="resource.id"
+                cols="12"
+                md="6"
+                xl="4"
+              >
+                <v-card class="material-card fill-height pa-5" rounded="xl">
+                  <div class="material-heading">
+                    <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
+
+                    <div class="min-width-0">
+                      <h3>{{ resource.title }}</h3>
+
+                      <p>
+                        {{ resource.course || 'Course not specified' }}
+                        · {{ formatDate(resource.created_at) }}
+                      </p>
+                    </div>
+
+                    <v-btn
+                      v-if="resource.status === 'approved'"
+                      :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                      class="material-save-button"
+                      :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
+                      :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
+                      :loading="savingResourceId === resource.id"
+                      size="small"
+                      variant="tonal"
+                      @click="toggleSavedMaterial(resource)"
+                    />
+                  </div>
+
+                  <div class="material-meta">
+                    <v-chip color="primary" size="x-small" variant="tonal">
+                      {{ getResourceCategoryLabel(resource.category) }}
+                    </v-chip>
+
+                    <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
+                  </div>
+
+                  <v-chip
+                    v-if="resource.status !== 'approved'"
+                    class="mt-3 align-self-start"
+                    :color="resource.status === 'pending' ? 'warning' : 'error'"
+                    prepend-icon="mdi-clock-outline"
+                    size="small"
+                    variant="tonal"
+                  >
+                    {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved · upload a corrected PDF' }}
+                  </v-chip>
+
+                  <v-chip
+                    class="material-level-chip"
+                    color="secondary"
+                    prepend-icon="mdi-account-school-outline"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    {{ getAcademicLevelLabel(getCourseAcademicLevel(resource.course) || resource.academic_level) }}
+                  </v-chip>
+
+                  <p v-if="resource.description" class="material-description">
+                    {{ resource.description }}
                   </p>
-                </div>
 
-                <v-btn
-                  v-if="resource.status === 'approved'"
-                  :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
-                  class="material-save-button"
-                  :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
-                  :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
-                  :loading="savingResourceId === resource.id"
-                  size="small"
-                  variant="tonal"
-                  @click="toggleSavedMaterial(resource)"
-                />
-              </div>
+                  <v-btn
+                    block
+                    class="mt-auto"
+                    color="primary"
+                    :href="resource.url"
+                    rel="noopener noreferrer"
+                    rounded="pill"
+                    target="_blank"
+                    variant="tonal"
+                  >
+                    Read PDF
+                    <v-icon end>mdi-open-in-new</v-icon>
+                  </v-btn>
 
-              <div class="material-meta">
-                <v-chip color="primary" size="x-small" variant="tonal">
-                  {{ getResourceCategoryLabel(resource.category) }}
-                </v-chip>
+                  <v-btn
+                    v-if="!isResourceModerator || resource.uploaded_by === user?.id"
+                    aria-label="Edit material"
+                    block
+                    class="mt-2"
+                    color="secondary"
+                    prepend-icon="mdi-pencil-outline"
+                    rounded="pill"
+                    variant="tonal"
+                    @click="openEditResource(resource)"
+                  >
+                    Edit material
+                  </v-btn>
 
-                <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
-              </div>
-
-              <v-chip
-                v-if="resource.status !== 'approved'"
-                class="mt-3 align-self-start"
-                :color="resource.status === 'pending' ? 'warning' : 'error'"
-                prepend-icon="mdi-clock-outline"
-                size="small"
-                variant="tonal"
-              >
-                {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved · upload a corrected PDF' }}
-              </v-chip>
-
-              <v-chip
-                class="material-level-chip"
-                color="secondary"
-                prepend-icon="mdi-account-school-outline"
-                size="x-small"
-                variant="tonal"
-              >
-                {{ getAcademicLevelLabel(getCourseAcademicLevel(resource.course) || resource.academic_level) }}
-              </v-chip>
-
-              <p v-if="resource.description" class="material-description">
-                {{ resource.description }}
-              </p>
-
-              <v-btn
-                block
-                class="mt-auto"
-                color="primary"
-                :href="resource.url"
-                rel="noopener noreferrer"
-                rounded="pill"
-                target="_blank"
-                variant="tonal"
-              >
-                Read PDF
-                <v-icon end>mdi-open-in-new</v-icon>
-              </v-btn>
-
-              <v-btn
-                v-if="!isResourceModerator || resource.uploaded_by === user?.id"
-                block
-                class="mt-2"
-                icon="mdi-pencil-outline"
-                rounded="pill"
-                variant="text"
-                @click="openEditResource(resource)"
-              />
-
-              <v-btn
-                v-if="isResourceModerator"
-                block
-                class="mt-2"
-                color="error"
-                prepend-icon="mdi-delete-outline"
-                rounded="pill"
-                variant="text"
-                @click="resourceToDelete = resource"
-              >
-                Delete resource
-              </v-btn>
-            </v-card>
-          </v-col>
-        </v-row>
+                  <v-btn
+                    v-if="isResourceModerator"
+                    block
+                    class="mt-2"
+                    color="error"
+                    prepend-icon="mdi-delete-outline"
+                    rounded="pill"
+                    variant="text"
+                    @click="resourceToDelete = resource"
+                  >
+                    Delete resource
+                  </v-btn>
+                </v-card>
+              </v-col>
+            </v-row>
+          </section>
+        </div>
       </section>
 
       <v-dialog
@@ -1028,10 +1132,11 @@
       </v-dialog>
 
       <v-dialog
-        v-model="editResourceId !== null"
         aria-labelledby="edit-resource-dialog-title"
         max-width="680"
+        :model-value="editResourceId !== null"
         scrollable
+        @update:model-value="value => { if (!value) editResourceId = null }"
       >
         <v-card class="material-dialog-card" rounded="xl">
           <div class="dialog-heading">
@@ -1339,6 +1444,7 @@
   import type { Task } from '@/services/tasks'
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { useAppTheme } from '@/composables/useAppTheme'
   import {
     academicLevels,
     getAcademicLevelLabel,
@@ -1351,20 +1457,25 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { normalizeCourseLabel } from '@/lib/identity'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { isResourceModerator as checkResourceModerator, deleteResource, deduplicateAndSortResources, getNotifications, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, resourceCategories, reviewResource, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
+  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
   import {
     createTask,
-    deleteTask,
     deduplicateAndSortTasks,
+    deleteTask,
     getTasks,
+    removeDuplicateTasks,
     updateTask,
   } from '@/services/tasks'
 
   const router = useRouter()
   const route = useRoute()
+  const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
+  // The raw lists are kept so the duplicate counters stay accurate; every
+  // visible list is derived from them through the automatic sorter.
   const tasks = ref<Task[]>([])
   const classMaterials = ref<Resource[]>([])
   const savedResourceIds = ref<string[]>([])
@@ -1378,6 +1489,8 @@
   const reviewingResourceId = ref<string | null>(null)
   const reviewAction = ref<'approved' | 'rejected' | null>(null)
   const reviewComments = ref<Record<string, string>>({})
+  const clearingDuplicateTasks = ref(false)
+  const clearingDuplicateMaterials = ref(false)
   let notificationPoll: ReturnType<typeof globalThis.setInterval> | null = null
   const unreadNotificationCount = computed(() => notifications.value.filter(item => !item.is_read).length)
   const materialSearch = ref('')
@@ -1396,7 +1509,7 @@
   const filteredClassMaterials = computed(() => {
     const query = materialSearch.value.trim().toLocaleLowerCase()
 
-    let materials = classMaterials.value
+    const materials = classMaterials.value
       .filter(resource => materialCategory.value === 'all' || resource.category === materialCategory.value)
       .filter(resource => !query
         || `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)} ${resource.uploaded_by_name}`
@@ -1411,7 +1524,7 @@
   const filteredTasks = computed(() => {
     const query = searchQuery.value.trim().toLocaleLowerCase()
 
-    let taskList = tasks.value
+    const taskList = tasks.value
       .filter(task => taskFilter.value === 'all' || (taskFilter.value === 'completed' ? task.completed : !task.completed))
       .filter(task => !query
         || `${task.title} ${task.description} ${task.course}`.toLocaleLowerCase().includes(query),
@@ -1419,7 +1532,42 @@
 
     return deduplicateAndSortTasks(taskList)
   })
+
+  // Duplicates removed by the automatic sorter, shown so the cleanup is never silent.
+  const sortedTasks = computed(() => deduplicateAndSortTasks(tasks.value))
+  const sortedClassMaterials = computed(() => deduplicateAndSortResources(classMaterials.value))
+  const duplicateTaskCount = computed(() => tasks.value.length - sortedTasks.value.length)
+  const duplicateMaterialCount = computed(() => classMaterials.value.length - sortedClassMaterials.value.length)
+
+  interface ResourceGroup {
+    courseKey: string
+    courseLabel: string
+    items: Resource[]
+  }
+
+  const groupedClassMaterials = computed<ResourceGroup[]>(() => {
+    const groups = new Map<string, ResourceGroup>()
+
+    for (const resource of filteredClassMaterials.value) {
+      const courseLabel = resource.course.trim()
+      const courseKey = courseLabel ? normalizeCourseLabel(courseLabel) : '__unassigned__'
+      const group = groups.get(courseKey)
+      if (group) {
+        group.items.push(resource)
+      } else {
+        groups.set(courseKey, { courseKey, courseLabel: courseLabel || 'No course code', items: [resource] })
+      }
+    }
+
+    return [...groups.values()].toSorted((a, b) => {
+      if (a.courseKey === '__unassigned__') return 1
+      if (b.courseKey === '__unassigned__') return -1
+      return a.courseLabel.localeCompare(b.courseLabel, undefined, { sensitivity: 'base' })
+    })
+  })
   const title = ref('')
+  // Course code (e.g. SVG 202) used to fold every upload for one course together.
+  const courseCode = ref('')
   const description = ref('')
   const course = ref('')
   const dueDate = ref('')
@@ -1486,22 +1634,11 @@
   }).format(new Date())
 
   const completedCount = computed(
-    () => tasks.value.filter(task => task.completed).length,
+    () => sortedTasks.value.filter(task => task.completed).length,
   )
   const pendingCount = computed(
-    () => tasks.value.filter(task => !task.completed).length,
+    () => sortedTasks.value.filter(task => !task.completed).length,
   )
-  const filteredTasks = computed(() => {
-    const query = searchQuery.value.trim().toLocaleLowerCase()
-
-    return tasks.value.filter(task => {
-      const matchesFilter = taskFilter.value === 'all'
-        || (taskFilter.value === 'completed' ? task.completed : !task.completed)
-      const matchesQuery = !query
-        || `${task.title} ${task.course} ${task.description}`.toLocaleLowerCase().includes(query)
-      return matchesFilter && matchesQuery
-    })
-  })
   const dueSoonCount = computed(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -1510,14 +1647,14 @@
     const todayKey = dateKey(today)
     const nextWeekKey = dateKey(nextWeek)
 
-    return tasks.value.filter(task =>
+    return sortedTasks.value.filter(task =>
       !task.completed
       && task.due_date
       && task.due_date >= todayKey
       && task.due_date <= nextWeekKey,
     ).length
   })
-  const upcomingTasks = computed(() => tasks.value
+  const upcomingTasks = computed(() => sortedTasks.value
     .filter(task => isDueSoon(task))
     .toSorted((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
     .slice(0, 5))
@@ -1639,6 +1776,16 @@
     }
   }
 
+  function addCourseCode (task: Task, code: string): Task {
+    const cleanedCode = code.trim().toUpperCase()
+    const taskCourse = task.course.trim()
+    if (!cleanedCode || taskCourse.toUpperCase().includes(cleanedCode)) {
+      return { ...task, course: taskCourse || cleanedCode }
+    }
+
+    return { ...task, course: taskCourse ? `${cleanedCode} · ${taskCourse}` : cleanedCode }
+  }
+
   async function addTask () {
     errorMessage.value = ''
 
@@ -1653,18 +1800,19 @@
       const newTask = await createTask({
         title: title.value,
         description: description.value,
-        course: course.value,
+        course: course.value.trim() || courseCode.value.trim(),
         due_date: dueDate.value || null,
         priority: priority.value,
       })
 
-      tasks.value.push(newTask)
+      tasks.value = [...tasks.value, addCourseCode(newTask, courseCode.value)]
       showAssignmentForm.value = false
       successMessage.value = 'Assignment saved to your academic plan.'
       successSnackbar.value = true
       title.value = ''
       description.value = ''
       course.value = ''
+      courseCode.value = ''
       dueDate.value = ''
       priority.value = 'medium'
     } catch (error) {
@@ -1677,7 +1825,8 @@
   async function loadClassMaterials () {
     loadingResources.value = true
     try {
-      classMaterials.value = await getResources('class_material', user.value?.academicLevel)
+      const loadedMaterials = await getResources('class_material', user.value?.academicLevel)
+      classMaterials.value = loadedMaterials
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
     } finally {
@@ -1731,7 +1880,7 @@
         file,
         academic_level: sharedLevel,
       })
-      classMaterials.value.unshift(resource)
+      classMaterials.value = [resource, ...classMaterials.value]
       showMaterialForm.value = false
       resourceTitle.value = ''
       resourceCourse.value = ''
@@ -1965,6 +2114,42 @@
       tasks.value = tasks.value.filter(item => item.id !== task.id)
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
+    }
+  }
+
+  async function clearDuplicateTasks () {
+    errorMessage.value = ''
+    clearingDuplicateTasks.value = true
+
+    try {
+      const removedIds = await removeDuplicateTasks(tasks.value)
+      tasks.value = tasks.value.filter(item => !removedIds.includes(item.id))
+      successMessage.value = removedIds.length === 1
+        ? '1 duplicate assignment removed.'
+        : `${removedIds.length} duplicate assignments removed.`
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not clear the duplicate assignments.')
+    } finally {
+      clearingDuplicateTasks.value = false
+    }
+  }
+
+  async function clearDuplicateMaterials () {
+    errorMessage.value = ''
+    clearingDuplicateMaterials.value = true
+
+    try {
+      const removedIds = await removeDuplicateResources(classMaterials.value)
+      classMaterials.value = classMaterials.value.filter(item => !removedIds.includes(item.id))
+      successMessage.value = removedIds.length === 1
+        ? '1 duplicate material removed.'
+        : `${removedIds.length} duplicate materials removed.`
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not clear the duplicate materials.')
+    } finally {
+      clearingDuplicateMaterials.value = false
     }
   }
 
@@ -2282,6 +2467,12 @@
     font-size: 11px;
   }
 
+  .theme-button,
+  .notification-button {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
   .materials-toolbar {
     display: grid;
     max-width: 1280px;
@@ -2301,6 +2492,27 @@
 
   .material-view-filter { min-width: 190px; }
   .saved-materials-hint { margin: -6px 0 18px; color: #7c8982; font-size: 11px; }
+
+  .dedupe-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .dedupe-note { margin-bottom: 0; }
+
+  .material-groups { display: grid; gap: 26px; }
+
+  .material-group-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #2f4b3c;
+    font-size: 12px;
+  }
+
+  .material-group-heading strong {
+    font-weight: 750;
+    letter-spacing: -0.01em;
+  }
+
+  .material-group-heading .v-icon { color: #648875; }
 
   .material-meta {
     display: flex;
@@ -2790,6 +3002,22 @@
     font-size: 20px;
   }
 
+  .v-theme--academicDark .dashboard-quick-nav {
+    border-color: #30414a;
+    background: rgb(20 32 40 / 96%);
+    box-shadow: 0 10px 32px rgb(0 0 0 / 38%);
+  }
+
+  .v-theme--academicDark .dashboard-quick-nav a {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .dashboard-quick-nav a:hover,
+  .v-theme--academicDark .dashboard-quick-nav a:focus-visible {
+    background: #23352f;
+    color: #cfe3d8;
+  }
+
   @media (max-width: 1279px) {
     .dashboard-actions .shared-link {
       display: none;
@@ -2802,232 +3030,238 @@
     text-decoration: none;
   }
 
-  :global(.v-theme--academicDark) .dashboard-page {
+  .v-theme--academicDark .dashboard-page {
     color: #e2ebeb;
     background:
       radial-gradient(ellipse at 4% 0%, rgb(40 78 69 / 24%), transparent 31rem),
       #101a21;
   }
 
-  :global(.v-theme--academicDark) .dashboard-brand,
-  :global(.v-theme--academicDark) .dashboard-welcome h1,
-  :global(.v-theme--academicDark) .section-title-row h2,
-  :global(.v-theme--academicDark) .dialog-heading h2,
-  :global(.v-theme--academicDark) .stat-copy strong,
-  :global(.v-theme--academicDark) .assignment-heading h3,
-  :global(.v-theme--academicDark) .material-heading h3 {
+  .v-theme--academicDark .dashboard-brand,
+  .v-theme--academicDark .dashboard-welcome h1,
+  .v-theme--academicDark .section-title-row h2,
+  .v-theme--academicDark .dialog-heading h2,
+  .v-theme--academicDark .stat-copy strong,
+  .v-theme--academicDark .assignment-heading h3,
+  .v-theme--academicDark .material-heading h3 {
     color: #e0eae8;
   }
 
-  :global(.v-theme--academicDark) .dashboard-brand small,
-  :global(.v-theme--academicDark) .dashboard-welcome p,
-  :global(.v-theme--academicDark) .section-title-row p,
-  :global(.v-theme--academicDark) .stat-copy > span,
-  :global(.v-theme--academicDark) .stat-copy small,
-  :global(.v-theme--academicDark) .assignment-meta,
-  :global(.v-theme--academicDark) .assignment-description,
-  :global(.v-theme--academicDark) .material-heading p,
-  :global(.v-theme--academicDark) .material-description {
+  .v-theme--academicDark .dashboard-brand small,
+  .v-theme--academicDark .dashboard-welcome p,
+  .v-theme--academicDark .section-title-row p,
+  .v-theme--academicDark .stat-copy > span,
+  .v-theme--academicDark .stat-copy small,
+  .v-theme--academicDark .assignment-meta,
+  .v-theme--academicDark .assignment-description,
+  .v-theme--academicDark .material-heading p,
+  .v-theme--academicDark .material-description {
     color: #a3b1b4;
   }
 
-  :global(.v-theme--academicDark) .welcome-date,
-  :global(.v-theme--academicDark) .stat-card,
-  :global(.v-theme--academicDark) .section-panel,
-  :global(.v-theme--academicDark) .upcoming-card,
-  :global(.v-theme--academicDark) .assignment-dialog-card,
-  :global(.v-theme--academicDark) .material-dialog-card,
-  :global(.v-theme--academicDark) .profile-dialog-card,
-  :global(.v-theme--academicDark) .upload-material-card,
-  :global(.v-theme--academicDark) .material-card,
-  :global(.v-theme--academicDark) .assignment-card {
+  .v-theme--academicDark .welcome-date,
+  .v-theme--academicDark .stat-card,
+  .v-theme--academicDark .section-panel,
+  .v-theme--academicDark .upcoming-card,
+  .v-theme--academicDark .assignment-dialog-card,
+  .v-theme--academicDark .material-dialog-card,
+  .v-theme--academicDark .profile-dialog-card,
+  .v-theme--academicDark .upload-material-card,
+  .v-theme--academicDark .material-card,
+  .v-theme--academicDark .assignment-card {
     border-color: #30414a;
     background: #1b2932;
   }
 
-  :global(.v-theme--academicDark) .assignment-done {
+  .v-theme--academicDark .assignment-done {
     background: #17242b;
   }
 
-  :global(.v-theme--academicDark) .assignment-tabs {
+  .v-theme--academicDark .assignment-tabs {
     border-color: #30414a;
   }
 
-  :global(.v-theme--academicDark) .assignment-tabs :deep(.v-tab) {
+  .v-theme--academicDark .assignment-tabs :deep(.v-tab) {
     color: #a3b1b4;
   }
 
-  :global(.v-theme--academicDark) .assignment-tabs :deep(.v-tab--selected) {
+  .v-theme--academicDark .assignment-tabs :deep(.v-tab--selected) {
     color: #c5dfd1;
   }
 
-  :global(.v-theme--academicDark) .tab-count {
+  .v-theme--academicDark .tab-count {
     color: #b7c5c1;
     background: #2d3c40;
   }
 
-  :global(.v-theme--academicDark) .assignment-tabs :deep(.v-tab--selected .tab-count) {
+  .v-theme--academicDark .assignment-tabs :deep(.v-tab--selected .tab-count) {
     color: #d1e7d7;
     background: #31463e;
   }
 
-  :global(.v-theme--academicDark) .dialog-heading {
+  .v-theme--academicDark .dialog-heading {
     border-color: #30414a;
   }
 
-  :global(.v-theme--academicDark) .profile-tabs {
+  .v-theme--academicDark .profile-tabs {
     border-color: #30414a;
   }
 
-  :global(.v-theme--academicDark) .profile-hint {
+  .v-theme--academicDark .profile-hint {
     color: #a3b1b4;
   }
 
-  :global(.v-theme--academicDark) .dialog-heading h2,
-  :global(.v-theme--academicDark) .upcoming-card .section-title-row h2,
-  :global(.v-theme--academicDark) .upcoming-item strong {
+  .v-theme--academicDark .dialog-heading h2,
+  .v-theme--academicDark .upcoming-card .section-title-row h2,
+  .v-theme--academicDark .upcoming-item strong {
     color: #e0eae8;
   }
 
-  :global(.v-theme--academicDark) .dialog-heading p,
-  :global(.v-theme--academicDark) .upcoming-intro,
-  :global(.v-theme--academicDark) .upcoming-item span:not(.upcoming-date) {
+  .v-theme--academicDark .dialog-heading p,
+  .v-theme--academicDark .upcoming-intro,
+  .v-theme--academicDark .upcoming-item span:not(.upcoming-date) {
     color: #a3b1b4;
   }
 
-  :global(.v-theme--academicDark) .upcoming-item {
+  .v-theme--academicDark .upcoming-item {
     border-color: #30414a;
   }
 
-  :global(.v-theme--academicDark) .upcoming-date {
+  .v-theme--academicDark .upcoming-date {
     color: #d4b66e;
     background: #393628;
   }
 
-  :global(.v-theme--academicDark) .upcoming-empty {
+  .v-theme--academicDark .upcoming-empty {
     color: #b7c9bb;
     background: #263a34;
   }
 
-  :global(.v-theme--academicDark) .stat-pending .stat-icon,
-  :global(.v-theme--academicDark) .form-icon {
+  .v-theme--academicDark .stat-pending .stat-icon,
+  .v-theme--academicDark .form-icon {
     color: #d4b66e;
     background: #393628;
   }
 
-  :global(.v-theme--academicDark) .stat-complete .stat-icon,
-  :global(.v-theme--academicDark) .empty-symbol {
+  .v-theme--academicDark .stat-complete .stat-icon,
+  .v-theme--academicDark .empty-symbol {
     color: #9bc9ad;
     background: #263a34;
   }
 
-  :global(.v-theme--academicDark) .stat-resources .stat-icon {
+  .v-theme--academicDark .stat-resources .stat-icon {
     color: #9ac5d0;
     background: #263a42;
   }
 
-  :global(.v-theme--academicDark) .study-tip {
+  .v-theme--academicDark .study-tip {
     border-color: #33443d;
     color: #dbe8de;
     background: linear-gradient(130deg, #253a34, #30382f);
   }
 
-  :global(.v-theme--academicDark) .study-tip p,
-  :global(.v-theme--academicDark) .study-tip .section-kicker {
+  .v-theme--academicDark .study-tip p,
+  .v-theme--academicDark .study-tip .section-kicker {
     color: #b1c0b4;
   }
 
-  :global(.v-theme--academicDark) .tip-icon {
+  .v-theme--academicDark .tip-icon {
     color: #d4b66e;
     background: #3d3b30;
   }
 
-  :global(.v-theme--academicDark) .materials-empty {
+  .v-theme--academicDark .materials-empty {
     border-color: #3a4a4b;
     color: #afbdba;
     background: #1b2932;
   }
 
-  :global(.v-theme--academicDark) .dashboard-footer {
+  .v-theme--academicDark .material-group-heading { color: #d5e4de; }
+
+  .v-theme--academicDark .material-group-heading .v-icon { color: #a5cbbb; }
+
+  .v-theme--academicDark .saved-materials-hint { color: #a3b1b4; }
+
+  .v-theme--academicDark .dashboard-footer {
     border-color: #30414a;
     color: #9ba9ab;
   }
 
-  :global(.v-theme--academicDark) .dashboard-footer a {
+  .v-theme--academicDark .dashboard-footer a {
     color: #a5cbbb;
   }
 
-  :global(.v-theme--campusGreen) .dashboard-page {
+  .v-theme--campusGreen .dashboard-page {
     color: #264538;
     background: radial-gradient(ellipse at 4% 0%, #dcebe0, transparent 31rem), #edf4ee;
   }
 
-  :global(.v-theme--campusGreen) .dashboard-brand,
-  :global(.v-theme--campusGreen) .dashboard-welcome h1,
-  :global(.v-theme--campusGreen) .section-title-row h2,
-  :global(.v-theme--campusGreen) .dialog-heading h2,
-  :global(.v-theme--campusGreen) .stat-copy strong {
+  .v-theme--campusGreen .dashboard-brand,
+  .v-theme--campusGreen .dashboard-welcome h1,
+  .v-theme--campusGreen .section-title-row h2,
+  .v-theme--campusGreen .dialog-heading h2,
+  .v-theme--campusGreen .stat-copy strong {
     color: #284a3a;
   }
 
-  :global(.v-theme--campusGreen) .stat-card,
-  :global(.v-theme--campusGreen) .section-panel,
-  :global(.v-theme--campusGreen) .upcoming-card,
-  :global(.v-theme--campusGreen) .assignment-card,
-  :global(.v-theme--campusGreen) .material-card,
-  :global(.v-theme--campusGreen) .assignment-dialog-card,
-  :global(.v-theme--campusGreen) .material-dialog-card,
-  :global(.v-theme--campusGreen) .profile-dialog-card {
+  .v-theme--campusGreen .stat-card,
+  .v-theme--campusGreen .section-panel,
+  .v-theme--campusGreen .upcoming-card,
+  .v-theme--campusGreen .assignment-card,
+  .v-theme--campusGreen .material-card,
+  .v-theme--campusGreen .assignment-dialog-card,
+  .v-theme--campusGreen .material-dialog-card,
+  .v-theme--campusGreen .profile-dialog-card {
     border-color: #d6e4d8;
     background: #fbfef9;
   }
 
-  :global(.v-theme--libraryWarm) .dashboard-page {
+  .v-theme--libraryWarm .dashboard-page {
     color: #49382b;
     background: radial-gradient(ellipse at 4% 0%, #eee1ce, transparent 31rem), #f7f0e6;
   }
 
-  :global(.v-theme--libraryWarm) .dashboard-brand,
-  :global(.v-theme--libraryWarm) .dashboard-welcome h1,
-  :global(.v-theme--libraryWarm) .section-title-row h2,
-  :global(.v-theme--libraryWarm) .dialog-heading h2,
-  :global(.v-theme--libraryWarm) .stat-copy strong {
+  .v-theme--libraryWarm .dashboard-brand,
+  .v-theme--libraryWarm .dashboard-welcome h1,
+  .v-theme--libraryWarm .section-title-row h2,
+  .v-theme--libraryWarm .dialog-heading h2,
+  .v-theme--libraryWarm .stat-copy strong {
     color: #57412f;
   }
 
-  :global(.v-theme--libraryWarm) .stat-card,
-  :global(.v-theme--libraryWarm) .section-panel,
-  :global(.v-theme--libraryWarm) .upcoming-card,
-  :global(.v-theme--libraryWarm) .assignment-card,
-  :global(.v-theme--libraryWarm) .material-card,
-  :global(.v-theme--libraryWarm) .assignment-dialog-card,
-  :global(.v-theme--libraryWarm) .material-dialog-card,
-  :global(.v-theme--libraryWarm) .profile-dialog-card {
+  .v-theme--libraryWarm .stat-card,
+  .v-theme--libraryWarm .section-panel,
+  .v-theme--libraryWarm .upcoming-card,
+  .v-theme--libraryWarm .assignment-card,
+  .v-theme--libraryWarm .material-card,
+  .v-theme--libraryWarm .assignment-dialog-card,
+  .v-theme--libraryWarm .material-dialog-card,
+  .v-theme--libraryWarm .profile-dialog-card {
     border-color: #e9ddcd;
     background: #fffaf2;
   }
 
-  :global(.v-theme--scholarBlue) .dashboard-page {
+  .v-theme--scholarBlue .dashboard-page {
     color: #2b4358;
     background: radial-gradient(ellipse at 4% 0%, #dce8f1, transparent 31rem), #eef3f8;
   }
 
-  :global(.v-theme--scholarBlue) .dashboard-brand,
-  :global(.v-theme--scholarBlue) .dashboard-welcome h1,
-  :global(.v-theme--scholarBlue) .section-title-row h2,
-  :global(.v-theme--scholarBlue) .dialog-heading h2,
-  :global(.v-theme--scholarBlue) .stat-copy strong {
+  .v-theme--scholarBlue .dashboard-brand,
+  .v-theme--scholarBlue .dashboard-welcome h1,
+  .v-theme--scholarBlue .section-title-row h2,
+  .v-theme--scholarBlue .dialog-heading h2,
+  .v-theme--scholarBlue .stat-copy strong {
     color: #294766;
   }
 
-  :global(.v-theme--scholarBlue) .stat-card,
-  :global(.v-theme--scholarBlue) .section-panel,
-  :global(.v-theme--scholarBlue) .upcoming-card,
-  :global(.v-theme--scholarBlue) .assignment-card,
-  :global(.v-theme--scholarBlue) .material-card,
-  :global(.v-theme--scholarBlue) .assignment-dialog-card,
-  :global(.v-theme--scholarBlue) .material-dialog-card,
-  :global(.v-theme--scholarBlue) .profile-dialog-card {
+  .v-theme--scholarBlue .stat-card,
+  .v-theme--scholarBlue .section-panel,
+  .v-theme--scholarBlue .upcoming-card,
+  .v-theme--scholarBlue .assignment-card,
+  .v-theme--scholarBlue .material-card,
+  .v-theme--scholarBlue .assignment-dialog-card,
+  .v-theme--scholarBlue .material-dialog-card,
+  .v-theme--scholarBlue .profile-dialog-card {
     border-color: #dbe5ee;
     background: #fbfdff;
   }

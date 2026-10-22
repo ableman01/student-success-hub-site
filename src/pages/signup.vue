@@ -6,6 +6,18 @@
         <strong>LASU Student Success Hub</strong>
       </RouterLink>
       <div class="signup-header-actions">
+        <v-btn
+          :aria-label="themeLabel"
+          class="signup-theme-toggle"
+          icon
+          rounded="circle"
+          :title="themeLabel"
+          variant="tonal"
+          @click="toggleTheme"
+        >
+          <v-icon>{{ themeIcon }}</v-icon>
+        </v-btn>
+
         <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
         <v-btn class="signup-login-link" rounded="pill" to="/login" variant="text">Already a member? Log in</v-btn>
       </div>
@@ -215,10 +227,12 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels } from '@/lib/academics'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
 
   const router = useRouter()
+  const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const firstName = ref('')
   const lastName = ref('')
   const dateOfBirth = ref('')
@@ -383,6 +397,18 @@
     align-items: center;
     justify-content: space-between;
     margin-inline: auto;
+  }
+
+  .signup-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .signup-theme-toggle {
+    width: 42px !important;
+    height: 42px !important;
+    background: #eef2f0 !important;
   }
 
   .signup-login-link {
@@ -583,57 +609,61 @@
     }
   }
 
-  :global(.v-theme--academicDark) .signup-page {
+  .v-theme--academicDark .signup-page {
     background:
       radial-gradient(ellipse at 8% 20%, rgb(41 83 73 / 24%), transparent 28rem),
       radial-gradient(ellipse at 92% 85%, rgb(114 92 45 / 14%), transparent 26rem),
       #101a21;
   }
 
-  :global(.v-theme--academicDark) .signup-brand {
+  .v-theme--academicDark .signup-brand {
     color: #e0eae8;
   }
 
-  :global(.v-theme--academicDark) .signup-card {
+  .v-theme--academicDark .signup-theme-toggle {
+    background: #24343c !important;
+  }
+
+  .v-theme--academicDark .signup-card {
     border-color: #30414a;
     background: #1b2932;
   }
 
-  :global(.v-theme--campusGreen) .signup-page {
+  .v-theme--campusGreen .signup-page {
     background:
       radial-gradient(ellipse at 8% 20%, #d3e6d8, transparent 28rem),
       radial-gradient(ellipse at 92% 85%, #e8e3c9, transparent 26rem),
       #edf4ee;
   }
 
-  :global(.v-theme--libraryWarm) .signup-page {
+  .v-theme--libraryWarm .signup-page {
     background:
       radial-gradient(ellipse at 8% 20%, #eee0cc, transparent 28rem),
       radial-gradient(ellipse at 92% 85%, #eadcc7, transparent 26rem),
       #f7f0e6;
   }
 
-  :global(.v-theme--libraryWarm) .signup-brand {
+  .v-theme--libraryWarm .signup-brand {
     color: #57412f;
   }
 
-  :global(.v-theme--libraryWarm) .signup-card {
+  .v-theme--libraryWarm .signup-card {
     border-color: #e9ddcd;
     background: #fffaf2;
   }
 
-  :global(.v-theme--scholarBlue) .signup-page {
+  .v-theme--scholarBlue .signup-page {
     background:
       radial-gradient(ellipse at 8% 20%, #d8e6f1, transparent 28rem),
       radial-gradient(ellipse at 92% 85%, #e6e9ef, transparent 26rem),
       #eef3f8;
   }
 
-  :global(.v-theme--scholarBlue) .signup-brand {
+  .v-theme--scholarBlue .signup-brand {
     color: #294766;
   }
 
-  :global(.v-theme--scholarBlue) .signup-card {
+  .v-theme--scholarBlue .signup-card {
     border-color: #dbe5ee;
     background: #fbfdff;
   }

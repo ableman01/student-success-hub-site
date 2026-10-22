@@ -405,4 +405,86 @@
     .create-form > :nth-child(3), .form-actions { grid-column: auto; }
     .page-footer { align-items: flex-start; flex-direction: column; }
   }
+  .v-theme--academicDark .groups-page {
+    color: #e2ebeb;
+    background:
+      radial-gradient(ellipse at 8% 2%, rgb(40 78 69 / 24%), transparent 32rem),
+      #101a21;
+  }
+
+  .v-theme--academicDark .groups-hero {
+    border-color: #30414a;
+    background: linear-gradient(120deg, #1b2932 0%, #17242b 65%, #1d2c31 100%);
+    box-shadow: 0 14px 40px rgb(0 0 0 / 30%);
+  }
+
+  .v-theme--academicDark .hero-copy h1,
+  .v-theme--academicDark .card-heading h2,
+  .v-theme--academicDark .section-heading h2,
+  .v-theme--academicDark .invite-copy strong,
+  .v-theme--academicDark .group-title strong,
+  .v-theme--academicDark .post-meta strong,
+  .v-theme--academicDark .empty-chat strong,
+  .v-theme--academicDark .empty-groups h3 {
+    color: #e0eae8;
+  }
+
+  .v-theme--academicDark .hero-copy h1 span,
+  .v-theme--academicDark .brand small,
+  .v-theme--academicDark .group-title small,
+  .v-theme--academicDark .invite-copy span,
+  .v-theme--academicDark .post-meta time,
+  .v-theme--academicDark .empty-chat,
+  .v-theme--academicDark .empty-groups,
+  .v-theme--academicDark .hero-actions > span,
+  .v-theme--academicDark .expand-icon {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .eyebrow {
+    color: #9bc9ad;
+  }
+
+  .v-theme--academicDark .hero-copy > p,
+  .v-theme--academicDark .section-heading p,
+  .v-theme--academicDark .card-heading p {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .post-content {
+    color: #cfdad9;
+  }
+
+  .v-theme--academicDark .visual-glow {
+    background: #1f3a35;
+  }
+
+  .v-theme--academicDark .invite-card,
+  .v-theme--academicDark .group-card,
+  .v-theme--academicDark .group-post {
+    border-color: #30414a;
+    background: #1b2932;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 26%);
+  }
+
+  .v-theme--academicDark .group-body {
+    border-top-color: #30414a;
+    background: #17242b;
+  }
+
+  .v-theme--academicDark .invite-icon,
+  .v-theme--academicDark .group-avatar,
+  .v-theme--academicDark .empty-icon {
+    color: #9bc9ad;
+    background: #23352f;
+  }
+
+  .v-theme--academicDark .empty-groups {
+    border-color: #2f4049;
+    background: rgb(27 41 50 / 72%);
+  }
+
+  .v-theme--academicDark .post-composer {
+    border-top-color: #30414a;
+  }
 </style>

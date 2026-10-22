@@ -8,6 +8,18 @@
         </RouterLink>
 
         <div class="auth-header-actions">
+          <v-btn
+            :aria-label="themeLabel"
+            class="auth-theme-toggle"
+            icon
+            rounded="circle"
+            :title="themeLabel"
+            variant="tonal"
+            @click="toggleTheme"
+          >
+            <v-icon>{{ themeIcon }}</v-icon>
+          </v-btn>
+
           <span class="header-prompt">New to the hub?</span>
           <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
           <v-btn rounded="pill" to="/signup" variant="text">Create account</v-btn>
@@ -162,11 +174,13 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { useAppTheme } from '@/composables/useAppTheme'
   import { signIn } from '@/lib/auth'
   import { isSupabaseConfigured } from '@/lib/supabase'
 
   const route = useRoute()
   const router = useRouter()
+  const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const visible = ref(false)
   const email = ref('')
   const password = ref('')
@@ -248,6 +262,12 @@
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .auth-theme-toggle {
+    width: 42px !important;
+    height: 42px !important;
+    background: #eef2f0 !important;
   }
 
   .header-prompt {
@@ -539,7 +559,7 @@
     font-size: 10px;
   }
 
-  :global(.v-theme--academicDark) .login-page {
+  .v-theme--academicDark .login-page {
     color: #e4ecee;
     background:
       radial-gradient(ellipse at 9% 28%, rgb(41 83 73 / 27%), transparent 29rem),
@@ -547,75 +567,79 @@
       #101a21;
   }
 
-  :global(.v-theme--academicDark) .auth-layout {
+  .v-theme--academicDark .auth-layout {
     border-color: #30414a;
     background: #1b2932;
   }
 
-  :global(.v-theme--academicDark) .auth-brand,
-  :global(.v-theme--academicDark) .login-card-heading h2 {
+  .v-theme--academicDark .auth-brand,
+  .v-theme--academicDark .login-card-heading h2 {
     color: #e5eeec;
   }
 
-  :global(.v-theme--academicDark) .header-prompt,
-  :global(.v-theme--academicDark) .login-card-heading p,
-  :global(.v-theme--academicDark) .login-signup,
-  :global(.v-theme--academicDark) .back-home {
+  .v-theme--academicDark .header-prompt,
+  .v-theme--academicDark .login-card-heading p,
+  .v-theme--academicDark .login-signup,
+  .v-theme--academicDark .back-home {
     color: #a4b3b7;
   }
 
-  :global(.v-theme--academicDark) .login-icon {
+  .v-theme--academicDark .login-icon {
     color: #a5cbbb;
     background: #2b403b;
   }
 
-  :global(.v-theme--academicDark) .login-divider::before,
-  :global(.v-theme--academicDark) .login-divider::after {
+  .v-theme--academicDark .login-divider::before,
+  .v-theme--academicDark .login-divider::after {
     background: #33434b;
   }
 
-  :global(.v-theme--academicDark) .login-signup a {
+  .v-theme--academicDark .auth-theme-toggle {
+    background: #24343c !important;
+  }
+
+  .v-theme--academicDark .login-signup a {
     color: #a5cbbb;
   }
 
-  :global(.v-theme--campusGreen) .login-page {
+  .v-theme--campusGreen .login-page {
     background:
       radial-gradient(ellipse at 9% 28%, #d3e6d8, transparent 29rem),
       radial-gradient(ellipse at 92% 90%, #e8e3c9, transparent 27rem),
       #edf4ee;
   }
 
-  :global(.v-theme--libraryWarm) .login-page {
+  .v-theme--libraryWarm .login-page {
     background:
       radial-gradient(ellipse at 9% 28%, #eee0cc, transparent 29rem),
       radial-gradient(ellipse at 92% 90%, #eadcc7, transparent 27rem),
       #f7f0e6;
   }
 
-  :global(.v-theme--libraryWarm) .auth-layout {
+  .v-theme--libraryWarm .auth-layout {
     border-color: #e9ddcd;
     background: #fffaf2;
   }
 
-  :global(.v-theme--libraryWarm) .auth-brand,
-  :global(.v-theme--libraryWarm) .login-card-heading h2 {
+  .v-theme--libraryWarm .auth-brand,
+  .v-theme--libraryWarm .login-card-heading h2 {
     color: #57412f;
   }
 
-  :global(.v-theme--scholarBlue) .login-page {
+  .v-theme--scholarBlue .login-page {
     background:
       radial-gradient(ellipse at 9% 28%, #d8e6f1, transparent 29rem),
       radial-gradient(ellipse at 92% 90%, #e6e9ef, transparent 27rem),
       #eef3f8;
   }
 
-  :global(.v-theme--scholarBlue) .auth-layout {
+  .v-theme--scholarBlue .auth-layout {
     border-color: #dbe5ee;
     background: #fbfdff;
   }
 
-  :global(.v-theme--scholarBlue) .auth-brand,
-  :global(.v-theme--scholarBlue) .login-card-heading h2 {
+  .v-theme--scholarBlue .auth-brand,
+  .v-theme--scholarBlue .login-card-heading h2 {
     color: #294766;
   }
 

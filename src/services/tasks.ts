@@ -1,4 +1,5 @@
 import { getCurrentUser } from '@/lib/auth'
+import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 import { isResourceModerator } from '@/services/resources'
 
@@ -71,6 +72,14 @@ export async function createTask (task: NewTask) {
     }
 
     const tasks = getDemoTasks()
+    const duplicate = tasks.find(existing =>
+      existing.user_id === user.id
+      && getResourceIdentityKey(existing.course, existing.title) === getResourceIdentityKey(task.course, task.title),
+    )
+    if (duplicate) {
+      throw new Error(`“${task.title.trim()}” is already in your plan${duplicate.course ? ` for ${duplicate.course.trim()}` : ''}. Edit the existing assignment instead of adding it twice.`)
+    }
+
     const newTask: Task = {
       ...task,
       id: globalThis.crypto.randomUUID(),
@@ -84,6 +93,22 @@ export async function createTask (task: NewTask) {
     tasks.push(newTask)
     saveDemoTasks(tasks)
     return newTask
+  }
+
+  const { data: existingTasks, error: lookupError } = await getSupabaseClient()
+    .from('tasks')
+    .select('id, title, course')
+    .limit(500)
+
+  if (lookupError) {
+    throw lookupError
+  }
+
+  const duplicate = (existingTasks || []).find(existing =>
+    getResourceIdentityKey(existing.course || '', existing.title || '') === getResourceIdentityKey(task.course, task.title),
+  )
+  if (duplicate) {
+    throw new Error(`“${task.title.trim()}” is already in your plan${duplicate.course ? ` for ${duplicate.course.trim()}` : ''}. Edit the existing assignment instead of adding it twice.`)
   }
 
   const { data, error } = await getSupabaseClient()
@@ -105,16 +130,33 @@ export async function createTask (task: NewTask) {
   return data
 }
 
+/**
+ * Finds an assignment that would land on the same identity key.
+ * Only the learner's own plan is compared, so two students can keep their own
+ * copy of the same brief.
+ */
+function findDuplicateTask (tasks: Pick<Task, 'id' | 'title' | 'course'>[], ownerId: string, id: Task['id'] | null, course: string, title: string) {
+  const key = getResourceIdentityKey(course, title)
+
+  return tasks.find(task =>
+    task.id !== id
+    && task.user_id === ownerId
+    && getResourceIdentityKey(task.course || '', task.title || '') === key,
+  )
+}
+
 export async function updateTask (
   id: Task['id'],
-  changes: Partial<Pick<Task, 'title' | 'description' | 'course' | 'due_date' | 'priority' | 'completed'>>
+  changes: Partial<Pick<Task, 'title' | 'description' | 'course' | 'due_date' | 'priority' | 'completed'>>,
 ) {
-  if (!isSupabaseConfigured) {
-    const user = await getCurrentUser()
-    if (!user) {
-      throw new Error('Sign in before updating assignments.')
-    }
+  const user = await getCurrentUser()
+  if (!user) {
+    throw new Error('Sign in before updating assignments.')
+  }
 
+  const moderator = await isResourceModerator(user.id)
+
+  if (!isSupabaseConfigured) {
     const tasks = getDemoTasks()
     const index = tasks.findIndex(task => task.id === id && task.user_id === user.id)
     if (index === -1) {
@@ -126,9 +168,44 @@ export async function updateTask (
       throw new Error('Assignment not found.')
     }
 
+    const nextTitle = changes.title === undefined ? task.title : changes.title.trim()
+    const nextCourse = changes.course === undefined ? task.course : changes.course.trim()
+    const duplicate = changes.title === undefined && changes.course === undefined
+      ? undefined
+      : findDuplicateTask(tasks, task.user_id, id, nextCourse, nextTitle)
+    if (duplicate) {
+      throw new Error(`“${nextTitle}” already exists in your plan${nextCourse ? ` for ${nextCourse}` : ''}. Edit that assignment instead of creating a second copy.`)
+    }
+
     tasks[index] = { ...task, ...changes }
     saveDemoTasks(tasks)
     return tasks[index]!
+  }
+
+  const { data: existingTasks, error: lookupError } = await getSupabaseClient()
+    .from('tasks')
+    .select('id, user_id, title, course')
+    .limit(500)
+
+  if (lookupError) {
+    throw lookupError
+  }
+
+  const target = (existingTasks || []).find(task => task.id === id)
+  if (!target) {
+    throw new Error('Assignment not found.')
+  }
+  if (target.user_id !== user.id && !moderator) {
+    throw new Error('You can only edit your own assignments.')
+  }
+
+  const nextTitle = changes.title === undefined ? target.title : changes.title.trim()
+  const nextCourse = changes.course === undefined ? target.course : changes.course.trim()
+  const duplicate = changes.title === undefined && changes.course === undefined
+    ? undefined
+    : findDuplicateTask(existingTasks || [], target.user_id, id, nextCourse, nextTitle)
+  if (duplicate) {
+    throw new Error(`“${nextTitle}” already exists in this plan${nextCourse ? ` for ${nextCourse}` : ''}. Edit that assignment instead of creating a second copy.`)
   }
 
   const { data, error } = await getSupabaseClient()
@@ -145,22 +222,98 @@ export async function updateTask (
   return data
 }
 
-export function deduplicateAndSortTasks (tasks: Task[]): Task[] {
-  const seen = new Set<string>()
-  return tasks
-    .filter(task => {
-      const key = `${task.course.trim().toLowerCase()}::${task.title.trim().toLowerCase()}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
+function priorityRank (priority: Task['priority']) {
+  return priority === 'high' ? 2 : (priority === 'medium' ? 1 : 0)
+}
+
+/**
+ * Orders assignments so the most useful copy of a duplicate wins:
+ * an open assignment beats a completed one, then the earliest deadline.
+ */
+function compareTasks (a: Pick<Task, 'completed' | 'due_date' | 'id'>, b: Pick<Task, 'completed' | 'due_date' | 'id'>) {
+  return Number(a.completed) - Number(b.completed)
+    || (a.due_date || '9999-12-31').localeCompare(b.due_date || '9999-12-31')
+    || a.id.localeCompare(b.id)
+}
+
+function mergeDuplicateTasks (tasks: Task[]) {
+  const merged = new Map<string, Task>()
+
+  for (const task of tasks.toSorted(compareTasks)) {
+    const key = getResourceIdentityKey(task.course, task.title)
+    const existing = merged.get(key)
+    if (!existing) {
+      merged.set(key, { ...task })
+      continue
+    }
+
+    const strongerPriority = priorityRank(task.priority) > priorityRank(existing.priority) ? task.priority : existing.priority
+
+    merged.set(key, {
+      ...existing,
+      description: existing.description || task.description,
+      due_date: existing.due_date || task.due_date,
+      priority: strongerPriority,
+      completed: existing.completed && task.completed,
     })
-    .sort((a, b) => {
+  }
+
+  return [...merged.values()]
+}
+
+export function deduplicateAndSortTasks (tasks: Task[]): Task[] {
+  return mergeDuplicateTasks(tasks)
+    .toSorted((a, b) => {
       const courseCompare = a.course.localeCompare(b.course, undefined, { sensitivity: 'base' })
-      if (courseCompare !== 0) return courseCompare
+      if (courseCompare !== 0) {
+        return courseCompare
+      }
       const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity
       const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity
       return aDate - bDate
     })
+}
+
+/**
+ * The ids of the redundant copies inside a list of assignments.
+ * The most useful entry of every group is kept: an open assignment with the
+ * earliest deadline wins over a completed one.
+ */
+export function findDuplicateTaskIds (tasks: Task[]) {
+  return findDuplicateIds(
+    tasks,
+    task => getResourceIdentityKey(task.course, task.title),
+    compareTasks,
+  )
+}
+
+/** Permanently removes the repeated copies of an assignment. */
+export async function removeDuplicateTasks (tasks: Task[]) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser || !await isResourceModerator(currentUser.id)) {
+    throw new Error('Only the site creator can clear duplicate assignments.')
+  }
+
+  const duplicateIds = findDuplicateTaskIds(tasks)
+  if (duplicateIds.length === 0) {
+    return []
+  }
+
+  if (!isSupabaseConfigured) {
+    saveDemoTasks(getDemoTasks().filter(task => !duplicateIds.includes(task.id)))
+    return duplicateIds
+  }
+
+  const { error } = await getSupabaseClient()
+    .from('tasks')
+    .delete()
+    .in('id', duplicateIds)
+
+  if (error) {
+    throw error
+  }
+
+  return duplicateIds
 }
 
 export async function deleteTask (id: Task['id']) {
@@ -188,3 +341,5 @@ export async function deleteTask (id: Task['id']) {
     throw error
   }
 }
+
+export { getResourceIdentityKey, normalizeCourseLabel } from '@/lib/identity'

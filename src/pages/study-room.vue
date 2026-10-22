@@ -573,6 +573,92 @@
       #f4f6f2;
   }
 
+  .v-theme--academicDark .study-page {
+    background:
+      radial-gradient(ellipse at 8% 4%, rgb(40 78 69 / 24%), transparent 31rem),
+      #101a21;
+  }
+
+  .v-theme--academicDark .study-header {
+    border-bottom-color: #2b3a43;
+  }
+
+  .v-theme--academicDark .study-brand,
+  .v-theme--academicDark .study-intro h1,
+  .v-theme--academicDark .room-toolbar h2,
+  .v-theme--academicDark .reading-card h2,
+  .v-theme--academicDark .room-empty strong {
+    color: #e0eae8;
+  }
+
+  .v-theme--academicDark .study-brand small,
+  .v-theme--academicDark .study-intro p,
+  .v-theme--academicDark .room-empty,
+  .v-theme--academicDark .room-guideline,
+  .v-theme--academicDark .discussion-starters,
+  .v-theme--academicDark .message-topline time {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .section-kicker,
+  .v-theme--academicDark .room-empty > .v-icon {
+    color: #9bc9ad;
+  }
+
+  .v-theme--academicDark .room-card,
+  .v-theme--academicDark .reading-card,
+  .v-theme--academicDark .community-note,
+  .v-theme--academicDark .guide-card,
+  .v-theme--academicDark .group-card,
+  .v-theme--academicDark .focus-card {
+    border-color: #30414a;
+    background: #1b2932;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 26%);
+  }
+
+  .v-theme--academicDark .study-section-nav {
+    border-color: #30414a;
+    background: rgb(27 41 50 / 94%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  }
+
+  .v-theme--academicDark .study-section-nav a {
+    color: #c3d1cd;
+  }
+
+  .v-theme--academicDark .study-section-nav a:hover,
+  .v-theme--academicDark .study-section-nav a:focus-visible {
+    background: #23352f;
+    outline-color: #74977b;
+  }
+
+  .v-theme--academicDark .mobile-study-nav {
+    border-color: #30414a;
+    background: rgb(20 32 40 / 96%);
+    box-shadow: 0 10px 32px rgb(0 0 0 / 38%);
+  }
+
+  .v-theme--academicDark .mobile-study-nav a {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .study-message {
+    border-color: var(--message-border, #30414a);
+    background: var(--message-tint, #17242b);
+  }
+
+  .v-theme--academicDark .study-message p {
+    color: #cfdad9;
+  }
+
+  .v-theme--academicDark .message-topline strong {
+    color: var(--sender-name-color, #e0eae8);
+  }
+
+  .v-theme--academicDark .chat-image {
+    border-color: #30414a;
+  }
+
   .study-width {
     max-width: 1280px;
     width: 100%;

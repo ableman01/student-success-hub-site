@@ -2,11 +2,13 @@
   <main class="saved-page">
     <v-container class="saved-container">
       <div class="saved-eyebrow"><v-icon size="17">mdi-bookmark-check-outline</v-icon> YOUR PERSONAL LIBRARY</div>
+
       <div class="saved-heading-row">
         <div>
           <h1>Saved materials</h1>
           <p>Keep the questions and course resources you want close at hand.</p>
         </div>
+
         <v-chip color="primary" prepend-icon="mdi-bookmark" size="large" variant="tonal">
           {{ visibleMaterials.length }} {{ visibleMaterials.length === 1 ? 'item' : 'items' }}
         </v-chip>
@@ -21,11 +23,12 @@
             clearable
             density="comfortable"
             hide-details
-            prepend-inner-icon="mdi-magnify"
             placeholder="Search title, course or description"
+            prepend-inner-icon="mdi-magnify"
             rounded="lg"
             variant="outlined"
           />
+
           <v-select
             v-model="kindFilter"
             aria-label="Filter saved materials"
@@ -41,38 +44,49 @@
         <v-alert v-if="errorMessage" class="ma-5" type="error" variant="tonal">{{ errorMessage }}</v-alert>
         <div v-if="loading" class="saved-loading"><v-progress-circular color="primary" indeterminate /><span>Loading your saved materials…</span></div>
 
-        <div v-else-if="visibleMaterials.length" class="saved-grid">
-          <v-card v-for="resource in visibleMaterials" :key="resource.id" class="saved-card" elevation="0" rounded="lg">
+        <div v-else-if="visibleMaterials.length > 0" class="saved-grid">
+          <v-card
+            v-for="resource in visibleMaterials"
+            :key="resource.id"
+            class="saved-card"
+            elevation="0"
+            rounded="lg"
+          >
             <div class="saved-card-top">
               <div class="saved-file-icon"><v-icon color="error" size="27">mdi-file-pdf-box</v-icon></div>
+
               <v-btn
                 :aria-label="`Remove ${resource.title} from saved materials`"
-                :loading="savingResourceId === resource.id"
                 color="primary"
                 icon="mdi-bookmark-remove-outline"
+                :loading="savingResourceId === resource.id"
                 size="small"
                 variant="text"
                 @click="removeSaved(resource)"
               />
             </div>
+
             <div class="saved-card-content">
               <div class="saved-chip-row">
                 <v-chip color="primary" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
                 <span>{{ formatDate(resource.created_at) }}</span>
               </div>
+
               <h2>{{ resource.title }}</h2>
               <p class="saved-course">{{ resource.course || 'Course not specified' }}</p>
               <p v-if="resource.description" class="saved-description">{{ resource.description }}</p>
+
               <div class="saved-card-footer">
                 <span><v-icon size="15">mdi-account-outline</v-icon>{{ resource.uploaded_by_name || 'LASU student' }}</span>
+
                 <v-btn
-                  :href="resource.url"
-                  color="primary"
                   append-icon="mdi-open-in-new"
+                  color="primary"
+                  :href="resource.url"
+                  rel="noopener noreferrer"
                   rounded="pill"
                   size="small"
                   target="_blank"
-                  rel="noopener noreferrer"
                   variant="tonal"
                 >Open PDF</v-btn>
               </div>
@@ -80,16 +94,18 @@
           </v-card>
         </div>
 
-        <div v-else-if="savedResources.length" class="saved-empty">
+        <div v-else-if="savedResources.length > 0" class="saved-empty">
           <div class="saved-empty-icon"><v-icon size="30">mdi-magnify</v-icon></div>
           <h2>No matching materials</h2>
           <p>Try another search or filter to find a saved resource.</p>
           <v-btn rounded="pill" variant="tonal" @click="search = ''; kindFilter = 'all'">Clear filters</v-btn>
         </div>
+
         <div v-else-if="!errorMessage" class="saved-empty">
           <div class="saved-empty-icon"><v-icon size="30">mdi-bookmark-outline</v-icon></div>
           <h2>Your study library starts here</h2>
           <p>Bookmark a past question or class material, and it will be waiting here whenever you need it.</p>
+
           <div class="saved-empty-actions">
             <v-btn color="primary" prepend-icon="mdi-file-question-outline" rounded="pill" to="/#past-questions">Browse questions</v-btn>
             <v-btn prepend-icon="mdi-view-dashboard-outline" rounded="pill" to="/dashboard" variant="tonal">Browse class materials</v-btn>
@@ -97,6 +113,7 @@
         </div>
       </v-card>
     </v-container>
+
     <v-snackbar v-model="successSnackbar" color="success" timeout="2600">{{ successMessage }}</v-snackbar>
   </main>
 </template>
@@ -107,7 +124,7 @@
   import { computed, onMounted, ref } from 'vue'
   import { getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
-  import { getResourceCategoryLabel, getResources, getSavedResourceIds, setResourceSaved } from '@/services/resources'
+  import { deduplicateAndSortResources, getResourceCategoryLabel, getResources, getSavedResourceIds, setResourceSaved } from '@/services/resources'
 
   const user = ref<AppUser | null>(null)
   const resources = ref<Resource[]>([])
@@ -132,8 +149,8 @@
   })
   const visibleMaterials = computed(() => {
     const query = search.value.trim().toLocaleLowerCase()
-    return savedResources.value.filter(resource => kindFilter.value === 'all' || resource.kind === kindFilter.value)
-      .filter(resource => !query || `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)}`.toLocaleLowerCase().includes(query))
+    return deduplicateAndSortResources(savedResources.value.filter(resource => kindFilter.value === 'all' || resource.kind === kindFilter.value)
+      .filter(resource => !query || `${resource.title} ${resource.course} ${resource.description} ${getResourceCategoryLabel(resource.category)}`.toLocaleLowerCase().includes(query)))
   })
 
   async function loadSavedMaterials () {
@@ -176,7 +193,9 @@
     return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date))
   }
 
-  onMounted(() => { void loadSavedMaterials() })
+  onMounted(() => {
+    void loadSavedMaterials()
+  })
 </script>
 
 <style scoped>
@@ -216,4 +235,54 @@
     .saved-filter { max-width: none; }
     .saved-grid { grid-template-columns: 1fr; padding: 14px; }
   }
+
+  .v-theme--academicDark .saved-page {
+      background:
+        radial-gradient(ellipse at 4% 0%, rgb(40 78 69 / 24%), transparent 31rem),
+        #101a21;
+    }
+
+    .v-theme--academicDark .saved-heading-row h1,
+    .v-theme--academicDark .saved-card h2,
+    .v-theme--academicDark .saved-empty h2 {
+      color: #e0eae8;
+    }
+
+    .v-theme--academicDark .saved-heading-row p,
+    .v-theme--academicDark .saved-description,
+    .v-theme--academicDark .saved-card-footer > span,
+    .v-theme--academicDark .saved-empty p,
+    .v-theme--academicDark .saved-loading {
+      color: #a3b1b4;
+    }
+
+    .v-theme--academicDark .saved-eyebrow,
+    .v-theme--academicDark .saved-course {
+      color: #9bc9ad;
+    }
+
+    .v-theme--academicDark .saved-library {
+      border-color: #30414a;
+      background: #1b2932;
+    }
+
+    .v-theme--academicDark .saved-toolbar,
+    .v-theme--academicDark .saved-card-footer {
+      border-color: #30414a;
+    }
+
+    .v-theme--academicDark .saved-card {
+      border-color: #30414a;
+      background: #17242b;
+    }
+
+    .v-theme--academicDark .saved-card:hover {
+      border-color: #4a6558;
+      box-shadow: 0 12px 25px rgb(0 0 0 / 30%);
+    }
+
+    .v-theme--academicDark .saved-file-icon,
+    .v-theme--academicDark .saved-empty-icon {
+      background: #23352f;
+    }
 </style>

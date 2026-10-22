@@ -184,4 +184,54 @@
     .update-content h2 { font-size: 16px; }
     .update-footer { align-items: flex-start; flex-direction: column; }
   }
+
+  .v-theme--academicDark .updates-page {
+    background:
+      radial-gradient(ellipse at 4% 0%, rgb(40 78 69 / 24%), transparent 31rem),
+      #101a21;
+  }
+
+  .v-theme--academicDark .updates-heading h1,
+  .v-theme--academicDark .update-content h2,
+  .v-theme--academicDark .updates-empty h2 {
+    color: #e0eae8;
+  }
+
+  .v-theme--academicDark .updates-heading p,
+  .v-theme--academicDark .update-content p,
+  .v-theme--academicDark .update-meta,
+  .v-theme--academicDark .updates-loading,
+  .v-theme--academicDark .updates-empty {
+    color: #a3b1b4;
+  }
+
+  .v-theme--academicDark .updates-kicker,
+  .v-theme--academicDark .update-footer > span {
+    color: #9bc9ad;
+  }
+
+  .v-theme--academicDark .update-card {
+    border-color: #30414a;
+    background: #1b2932;
+  }
+
+  .v-theme--academicDark .update-icon {
+    color: #9bc9ad;
+    background: #23352f;
+  }
+
+  .v-theme--academicDark .update-icon-deadline {
+    color: #e2a49b;
+    background: #3a2725;
+  }
+
+  .v-theme--academicDark .update-icon-registration {
+    color: #dcc38b;
+    background: #352e1f;
+  }
+
+  .v-theme--academicDark .update-icon-academic {
+    color: #9ac5d0;
+    background: #22333d;
+  }
 </style>
