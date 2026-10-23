@@ -11,7 +11,6 @@ import StudyGroupsPage from '@/pages/study-groups.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
 import TimetablePage from '@/pages/timetable.vue'
 import ProfilePage from '@/pages/profile.vue'
-import ProfilePage from '@/pages/profile.vue'
 
 const router = createRouter({
   history: createWebHistory(),
