@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <main class="home-page">
     <div class="home-width">
       <header class="home-header">
@@ -67,7 +67,7 @@
 
           <p class="hero-description">
             Find the resources you need, stay on top of assignments, and make
-            your study time count — all in one welcoming student space.
+            your study time count â€” all in one welcoming student space.
           </p>
 
           <div class="hero-actions">
@@ -168,7 +168,7 @@
             variant="tonal"
             @click="showUpload = !showUpload"
           >
-            Share a past question
+            Past question
           </v-btn>
 
           <v-btn
@@ -262,7 +262,7 @@
             <span class="feature-icon feature-icon-gold"><v-icon>mdi-file-upload-outline</v-icon></span>
 
             <div>
-              <h3 class="text-h6 font-weight-bold">Share a past question</h3>
+              <h3 class="text-h6 font-weight-bold">Past question</h3>
               <p class="text-body-2 text-medium-emphasis">Help another student feel prepared.</p>
             </div>
           </div>
@@ -347,7 +347,7 @@
 
           <div>
             <h3>The library is ready for its first resource.</h3>
-            <p>Be the first to share a past question and help your classmates prepare.</p>
+            <p>Be the first to upload a past question and help your classmates prepare.</p>
           </div>
 
           <v-btn
@@ -375,7 +375,7 @@
 
         <v-row v-else class="past-question-grid">
           <v-col
-            v-for="resource in filteredPastQuestions"
+            v-for="resource in paginatedPastQuestions"
             :key="resource.id"
             cols="12"
             lg="4"
@@ -390,7 +390,7 @@
 
                   <p class="text-caption text-medium-emphasis mt-1">
                     {{ resource.course || 'Course not specified' }}
-                    ·
+                    Â·
                     {{ formatDate(resource.created_at) }}
                   </p>
 
@@ -403,7 +403,7 @@
                       size="x-small"
                       variant="tonal"
                     >
-                      {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved · see notifications' }}
+                      {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved Â· see notifications' }}
                     </v-chip>
 
                     <span>Shared by <strong>{{ resource.uploaded_by_name || 'LASU student' }}</strong></span>
@@ -471,6 +471,11 @@
             </v-card>
           </v-col>
         </v-row>
+
+        <div v-if="filteredPastQuestions.length > pastQuestionPerPage" class="d-flex justify-center mt-6">
+          <v-pagination v-model="pastQuestionPage" :length="pastQuestionTotalPages" rounded="circle" />
+        </div>
+
       </section>
 
       <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
@@ -575,7 +580,7 @@
         <v-card-title class="text-h6 font-weight-bold">Delete this shared resource?</v-card-title>
 
         <v-card-text>
-          “{{ resourceToDelete?.title }}” and its PDF will be removed from the shared library. This cannot be undone.
+          â€œ{{ resourceToDelete?.title }}â€ and its PDF will be removed from the shared library. This cannot be undone.
         </v-card-text>
 
         <v-card-actions class="px-5 pb-4">
@@ -657,7 +662,15 @@
       .toSorted((a: string, b: string) => a.localeCompare(b))
       .map(course => ({ title: course, value: course })),
   )
-  const filteredPastQuestions = computed(() => {
+  const pastQuestionPage = ref(1)
+const pastQuestionPerPage = 10
+const paginatedPastQuestions = computed(() => {
+  const start = (pastQuestionPage.value - 1) * pastQuestionPerPage
+  return filteredPastQuestions.value.slice(start, start + pastQuestionPerPage)
+})
+const pastQuestionTotalPages = computed(() => Math.max(1, Math.ceil(filteredPastQuestions.value.length / pastQuestionPerPage)))
+
+const filteredPastQuestions = computed(() => {
     const query = questionSearch.value.trim().toLocaleLowerCase()
 
     const rawFiltered = pastQuestions.value

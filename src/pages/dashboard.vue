@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <main id="dashboard-top" class="dashboard-page">
     <v-container class="dashboard-width py-5 py-md-8" fluid>
       <header class="dashboard-header">
@@ -56,7 +56,7 @@
             to="/#past-questions"
             variant="text"
           >
-            Shared questions
+            Past questions
           </v-btn>
 
           <v-btn
@@ -64,7 +64,7 @@
             prepend-icon="mdi-account-circle-outline"
             rounded="pill"
             variant="tonal"
-            @click="openProfileSettings"
+            @click="router.push('/profile')"
           >
             My profile
           </v-btn>
@@ -161,7 +161,7 @@
             <div class="moderation-copy">
               <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
               <strong>{{ resource.title }}</strong>
-              <span>{{ resource.course || 'Course not specified' }} · {{ resource.uploaded_by_name }} · {{ formatDate(resource.created_at) }}</span>
+              <span>{{ resource.course || 'Course not specified' }} Â· {{ resource.uploaded_by_name }} Â· {{ formatDate(resource.created_at) }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
 
               <v-textarea
@@ -224,7 +224,7 @@
           <div class="stat-copy">
             <span>Completed</span>
             <strong>{{ completedCount }}</strong>
-            <small>Look how far you’ve come</small>
+            <small>Look how far youâ€™ve come</small>
           </div>
         </v-card>
 
@@ -885,7 +885,7 @@
 
                       <p>
                         {{ resource.course || 'Course not specified' }}
-                        · {{ formatDate(resource.created_at) }}
+                        Â· {{ formatDate(resource.created_at) }}
                       </p>
                     </div>
 
@@ -918,7 +918,7 @@
                     size="small"
                     variant="tonal"
                   >
-                    {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved · upload a corrected PDF' }}
+                    {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
                   </v-chip>
 
                   <v-chip
@@ -989,7 +989,7 @@
       >
         <v-card rounded="xl">
           <v-card-title>Delete this shared resource?</v-card-title>
-          <v-card-text>“{{ resourceToDelete?.title }}” and its PDF will be removed from the library.</v-card-text>
+          <v-card-text>â€œ{{ resourceToDelete?.title }}â€ and its PDF will be removed from the library.</v-card-text>
 
           <v-card-actions class="pa-4 pt-0">
             <v-spacer />
@@ -1420,7 +1420,7 @@
       </v-dialog>
 
       <footer class="dashboard-footer">
-        <span>One step at a time. You’re making progress.</span>
+        <span>One step at a time. Youâ€™re making progress.</span>
         <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
       </footer>
 
@@ -1783,7 +1783,7 @@
       return { ...task, course: taskCourse || cleanedCode }
     }
 
-    return { ...task, course: taskCourse ? `${cleanedCode} · ${taskCourse}` : cleanedCode }
+    return { ...task, course: taskCourse ? `${cleanedCode} Â· ${taskCourse}` : cleanedCode }
   }
 
   async function addTask () {
@@ -1950,7 +1950,7 @@
     profileProgram.value = user.value?.program || ''
     profileCurrentPassword.value = ''
     isEditingProfile.value = false
-    showProfileDialog.value = true
+    router.push('/profile')
   }
 
   function beginProfileEdit () {

@@ -5,14 +5,12 @@ import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
-export type ResourceCategory = 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide' | 'assignment'
+export type ResourceCategory = 'past_question' | 'lecture_notes' | 'assignment'
 export type ResourceStatus = 'pending' | 'approved' | 'rejected'
 
 export const resourceCategories: { title: string, value: ResourceCategory }[] = [
   { title: 'Past questions', value: 'past_question' },
   { title: 'Lecture notes', value: 'lecture_notes' },
-  { title: 'Course handouts', value: 'course_handout' },
-  { title: 'Study guides', value: 'study_guide' },
   { title: 'Assignment PDFs', value: 'assignment' },
 ]
 
@@ -470,7 +468,12 @@ export async function updateResource (
 
   const moderator = await isResourceModerator(user.id)
 
-  if (!isSupabaseConfigured) {
+  
+
+  if (!user.is_admin) {
+    throw new Error('Only admins can edit resources.')
+  }
+if (!isSupabaseConfigured) {
     const existing = await localTransaction<Resource & { blob: Blob } | undefined>(
       'readonly',
       store => store.get(resourceId),

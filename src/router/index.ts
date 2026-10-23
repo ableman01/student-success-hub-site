@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+﻿import { createRouter, createWebHistory } from 'vue-router'
 import { hasAuthSession } from '@/lib/auth'
 import DashboardPage from '@/pages/dashboard.vue'
 import EmailConfirmationPage from '@/pages/email-confirmation.vue'
@@ -10,6 +10,8 @@ import SignupPage from '@/pages/signup.vue'
 import StudyGroupsPage from '@/pages/study-groups.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
 import TimetablePage from '@/pages/timetable.vue'
+import ProfilePage from '@/pages/profile.vue'
+import ProfilePage from '@/pages/profile.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -36,12 +38,8 @@ const router = createRouter({
       component: DashboardPage,
       meta: { requiresAuth: true },
     },
-    {
-      path: '/saved-materials',
-      component: SavedMaterialsPage,
-      meta: { requiresAuth: true },
-    },
-  ],
+
+    {\r\n      path: '/saved-materials',\r\n      component: SavedMaterialsPage,\r\n      meta: { requiresAuth: true },\r\n    },\r\n    {\r\n      path: '/profile',\r\n      component: ProfilePage,\r\n      meta: { requiresAuth: true },\r\n    },\r\n  ],
 })
 
 router.beforeEach(async to => {
@@ -71,3 +69,4 @@ router.beforeEach(async to => {
 })
 
 export default router
+

@@ -152,6 +152,11 @@ export async function updateTask (
   const user = await getCurrentUser()
   if (!user) {
     throw new Error('Sign in before updating assignments.')
+
+  if (!user.is_admin) {
+    throw new Error('Only admins can edit assignments.')
+  }
+
   }
 
   const moderator = await isResourceModerator(user.id)

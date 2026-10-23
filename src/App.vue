@@ -143,11 +143,11 @@
 
       <v-list class="student-drawer-links student-drawer-account" nav>
         <v-list-item
-          :active="route.path === '/dashboard' && Boolean(route.query.profile)"
+          :active="route.path === '/profile'"
           prepend-icon="mdi-account-circle-outline"
           rounded="lg"
           title="My profile"
-          to="/dashboard?profile=1"
+          to="/profile"
           @click="closeMobileDrawer"
         />
 
