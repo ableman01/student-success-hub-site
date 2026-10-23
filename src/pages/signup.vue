@@ -174,6 +174,21 @@
             </v-col>
 
             <v-col cols="12" class="signup-full-row">
+              <v-expansion-panels class="mb-2">
+                <v-expansion-panel title="Read the site terms and conditions">
+                  <v-expansion-panel-text>
+                    <ul class="signup-terms">
+                      <li>Provide accurate account, identity, and academic information. Do not impersonate another person.</li>
+                      <li>Upload only honest, relevant study materials that you have the right to share. Do not upload altered, misleading, private, or copyrighted material without permission.</li>
+                      <li>Use respectful language and do not harass, threaten, spam, or share another person’s personal information.</li>
+                      <li>Do not use the site to cheat, distribute live examination content, or break university rules or applicable law.</li>
+                      <li>Keep your password private and tell the site team if you believe your account has been accessed without permission.</li>
+                      <li>Shared uploads may be reviewed, hidden, or removed when they violate these terms. You remain responsible for the content you submit.</li>
+                      <li>The hub is a student resource and does not guarantee that shared information is complete, correct, or an official university notice.</li>
+                    </ul>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
               <v-checkbox
                 v-model="agreedToTerms"
                 color="secondary"

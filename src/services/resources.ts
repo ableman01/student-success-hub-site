@@ -5,13 +5,12 @@ import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
-export type ResourceCategory = 'past_question' | 'lecture_notes' | 'assignment'
+export type ResourceCategory = 'past_question' | 'lecture_notes'
 export type ResourceStatus = 'pending' | 'approved' | 'rejected'
 
 export const resourceCategories: { title: string, value: ResourceCategory }[] = [
   { title: 'Past questions', value: 'past_question' },
   { title: 'Lecture notes', value: 'lecture_notes' },
-  { title: 'Assignment PDFs', value: 'assignment' },
 ]
 
 export function getResourceCategoryLabel (category: ResourceCategory) {
@@ -470,8 +469,9 @@ export async function updateResource (
 
   
 
-  if (!user.is_admin) {
-    throw new Error('Only admins can edit resources.')
+  // Only the site admin (resource moderator) can edit shared resources.
+  if (!moderator) {
+    throw new Error('Only the admin can edit class materials and past questions.')
   }
 if (!isSupabaseConfigured) {
     const existing = await localTransaction<Resource & { blob: Blob } | undefined>(
@@ -523,10 +523,7 @@ if (!isSupabaseConfigured) {
     .update(updateData)
     .eq('id', resourceId)
 
-  // Only the uploader owns a material, unless the site creator is reviewing it.
-  if (!moderator) {
-    query.eq('uploaded_by', user.id)
-  }
+  // Admin edits any resource; no uploader restriction.
 
   const { data, error } = await query.select('*').single()
 

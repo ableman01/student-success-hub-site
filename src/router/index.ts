@@ -11,6 +11,7 @@ import StudyGroupsPage from '@/pages/study-groups.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
 import TimetablePage from '@/pages/timetable.vue'
 import ProfilePage from '@/pages/profile.vue'
+import AboutMePage from '@/pages/about-me.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,6 +22,7 @@ const router = createRouter({
     { path: '/signup', component: SignupPage },
     { path: '/auth/confirm', component: EmailConfirmationPage },
     { path: '/lasu-updates', component: LasuUpdatesPage },
+    { path: '/about-me', component: AboutMePage, meta: { requiresAuth: true } },
     { path: '/timetable', component: TimetablePage, meta: { requiresAuth: true } },
     {
       path: '/study',
@@ -38,7 +40,17 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
-    {\r\n      path: '/saved-materials',\r\n      component: SavedMaterialsPage,\r\n      meta: { requiresAuth: true },\r\n    },\r\n    {\r\n      path: '/profile',\r\n      component: ProfilePage,\r\n      meta: { requiresAuth: true },\r\n    },\r\n  ],
+    {
+      path: '/saved-materials',
+      component: SavedMaterialsPage,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      component: ProfilePage,
+      meta: { requiresAuth: true },
+    },
+  ],
 })
 
 router.beforeEach(async to => {

@@ -460,6 +460,19 @@
                 v-if="isResourceModerator"
                 block
                 class="mt-2"
+                color="secondary"
+                rounded="pill"
+                variant="tonal"
+                prepend-icon="mdi-pencil-outline"
+                @click="openEditResource(resource)"
+              >
+                Edit past question
+              </v-btn>
+
+              <v-btn
+                v-if="isResourceModerator"
+                block
+                class="mt-2"
                 color="error"
                 rounded="pill"
                 variant="text"
@@ -575,6 +588,72 @@
       {{ successMessage }}
     </v-snackbar>
 
+    <v-dialog :model-value="Boolean(editingResource)" max-width="640" scrollable
+      @update:model-value="value => { if (!value) editingResource.value = null }">
+      <v-card class="pa-5" rounded="xl">
+        <div class="dialog-heading">
+          <div class="form-icon"><v-icon>mdi-pencil-box-outline</v-icon></div>
+          <div>
+            <div class="section-kicker">EDIT PAST QUESTION</div>
+            <h2 class="text-h6 font-weight-bold">Edit past question</h2>
+            <p>Update the title, course, academic level, or description.</p>
+          </div>
+        </div>
+
+        <v-card-text class="dialog-form-content">
+          <v-form @submit.prevent="saveEditResource">
+            <v-alert v-if="errorMessage" class="mb-4" type="error" variant="tonal">
+              {{ errorMessage }}
+            </v-alert>
+
+            <v-text-field
+              v-model="editResourceTitle"
+              label="Title"
+              placeholder="e.g. 2024 final examination"
+              required
+            />
+
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="editResourceCourse"
+                label="Course"
+                placeholder="e.g. BIO 201"
+              />
+            </v-col>
+
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="editResourceAcademicLevel"
+                clearable
+                item-title="title"
+                item-value="value"
+                :items="academicLevels"
+                label="Academic level"
+                prepend-inner-icon="mdi-account-school-outline"
+              />
+            </v-col>
+
+            <v-textarea
+              v-model="editResourceDescription"
+              auto-grow
+              label="Description"
+              placeholder="Add the year, semester, instructor, or other useful details."
+              rows="2"
+            />
+
+            <div class="dialog-actions">
+              <v-btn rounded="pill" variant="text" @click="editingResource.value = null">
+                Cancel
+              </v-btn>
+              <v-btn color="primary" :loading="editing" rounded="pill" type="submit">
+                Save changes
+              </v-btn>
+            </div>
+          </v-form>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="showDeleteConfirmation" max-width="440">
       <v-card class="pa-2" rounded="xl">
         <v-card-title class="text-h6 font-weight-bold">Delete this shared resource?</v-card-title>
@@ -612,6 +691,7 @@
     getResources,
     getSavedResourceIds,
     setResourceSaved,
+    updateResource,
     uploadResource,
   } from '@/services/resources'
   const currentUser = ref<AppUser | null>(null)
@@ -631,7 +711,12 @@
   const successSnackbar = ref(false)
   const successMessage = ref('Past question uploaded and shared.')
   const resourceToDelete = ref<Resource | null>(null)
-  const deleting = ref(false)
+  const editingResource = ref<Resource | null>(null)
+  const editResourceTitle = ref('')
+  const editResourceCourse = ref('')
+  const editResourceAcademicLevel = ref<string | null>(null)
+  const editResourceDescription = ref('')
+  const editing = ref(false)
   const savedResourceIds = ref<string[]>([])
   const savingResourceId = ref('')
   const savedResourceView = ref<'all' | 'saved-only'>('all')
@@ -774,6 +859,45 @@ const filteredPastQuestions = computed(() => {
       errorMessage.value = getErrorMessage(error, 'Could not upload this past question.')
     } finally {
       uploading.value = false
+    }
+  }
+
+  async function openEditResource (resource: Resource) {
+    editingResource.value = resource
+    editResourceTitle.value = resource.title
+    editResourceCourse.value = resource.course
+    editResourceAcademicLevel.value = resource.academic_level
+    editResourceDescription.value = resource.description
+  }
+
+  async function saveEditResource () {
+    if (!editingResource.value) return
+    editing.value = true
+    errorMessage.value = ''
+    try {
+      await updateResource(editingResource.value.id, {
+        title: editResourceTitle.value,
+        course: editResourceCourse.value,
+        description: editResourceDescription.value,
+        academic_level: editResourceAcademicLevel.value,
+      })
+      const index = pastQuestions.value.findIndex(item => item.id === editingResource.value?.id)
+      if (index !== -1) {
+        pastQuestions.value[index] = {
+          ...pastQuestions.value[index],
+          title: editResourceTitle.value,
+          course: editResourceCourse.value,
+          description: editResourceDescription.value,
+          academic_level: editResourceAcademicLevel.value,
+        }
+      }
+      editingResource.value = null
+      successMessage.value = 'Past question updated successfully.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not update this past question.')
+    } finally {
+      editing.value = false
     }
   }
 
@@ -1431,8 +1555,13 @@ const filteredPastQuestions = computed(() => {
   }
 
   .resource-description {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     color: #687983;
-    line-height: 1.6;
+    font-size: 12px !important;
+    line-height: 1.45;
   }
 
   .min-width-0 {

@@ -189,7 +189,7 @@
   import { onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { academicLevels } from '@/lib/academics'
-  import { getCurrentUser, updatePassword as updateUserPassword, updateProfile as updateUserProfile } from '@/lib/auth'
+  import { changePassword, getCurrentUser, updateProfile as updateUserProfile } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
 
   const router = useRouter()
@@ -273,7 +273,7 @@
     profileMessage.value = ''
     profileError.value = ''
     try {
-      await updateUserPassword({ currentPassword: currentPassword.value, newPassword: newPassword.value })
+      await changePassword(currentPassword.value, newPassword.value)
       profileMessage.value = 'Password updated successfully.'
       currentPassword.value = ''
       newPassword.value = ''

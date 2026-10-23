@@ -68,6 +68,9 @@
           >
             My profile
           </v-btn>
+          <v-btn class="shared-link" prepend-icon="mdi-account-outline" rounded="pill" to="/about-me" variant="text">
+            About me
+          </v-btn>
 
           <v-btn
             aria-label="WhatsApp customer care"
@@ -364,7 +367,7 @@
 
             <div v-else class="assignment-list">
               <v-card
-                v-for="task in filteredTasks"
+              v-for="task in paginatedTasks"
                 :key="task.id"
                 class="assignment-card"
                 :class="{ 'assignment-done': task.completed }"
@@ -437,6 +440,9 @@
                   @click="removeTask(task)"
                 />
               </v-card>
+            </div>
+            <div v-if="filteredTasks.length > taskPerPage" class="d-flex justify-center mt-5">
+              <v-pagination v-model="taskPage" :length="taskTotalPages" rounded="circle" />
             </div>
           </section>
         </v-col>
@@ -726,7 +732,7 @@
             <h2 id="materials-heading">Class materials</h2>
 
             <p>
-              Browse approved lecture notes, assignment PDFs, and handouts for courses in
+              Browse approved lecture notes for courses in
               {{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'your level' }}.
             </p>
           </div>
@@ -854,131 +860,99 @@
         </div>
 
         <div v-else class="material-groups">
-          <section
-            v-for="group in groupedClassMaterials"
-            :key="group.courseKey"
-            class="material-group"
-          >
-            <div class="material-group-heading">
-              <v-icon size="18">mdi-book-outline</v-icon>
-              <strong>{{ group.courseLabel }}</strong>
-
-              <v-chip color="secondary" size="x-small" variant="tonal">
-                {{ group.items.length }} {{ group.items.length === 1 ? 'item' : 'items' }}
-              </v-chip>
-            </div>
-
-            <v-row class="material-grid">
-              <v-col
-                v-for="resource in group.items"
-                :key="resource.id"
-                cols="12"
-                md="6"
-                xl="4"
-              >
-                <v-card class="material-card fill-height pa-5" rounded="xl">
-                  <div class="material-heading">
-                    <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
-
-                    <div class="min-width-0">
-                      <h3>{{ resource.title }}</h3>
-
-                      <p>
-                        {{ resource.course || 'Course not specified' }}
-                        Â· {{ formatDate(resource.created_at) }}
-                      </p>
-                    </div>
-
-                    <v-btn
-                      v-if="resource.status === 'approved'"
-                      :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
-                      class="material-save-button"
-                      :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
-                      :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
-                      :loading="savingResourceId === resource.id"
-                      size="small"
-                      variant="tonal"
-                      @click="toggleSavedMaterial(resource)"
-                    />
+          <v-row class="material-grid">
+            <v-col
+              v-for="resource in paginatedClassMaterials"
+              :key="resource.id"
+              cols="12"
+              md="6"
+              xl="4"
+            >
+              <v-card class="material-card fill-height pa-4" rounded="xl">
+                <div class="material-heading">
+                  <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
+                  <div class="min-width-0">
+                    <h3>{{ resource.title }}</h3>
+                    <p>
+                      {{ resource.course || 'Course not specified' }}
+                      Â· {{ formatDate(resource.created_at) }}
+                    </p>
                   </div>
-
-                  <div class="material-meta">
-                    <v-chip color="primary" size="x-small" variant="tonal">
-                      {{ getResourceCategoryLabel(resource.category) }}
-                    </v-chip>
-
-                    <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
-                  </div>
-
-                  <v-chip
-                    v-if="resource.status !== 'approved'"
-                    class="mt-3 align-self-start"
-                    :color="resource.status === 'pending' ? 'warning' : 'error'"
-                    prepend-icon="mdi-clock-outline"
+                  <v-btn
+                    v-if="resource.status === 'approved'"
+                    :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                    class="material-save-button"
+                    :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
+                    :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
+                    :loading="savingResourceId === resource.id"
                     size="small"
                     variant="tonal"
-                  >
-                    {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
+                    @click="toggleSavedMaterial(resource)"
+                  />
+                </div>
+                <div class="material-meta">
+                  <v-chip color="primary" size="x-small" variant="tonal">
+                    {{ getResourceCategoryLabel(resource.category) }}
                   </v-chip>
-
-                  <v-chip
-                    class="material-level-chip"
-                    color="secondary"
-                    prepend-icon="mdi-account-school-outline"
-                    size="x-small"
-                    variant="tonal"
-                  >
-                    {{ getAcademicLevelLabel(getCourseAcademicLevel(resource.course) || resource.academic_level) }}
-                  </v-chip>
-
-                  <p v-if="resource.description" class="material-description">
-                    {{ resource.description }}
-                  </p>
-
-                  <v-btn
-                    block
-                    class="mt-auto"
-                    color="primary"
-                    :href="resource.url"
-                    rel="noopener noreferrer"
-                    rounded="pill"
-                    target="_blank"
-                    variant="tonal"
-                  >
-                    Read PDF
-                    <v-icon end>mdi-open-in-new</v-icon>
-                  </v-btn>
-
-                  <v-btn
-                    v-if="!isResourceModerator || resource.uploaded_by === user?.id"
-                    aria-label="Edit material"
-                    block
-                    class="mt-2"
-                    color="secondary"
-                    prepend-icon="mdi-pencil-outline"
-                    rounded="pill"
-                    variant="tonal"
-                    @click="openEditResource(resource)"
-                  >
-                    Edit material
-                  </v-btn>
-
-                  <v-btn
-                    v-if="isResourceModerator"
-                    block
-                    class="mt-2"
-                    color="error"
-                    prepend-icon="mdi-delete-outline"
-                    rounded="pill"
-                    variant="text"
-                    @click="resourceToDelete = resource"
-                  >
-                    Delete resource
-                  </v-btn>
-                </v-card>
-              </v-col>
-            </v-row>
-          </section>
+                  <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
+                </div>
+                <v-chip
+                  v-if="resource.status !== 'approved'"
+                  class="mt-3 align-self-start"
+                  :color="resource.status === 'pending' ? 'warning' : 'error'"
+                  prepend-icon="mdi-clock-outline"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
+                </v-chip>
+                <p v-if="resource.description" class="material-description">
+                  {{ resource.description }}
+                </p>
+                <v-btn
+                  block
+                  class="mt-auto"
+                  color="primary"
+                  :href="resource.url"
+                  rel="noopener noreferrer"
+                  rounded="pill"
+                  target="_blank"
+                  variant="tonal"
+                >
+                  Read PDF
+                  <v-icon end>mdi-open-in-new</v-icon>
+                </v-btn>
+                <v-btn
+                  v-if="isResourceModerator"
+                  aria-label="Edit material"
+                  block
+                  class="mt-2"
+                  color="secondary"
+                  prepend-icon="mdi-pencil-outline"
+                  rounded="pill"
+                  variant="tonal"
+                  @click="openEditResource(resource)"
+                >
+                  Edit material
+                </v-btn>
+                <v-btn
+                  v-if="isResourceModerator"
+                  block
+                  class="mt-2"
+                  color="error"
+                  prepend-icon="mdi-delete-outline"
+                  rounded="pill"
+                  variant="text"
+                  @click="resourceToDelete = resource"
+                >
+                  Delete resource
+                </v-btn>
+              </v-card>
+            </v-col>
+          </v-row>
+          <div v-if="materialTotalPages > 1" class="d-flex justify-center mt-6">
+            <v-pagination v-model="materialPage" :length="materialTotalPages" rounded="circle" />
+          </div>
         </div>
       </section>
 
@@ -1035,7 +1009,7 @@
             <div>
               <div class="section-kicker">SHARE WITH CLASSMATES</div>
               <h2 id="material-dialog-title">Add class material</h2>
-              <p>Choose whether to share lecture notes, an assignment PDF, or another class handout. New uploads are reviewed before students can access them.</p>
+              <p>Share lecture notes. New uploads are reviewed before students can access them.</p>
             </div>
 
             <v-btn
@@ -1497,7 +1471,7 @@
   const materialCategory = ref<ResourceCategory | 'all'>('all')
   const materialView = ref<'all' | 'saved-only'>('all')
   const resourceCategory = ref<ResourceCategory>('lecture_notes')
-  const materialCategories = resourceCategories.filter(category => category.value !== 'past_question')
+  const materialCategories = resourceCategories.filter(category => category.value === 'lecture_notes')
   const materialCategoryFilters = [
     { title: 'All categories', value: 'all' },
     ...materialCategories,
@@ -1506,6 +1480,13 @@
     { title: 'All materials', value: 'all' },
     { title: 'Saved only', value: 'saved-only' },
   ]
+  const materialPage = ref(1)
+  const materialPerPage = 10
+  const paginatedClassMaterials = computed(() => {
+    const start = (materialPage.value - 1) * materialPerPage
+    return filteredClassMaterials.value.slice(start, start + materialPerPage)
+  })
+  const materialTotalPages = computed(() => Math.max(1, Math.ceil(filteredClassMaterials.value.length / materialPerPage)))
   const filteredClassMaterials = computed(() => {
     const query = materialSearch.value.trim().toLocaleLowerCase()
 
@@ -1532,6 +1513,10 @@
 
     return deduplicateAndSortTasks(taskList)
   })
+  const taskPage = ref(1)
+  const taskPerPage = 10
+  const taskTotalPages = computed(() => Math.max(1, Math.ceil(filteredTasks.value.length / taskPerPage)))
+  const paginatedTasks = computed(() => filteredTasks.value.slice((taskPage.value - 1) * taskPerPage, taskPage.value * taskPerPage))
 
   // Duplicates removed by the automatic sorter, shown so the cleanup is never silent.
   const sortedTasks = computed(() => deduplicateAndSortTasks(tasks.value))
@@ -2636,8 +2621,12 @@
   .assignment-description {
     margin: 7px 0 9px;
     color: #7a888c;
-    font-size: 11px;
-    line-height: 1.6;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 10px;
+    line-height: 1.45;
     white-space: pre-line;
   }
 
@@ -2929,8 +2918,12 @@
   .material-description {
     margin: 0;
     color: #728187;
-    font-size: 11px;
-    line-height: 1.6;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 10px;
+    line-height: 1.45;
   }
 
   .materials-empty {
