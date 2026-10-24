@@ -46,6 +46,10 @@
         {{ roomError }}
       </v-alert>
 
+      <v-alert v-if="roomNotice" class="mb-5" type="info" variant="tonal">
+        {{ roomNotice }}
+      </v-alert>
+
       <v-alert
         v-if="resourceError"
         class="mb-5"
@@ -100,6 +104,18 @@
                 prepend-inner-icon="mdi-book-open-variant"
                 variant="outlined"
               />
+              <v-btn
+                v-if="isRoomAdmin && activeCourse"
+                class="room-admin-delete"
+                color="error"
+                :loading="deletingRoom"
+                prepend-icon="mdi-delete-outline"
+                rounded="pill"
+                variant="tonal"
+                @click="deleteRoomDialog = true"
+              >
+                Delete live room
+              </v-btn>
               <p v-if="userAcademicLevel && !loadingResources && courseOptions.length === 0" class="course-picker-hint">
                 No course PDFs are listed for your level yet. You can enter a course code for your level.
               </p>
@@ -345,6 +361,20 @@
         <a href="#study-guidance"><v-icon>mdi-timer-outline</v-icon><span>Study guide</span></a>
       </nav>
 
+      <v-dialog v-model="deleteRoomDialog" max-width="480">
+        <v-card rounded="xl">
+          <v-card-title>Delete {{ activeCourse }} live room?</v-card-title>
+          <v-card-text>
+            This permanently closes the room and removes its discussion history. Students can reopen this course room later.
+          </v-card-text>
+          <v-card-actions class="px-5 pb-4">
+            <v-spacer />
+            <v-btn rounded="pill" variant="text" @click="deleteRoomDialog = false">Cancel</v-btn>
+            <v-btn color="error" :loading="deletingRoom" rounded="pill" @click="confirmDeleteRoom">Delete room</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
     </v-container>
   </main>
 </template>
@@ -360,13 +390,17 @@
   import { getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
-  import { getStudyMessages, leaveStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
+  import { getResourceCategoryLabel, getResources, isResourceModerator, resourceCategories } from '@/services/resources'
+  import { deleteStudyRoom, getStudyMessages, leaveStudyRoom, openStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
 
   const route = useRoute()
   const requestedCourse = typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : ''
   const activeCourse = ref('')
   const userAcademicLevel = ref('')
+  const isRoomAdmin = ref(false)
+  const deleteRoomDialog = ref(false)
+  const deletingRoom = ref(false)
+  const roomNotice = ref('')
   const courseResources = ref<Resource[]>([])
   const messages = ref<StudyMessage[]>([])
   const senderPalette = [
@@ -515,7 +549,10 @@
 
     loadingMessages.value = true
     roomError.value = ''
+    roomNotice.value = ''
     try {
+      await openStudyRoom(course)
+      if (version !== connectionVersion) return
       const history = await getStudyMessages(course)
       if (version !== connectionVersion) return
       messages.value = history
@@ -532,6 +569,9 @@
         error => {
           if (version === connectionVersion) roomError.value = error.message
         },
+        () => {
+          if (version === connectionVersion) void handleRoomClosed(course)
+        },
       )
       await scrollToLatest()
     } catch (error) {
@@ -540,6 +580,34 @@
       }
     } finally {
       if (version === connectionVersion) loadingMessages.value = false
+    }
+  }
+
+  async function handleRoomClosed (course: string) {
+    if (normalizeCourse(activeCourse.value) !== normalizeCourse(course)) return
+    const closingChannel = roomChannel
+    roomChannel = null
+    await leaveStudyRoom(closingChannel).catch(error => {
+      console.error('Could not leave the deleted study room.', error)
+    })
+    messages.value = []
+    onlineCount.value = 0
+    activeCourse.value = ''
+    roomNotice.value = `${normalizeCourse(course)} was closed by an admin.`
+  }
+
+  async function confirmDeleteRoom () {
+    if (!isRoomAdmin.value || !activeCourse.value) return
+    deletingRoom.value = true
+    const course = normalizeCourse(activeCourse.value)
+    try {
+      await deleteStudyRoom(course)
+      deleteRoomDialog.value = false
+      await handleRoomClosed(course)
+    } catch (error) {
+      roomError.value = getErrorMessage(error, 'Could not delete this live course room.')
+    } finally {
+      deletingRoom.value = false
     }
   }
 
@@ -585,6 +653,7 @@
     const user = await getCurrentUser()
     userAcademicLevel.value = user?.academicLevel || ''
     if (!userAcademicLevel.value) return
+    if (user) isRoomAdmin.value = await isResourceModerator(user.id)
 
     await loadResources()
     activeCourse.value = courseOptions.value.find(course => normalizeCourse(course) === normalizeCourse(requestedCourse))
@@ -910,6 +979,10 @@
     margin: 0;
     color: #748187;
     font-size: 12px;
+  }
+
+  .room-admin-delete {
+    flex: 0 0 auto;
   }
 
   .message-list {
@@ -1618,6 +1691,10 @@
       width: 100%;
       flex: 0 1 auto;
       padding: 0;
+    }
+
+    .room-admin-delete {
+      align-self: flex-start;
     }
 
     .group-art {

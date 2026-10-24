@@ -147,6 +147,10 @@ export async function leaveStudyGroup (channel: RealtimeChannel | null) {
 
 const maxMessageLength = 2000
 
+function normalizeStudyCourse (course: string) {
+  return course.trim().replace(/\s+/g, ' ').toLocaleUpperCase().slice(0, 80)
+}
+
 function requireSupabase () {
   if (!isSupabaseConfigured) {
     throw new Error('Live study rooms need a connected Supabase project.')
@@ -167,7 +171,7 @@ export async function getStudyMessages (course: string) {
   const { data, error } = await requireSupabase()
     .from('study_messages')
     .select('*')
-    .eq('course', course)
+    .eq('course', normalizeStudyCourse(course))
     .order('created_at', { ascending: true })
     .limit(100)
 
@@ -178,12 +182,41 @@ export async function getStudyMessages (course: string) {
   return addStudyImageUrls(data as StudyMessage[])
 }
 
+export async function openStudyRoom (courseInput: string) {
+  const course = normalizeStudyCourse(courseInput)
+  if (!course) throw new Error('Choose a course before opening a room.')
+
+  const client = requireSupabase()
+  const { error: openError } = await client
+    .from('study_rooms')
+    .upsert({ course }, { onConflict: 'course', ignoreDuplicates: true })
+  if (openError) throw getSchemaError(openError)
+
+  const { data, error } = await client.from('study_rooms').select('course').eq('course', course).single()
+  if (error) throw getSchemaError(error)
+  return data.course as string
+}
+
+export async function deleteStudyRoom (courseInput: string) {
+  const course = normalizeStudyCourse(courseInput)
+  const { data, error } = await requireSupabase()
+    .from('study_rooms')
+    .delete()
+    .eq('course', course)
+    .select('course')
+    .maybeSingle()
+
+  if (error) throw getSchemaError(error)
+  if (!data) throw new Error('Only an admin can delete a live course room, or the room was already removed.')
+}
+
 export async function sendStudyMessage (
   course: string,
   messageType: StudyMessageType,
   content: string,
   image?: File | null,
 ) {
+  course = normalizeStudyCourse(course)
   const text = content.trim()
   if (!text && !image) {
     throw new Error('Write a message or attach an image.')
@@ -242,7 +275,9 @@ export async function subscribeToStudyRoom (
   onMessage: (message: StudyMessage) => void,
   onPresence: (count: number) => void,
   onError: (error: Error) => void,
+  onRoomClosed?: () => void,
 ) {
+  course = normalizeStudyCourse(course)
   const user = await getCurrentUser()
   if (!user) {
     throw new Error('Sign in to join a study room.')
@@ -259,6 +294,10 @@ export async function subscribeToStudyRoom (
       if (message.course === course) {
         void addStudyImageUrls([message]).then(items => onMessage(items[0]))
       }
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_rooms' }, payload => {
+      const deleted = payload.old as { course?: string }
+      if (deleted.course === course) onRoomClosed?.()
     })
     .on('presence', { event: 'sync' }, () => {
       onPresence(Object.values(channel.presenceState()).reduce(

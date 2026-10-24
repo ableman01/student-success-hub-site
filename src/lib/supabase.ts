@@ -152,6 +152,20 @@ export interface Database {
         }
         Relationships: []
       }
+      study_rooms: {
+        Row: {
+          course: string
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          course: string
+          created_by?: string
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
       study_messages: {
         Row: {
           id: string
