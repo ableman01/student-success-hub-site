@@ -230,7 +230,7 @@
           <div class="stat-copy">
             <span>Completed</span>
             <strong>{{ completedCount }}</strong>
-            <small>Look how far youâ€™ve come</small>
+            <small>Look how far you’ve come</small>
           </div>
         </v-card>
 
@@ -963,7 +963,7 @@
       >
         <v-card rounded="xl">
           <v-card-title>Delete this shared resource?</v-card-title>
-          <v-card-text>â€œ{{ resourceToDelete?.title }}â€ and its PDF will be removed from the library.</v-card-text>
+          <v-card-text>“{{ resourceToDelete?.title }}” and its PDF will be removed from the library.</v-card-text>
 
           <v-card-actions class="pa-4 pt-0">
             <v-spacer />

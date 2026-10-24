@@ -67,7 +67,7 @@
 
           <p class="hero-description">
             Find the resources you need, stay on top of assignments, and make
-            your study time count â€” all in one welcoming student space.
+            your study time count — all in one welcoming student space.
           </p>
 
           <div class="hero-actions">
@@ -604,7 +604,7 @@
         <v-card-title class="text-h6 font-weight-bold">Delete this shared resource?</v-card-title>
 
         <v-card-text>
-          â€œ{{ resourceToDelete?.title }}â€ and its PDF will be removed from the shared library. This cannot be undone.
+          “{{ resourceToDelete?.title }}” and its PDF will be removed from the shared library. This cannot be undone.
         </v-card-text>
 
         <v-card-actions class="px-5 pb-4">
