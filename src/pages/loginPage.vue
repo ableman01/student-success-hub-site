@@ -165,6 +165,7 @@
 
       <footer class="auth-footer">
         <span>LASU Student Success Hub</span>
+        <RouterLink to="/about-us">About us</RouterLink>
         <span>Built for your academic journey</span>
       </footer>
     </div>

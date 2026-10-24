@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <main class="home-page">
     <div class="home-width">
       <header class="home-header">
@@ -109,6 +109,11 @@
             <RouterLink class="hero-secondary" to="/lasu-updates">
               View LASU updates
               <v-icon end size="18">mdi-bullhorn-outline</v-icon>
+            </RouterLink>
+
+            <RouterLink class="hero-secondary" to="/about-us">
+              About us
+              <v-icon end size="18">mdi-information-outline</v-icon>
             </RouterLink>
           </div>
 
@@ -491,67 +496,7 @@
 
       </section>
 
-      <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
-        <div class="about-study-hero">
-          <img alt="LASU students studying together in a library with LASU Student Success Hub text overlay" src="/about-study-group.jpg">
-          <div class="about-study-shade" />
-        </div>
 
-        <div class="about-app-heading">
-          <span class="section-eyebrow">One simple, reliable student experience</span>
-          <h2 id="about-app-heading">Helping every LASU student move forward</h2>
-
-          <p>
-            Our mission is to empower every student with the information, tools, opportunities, skills, and support they need to succeed academically, personally, and professionally.
-          </p>
-        </div>
-
-        <div class="success-pillars">
-          <article class="about-app-card">
-            <span class="pillar-number">01</span>
-            <v-icon color="primary" size="25">mdi-bullhorn-outline</v-icon>
-            <h3>What do I need to know?</h3>
-            <p>Find important announcements, deadlines, registration information, academic updates, and verified opportunities in one trusted place.</p>
-          </article>
-
-          <article class="about-app-card">
-            <span class="pillar-number">02</span>
-            <v-icon color="primary" size="25">mdi-calendar-check-outline</v-icon>
-            <h3>What should I do next?</h3>
-            <p>Use your dashboard and timetable to keep tasks, upcoming deadlines, study plans, and your progress in view.</p>
-          </article>
-
-          <article class="about-app-card">
-            <span class="pillar-number">03</span>
-            <v-icon color="primary" size="25">mdi-book-open-page-variant-outline</v-icon>
-            <h3>How can I improve?</h3>
-            <p>Build confidence with study resources, tutorials, peer learning, practical skills, and career development.</p>
-          </article>
-
-          <article class="about-app-card">
-            <span class="pillar-number">04</span>
-            <v-icon color="primary" size="25">mdi-briefcase-search-outline</v-icon>
-            <h3>Where can I find opportunities?</h3>
-            <p>Discover scholarships, internships, competitions, volunteering, mentorship, and student projects.</p>
-          </article>
-
-          <article class="about-app-card">
-            <span class="pillar-number">05</span>
-            <v-icon color="primary" size="25">mdi-account-group-outline</v-icon>
-            <h3>Who can help me?</h3>
-            <p>Connect with a trusted student community, peer mentors, academic support, and appropriate campus services.</p>
-          </article>
-        </div>
-
-        <div class="about-app-footer">
-          <p>The Hub brings these five needs together, so every student can find the next useful step in one welcoming place.</p>
-
-          <v-btn color="primary" rounded="pill" :to="currentUser ? '/timetable' : '/signup'">
-            {{ currentUser ? 'Build my study week' : 'Join the student hub' }}
-            <v-icon end>mdi-arrow-right</v-icon>
-          </v-btn>
-        </div>
-      </section>
 
       <section class="closing-banner">
         <div class="closing-icon"><v-icon size="30">mdi-school-outline</v-icon></div>
