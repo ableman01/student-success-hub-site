@@ -78,7 +78,7 @@
             type="success"
             variant="tonal"
           >
-            Your account was created and a confirmation email has been sent. Confirm your email, then log in here.
+            Welcome to LASU Student Success Hub! Your student account is almost ready. We sent a confirmation link to your inbox. Open it to activate your account, then log in to reach your dashboard, course resources, live classes, and study groups. If you cannot find the email, check your spam folder.
           </v-alert>
 
           <v-alert
