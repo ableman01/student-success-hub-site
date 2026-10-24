@@ -12,6 +12,7 @@ import StudyRoomPage from '@/pages/study-room.vue'
 import TimetablePage from '@/pages/timetable.vue'
 import ProfilePage from '@/pages/profile.vue'
 import AboutMePage from '@/pages/about-me.vue'
+import AboutUsPage from '@/pages/about-us.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/auth/confirm', component: EmailConfirmationPage },
     { path: '/lasu-updates', component: LasuUpdatesPage },
     { path: '/about-me', component: AboutMePage, meta: { requiresAuth: true } },
+    { path: '/about-us', component: AboutUsPage },
     { path: '/timetable', component: TimetablePage, meta: { requiresAuth: true } },
     {
       path: '/study',

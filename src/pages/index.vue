@@ -14,7 +14,7 @@
         <nav aria-label="Main navigation" class="header-actions">
           <a class="header-link" href="#past-questions">Explore resources</a>
           <RouterLink class="header-link" to="/lasu-updates">LASU updates</RouterLink>
-          <a class="header-link" href="#about-app">About</a>
+          <RouterLink class="header-link" to="/about-us">About us</RouterLink>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
           <a class="header-link" :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">WhatsApp support</a>
 
@@ -390,7 +390,7 @@
 
                   <p class="text-caption text-medium-emphasis mt-1">
                     {{ resource.course || 'Course not specified' }}
-                    Â·
+                    ·
                     {{ formatDate(resource.created_at) }}
                   </p>
 
@@ -578,7 +578,7 @@
         </RouterLink>
 
         <span class="footer-links">
-          <a href="#about-app">About this app</a>
+          <RouterLink to="/about-us">About us</RouterLink>
           <a :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">Questions? DM our customer care representative on WhatsApp.</a>
         </span>
       </footer>

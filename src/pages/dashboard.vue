@@ -71,6 +71,9 @@
           <v-btn class="shared-link" prepend-icon="mdi-account-outline" rounded="pill" to="/about-me" variant="text">
             About me
           </v-btn>
+          <v-btn class="shared-link" prepend-icon="mdi-information-outline" rounded="pill" to="/about-us" variant="text">
+            About us
+          </v-btn>
 
           <v-btn
             aria-label="WhatsApp customer care"
@@ -860,22 +863,20 @@
         </div>
 
         <div v-else class="material-groups">
-          <v-row class="material-grid">
-            <v-col
+          <div class="material-grid">
+            <v-card
               v-for="resource in paginatedClassMaterials"
               :key="resource.id"
-              cols="12"
-              md="6"
-              xl="4"
+              class="material-card pa-4"
+              rounded="xl"
             >
-              <v-card class="material-card fill-height pa-4" rounded="xl">
                 <div class="material-heading">
                   <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
                   <div class="min-width-0">
                     <h3>{{ resource.title }}</h3>
                     <p>
                       {{ resource.course || 'Course not specified' }}
-                      Â· {{ formatDate(resource.created_at) }}
+                      · {{ formatDate(resource.created_at) }}
                     </p>
                   </div>
                   <v-btn
@@ -947,9 +948,8 @@
                 >
                   Delete resource
                 </v-btn>
-              </v-card>
-            </v-col>
-          </v-row>
+            </v-card>
+          </div>
           <div v-if="materialTotalPages > 1" class="d-flex justify-center mt-6">
             <v-pagination v-model="materialPage" :length="materialTotalPages" rounded="circle" />
           </div>
@@ -1394,7 +1394,7 @@
       </v-dialog>
 
       <footer class="dashboard-footer">
-        <span>One step at a time. Youâ€™re making progress.</span>
+        <span>One step at a time. You’re making Progress.</span>
         <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
       </footer>
 
@@ -2421,6 +2421,18 @@
     box-shadow: 0 9px 28px rgb(30 53 54 / 4%);
   }
 
+  .material-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .material-grid > .material-card {
+    min-width: 0;
+    width: 100%;
+  }
+
   .section-panel {
     min-height: 100%;
     border-radius: 20px;
@@ -2913,6 +2925,7 @@
     margin: 5px 0 0;
     color: #7c898d;
     font-size: 10px;
+    overflow-wrap: anywhere;
   }
 
   .material-description {
