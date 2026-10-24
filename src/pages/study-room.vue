@@ -56,6 +56,17 @@
         {{ resourceError }}
       </v-alert>
 
+      <v-alert
+        v-if="!userAcademicLevel"
+        class="mb-5"
+        title="Set your academic level to join a course room"
+        type="warning"
+        variant="tonal"
+      >
+        Add your current level in My profile so we can show you the right course rooms.
+        <v-btn class="ml-2" to="/profile" variant="text">Open My profile</v-btn>
+      </v-alert>
+
       <section class="groups-invitation">
         <img src="/study-together.svg" alt="" aria-hidden="true">
         <div><div class="section-kicker">YOUR OWN STUDY CIRCLE</div><h2>Bring your classmates together</h2><p>Create a private group chat, invite classmates with a link, and share solved questions and images as you study.</p></div>
@@ -79,13 +90,19 @@
               <v-combobox
                 v-model="activeCourse"
                 class="course-picker"
+                density="compact"
+                :disabled="!userAcademicLevel"
                 hide-details
                 :items="courseOptions"
-                label="Choose or enter a course"
+                label="Choose or enter a course for your level"
                 maxlength="80"
+                :menu-props="{ maxHeight: 320 }"
                 prepend-inner-icon="mdi-book-open-variant"
                 variant="outlined"
               />
+              <p v-if="userAcademicLevel && !loadingResources && courseOptions.length === 0" class="course-picker-hint">
+                No course PDFs are listed for your level yet. You can enter a course code for your level.
+              </p>
             </div>
 
             <v-divider class="my-4" />
@@ -339,13 +356,17 @@
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
+  import { getCurrentUser } from '@/lib/auth'
+  import { getCourseAcademicLevel } from '@/lib/academics'
   import { getErrorMessage } from '@/lib/errors'
   import { customerCareWhatsAppUrl } from '@/lib/support'
   import { getResourceCategoryLabel, getResources, resourceCategories } from '@/services/resources'
   import { getStudyMessages, leaveStudyRoom, sendStudyMessage, subscribeToStudyRoom } from '@/services/study'
 
   const route = useRoute()
-  const activeCourse = ref(typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : '')
+  const requestedCourse = typeof route.query.course === 'string' ? route.query.course.trim().slice(0, 80) : ''
+  const activeCourse = ref('')
+  const userAcademicLevel = ref('')
   const courseResources = ref<Resource[]>([])
   const messages = ref<StudyMessage[]>([])
   const senderPalette = [
@@ -391,9 +412,25 @@
   const roomError = ref('')
   const resourceError = ref('')
   const messageEnd = ref<HTMLElement | null>(null)
+  function isResourceForUserLevel (resource: Resource) {
+    if (!userAcademicLevel.value) return false
+    const courseLevel = getCourseAcademicLevel(resource.course)
+    return courseLevel
+      ? courseLevel === userAcademicLevel.value
+      : resource.academic_level === userAcademicLevel.value
+  }
   const courseOptions = computed(() => [
-    ...new Set(courseResources.value.map(resource => resource.course.trim()).filter(Boolean)),
+    ...new Set(courseResources.value
+      .filter(isResourceForUserLevel)
+      .map(resource => resource.course.trim())
+      .filter(Boolean)),
   ].toSorted((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })))
+  function isCourseAllowedForUser (course: string) {
+    const normalizedCourse = normalizeCourse(course)
+    if (!normalizedCourse || !userAcademicLevel.value) return false
+    return courseOptions.value.some(option => normalizeCourse(option) === normalizedCourse)
+      || getCourseAcademicLevel(normalizedCourse) === userAcademicLevel.value
+  }
   const roomResources = computed(() => courseResources.value.filter(resource =>
     !activeCourse.value.trim()
     || resource.course.trim().toLocaleLowerCase() === activeCourse.value.trim().toLocaleLowerCase(),
@@ -447,7 +484,7 @@
         getResources('past_question'),
         getResources('class_material'),
       ])
-      courseResources.value = [...questions, ...materials]
+      courseResources.value = [...questions, ...materials].filter(isResourceForUserLevel)
     } catch (error) {
       resourceError.value = getErrorMessage(error, 'Could not load the shared course PDFs.')
     } finally {
@@ -470,8 +507,9 @@
     onlineCount.value = 0
     messages.value = []
 
-    if (!course) {
+    if (!course || !isCourseAllowedForUser(course)) {
       loadingMessages.value = false
+      if (course) roomError.value = `Enter a course code for ${userAcademicLevel.value} Level to open that room.`
       return
     }
 
@@ -508,8 +546,8 @@
   async function postMessage () {
     roomError.value = ''
     const course = normalizeCourse(activeCourse.value)
-    if (!course) {
-      roomError.value = 'Choose a course before posting.'
+    if (!course || !isCourseAllowedForUser(course)) {
+      roomError.value = `Choose a listed course or enter a course code for ${userAcademicLevel.value} Level before posting.`
       return
     }
 
@@ -544,12 +582,14 @@
   }
 
   onMounted(async () => {
+    const user = await getCurrentUser()
+    userAcademicLevel.value = user?.academicLevel || ''
+    if (!userAcademicLevel.value) return
+
     await loadResources()
-    if (activeCourse.value) {
-      await connectRoom(activeCourse.value)
-    } else if (courseOptions.value[0]) {
-      activeCourse.value = courseOptions.value[0]
-    }
+    activeCourse.value = courseOptions.value.find(course => normalizeCourse(course) === normalizeCourse(requestedCourse))
+      || courseOptions.value[0]
+      || ''
   })
 
   watch(activeCourse, (course, previous) => {
@@ -864,6 +904,12 @@
   .course-picker {
     width: min(100%, 340px);
     flex: 0 0 340px;
+  }
+
+  .course-picker-hint {
+    margin: 0;
+    color: #748187;
+    font-size: 12px;
   }
 
   .message-list {
@@ -1564,9 +1610,14 @@
       min-height: 0;
     }
 
-    .course-picker,
     .groups-heading-row {
       padding: 18px;
+    }
+
+    .course-picker {
+      width: 100%;
+      flex: 0 1 auto;
+      padding: 0;
     }
 
     .group-art {
