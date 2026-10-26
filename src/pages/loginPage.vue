@@ -2,9 +2,9 @@
   <main class="login-page">
     <div class="auth-shell">
       <header class="auth-header">
-        <RouterLink aria-label="LASU Student Success Hub home" class="auth-brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="auth-brand" to="/">
           <img alt="" src="/academic-mark.svg">
-          <span>LASU Student Success Hub</span>
+          <span>Student Success Hub</span>
         </RouterLink>
 
         <div class="auth-header-actions">
@@ -78,7 +78,7 @@
             type="success"
             variant="tonal"
           >
-            Welcome to LASU Student Success Hub! Your student account is almost ready. We sent a confirmation link to your inbox. Open it to activate your account, then log in to reach your dashboard, course resources, live classes, and study groups. If you cannot find the email, check your spam folder.
+            Welcome to Student Success Hub! Your student account is almost ready. We sent a confirmation link to your inbox. Open it to activate your account, then log in to reach your dashboard, course resources, live classes, and study groups. If you cannot find the email, check your spam folder.
           </v-alert>
 
           <v-alert
@@ -164,7 +164,7 @@
       </section>
 
       <footer class="auth-footer">
-        <span>LASU Student Success Hub</span>
+        <span>Student Success Hub</span>
         <RouterLink to="/about-us">About us</RouterLink>
         <span>Built for your academic journey</span>
       </footer>

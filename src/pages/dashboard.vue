@@ -2,11 +2,11 @@
   <main id="dashboard-top" class="dashboard-page">
     <v-container class="dashboard-width py-5 py-md-8" fluid>
       <header class="dashboard-header">
-        <RouterLink aria-label="LASU Student Success Hub home" class="dashboard-brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="dashboard-brand" to="/">
           <img alt="" src="/academic-mark.svg">
 
           <span>
-            <strong>LASU Student Success Hub</strong>
+            <strong>Student Success Hub</strong>
             <small>Your academic space</small>
           </span>
         </RouterLink>
@@ -1395,7 +1395,7 @@
 
       <footer class="dashboard-footer">
         <span>One step at a time. You’re making Progress.</span>
-        <RouterLink to="/">Back to LASU Student Success Hub</RouterLink>
+        <RouterLink to="/">Back to Student Success Hub</RouterLink>
       </footer>
 
       <nav aria-label="Dashboard shortcuts" class="dashboard-quick-nav">

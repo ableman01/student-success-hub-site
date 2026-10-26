@@ -362,7 +362,7 @@
         'END:VEVENT',
       ].join('\r\n')
     })
-    const calendar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LASU Student Success Hub//Timetable//EN', 'CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n')
+    const calendar = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Student Success Hub//Timetable//EN', 'CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n')
     const blob = new Blob([calendar], { type: 'text/calendar;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')

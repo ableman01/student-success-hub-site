@@ -2,9 +2,9 @@
   <main class="study-page">
     <v-container class="study-width py-5 py-md-8" fluid>
       <header class="study-header">
-        <RouterLink aria-label="LASU Student Success Hub home" class="study-brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="study-brand" to="/">
           <img alt="" src="/academic-mark.svg">
-          <span><strong>LASU Student Success Hub</strong><small>Learn together. Go further.</small></span>
+          <span><strong>Student Success Hub</strong><small>Learn together. Go further.</small></span>
         </RouterLink>
 
         <nav aria-label="Study room navigation" class="study-header-actions">

@@ -7,14 +7,14 @@
 
       <header class="about-us-heading">
         <span class="about-us-kicker">WHY WE BUILT THIS</span>
-        <h1>About the LASU Student Success Hub</h1>
+        <h1>About the Student Success Hub</h1>
         <p>A practical study space created to help LASU students find useful resources, plan their work, and learn together.</p>
       </header>
 
       <v-card class="creator-card pa-5 pa-md-8" elevation="0" rounded="xl">
         <div class="creator-photo-wrap">
           <v-img
-            alt="The creator of the LASU Student Success Hub"
+            alt="The creator of the Student Success Hub"
             class="creator-photo"
             cover
             src="@/assets/creator.png"
@@ -34,13 +34,13 @@
 
       <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
         <div class="about-study-hero">
-          <img alt="LASU students studying together in a library with LASU Student Success Hub text overlay" src="/about-study-group.jpg">
+          <img alt="LASU students studying together in a library with Student Success Hub text overlay" src="/about-study-group.jpg">
           <div class="about-study-shade" />
         </div>
 
         <div class="about-app-heading">
           <span class="section-eyebrow">One simple, reliable student experience</span>
-          <h2 id="about-app-heading">Helping every LASU student move forward</h2>
+          <h2 id="about-app-heading">Helping every student move forward</h2>
 
           <p>
             Our mission is to empower every student with the information, tools, opportunities, skills, and support they need to succeed academically, personally, and professionally.

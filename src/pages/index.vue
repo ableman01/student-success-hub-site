@@ -2,11 +2,11 @@
   <main class="home-page">
     <div class="home-width">
       <header class="home-header">
-        <RouterLink aria-label="LASU Student Success Hub home" class="brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="brand" to="/">
           <img alt="" class="brand-mark" src="/academic-mark.svg">
 
           <span class="brand-copy">
-            <strong>LASU Student Success Hub</strong>
+            <strong>Student Success Hub</strong>
             <span>Learn together. Go further.</span>
           </span>
         </RouterLink>
@@ -56,7 +56,7 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot" />
-            BUILT FOR LASU STUDENTS
+            SUPPORTING LASU STUDENTS AND BEYOND
           </div>
 
           <h1>
@@ -517,9 +517,9 @@
       </section>
 
       <footer class="home-footer">
-        <RouterLink aria-label="LASU Student Success Hub home" class="brand footer-brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="brand footer-brand" to="/">
           <img alt="" class="brand-mark brand-mark-small" src="/academic-mark.svg">
-          <strong>LASU Student Success Hub</strong>
+          <strong>Student Success Hub</strong>
         </RouterLink>
 
         <span class="footer-links">

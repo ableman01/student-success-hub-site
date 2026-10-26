@@ -1,9 +1,9 @@
 <template>
   <main class="confirmation-page">
     <header class="confirmation-header">
-      <RouterLink aria-label="LASU Student Success Hub home" class="confirmation-brand" to="/">
+      <RouterLink aria-label="Student Success Hub home" class="confirmation-brand" to="/">
         <img alt="" src="/academic-mark.svg">
-        <strong>LASU Student Success Hub</strong>
+        <strong>Student Success Hub</strong>
       </RouterLink>
 
       <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
@@ -17,7 +17,7 @@
         </v-icon>
       </div>
 
-      <div class="confirmation-kicker">LASU STUDENT SUCCESS HUB</div>
+      <div class="confirmation-kicker">STUDENT SUCCESS HUB</div>
       <h1>{{ heading }}</h1>
       <p>{{ message }}</p>
 
@@ -80,11 +80,11 @@
       return 'The confirmation link may have expired or already been used. Request a new link or log in if your account is already confirmed.'
     }
     if (!confirmed.value) {
-      return 'Use the confirmation link sent to your inbox to finish setting up your LASU Student Success Hub account.'
+      return 'Use the confirmation link sent to your inbox to finish setting up your Student Success Hub account.'
     }
     return signedIn.value
-      ? 'Your LASU Student Success Hub account is ready. Continue to your dashboard.'
-      : 'Your LASU Student Success Hub account is ready. Log in to continue to your dashboard.'
+      ? 'Your Student Success Hub account is ready. Continue to your dashboard.'
+      : 'Your Student Success Hub account is ready. Log in to continue to your dashboard.'
   })
 
   onMounted(async () => {

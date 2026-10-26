@@ -6,9 +6,9 @@
         @click="toggleNavigation"
       />
 
-      <RouterLink aria-label="LASU Student Success Hub home" class="student-site-brand" to="/">
+      <RouterLink aria-label="Student Success Hub home" class="student-site-brand" to="/">
         <img alt="" src="/academic-mark.svg">
-        <span><strong>LASU Student Success Hub</strong><small>Your academic space</small></span>
+        <span><strong>Student Success Hub</strong><small>Your academic space</small></span>
       </RouterLink>
 
       <v-spacer />
