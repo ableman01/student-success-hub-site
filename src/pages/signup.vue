@@ -158,13 +158,16 @@
             </v-col>
 
             <v-col cols="12" sm="6">
-              <v-text-field
+              <v-combobox
                 v-model="program"
                 autocomplete="organization-title"
                 color="primary"
-                label="Programme or department (optional)"
-                placeholder="e.g. Environmental Management"
+                :items="programmeOptions"
+                label="Programme or department"
+                placeholder="Choose a suggestion or type your programme"
                 prepend-inner-icon="mdi-book-education-outline"
+                required
+                :rules="[value => Boolean(value?.trim()) || 'Choose or enter your programme']"
                 variant="outlined"
               />
             </v-col>
@@ -298,6 +301,7 @@
   import { useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { getAcademicLevels } from '@/lib/academics'
+  import { programmeOptions } from '@/lib/programs'
   import { getDefaultInstitution, getInstitutions, institutionTypes, otherInstitutionValue } from '@/lib/institutions'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
 
@@ -319,11 +323,15 @@
       institution.value = getDefaultInstitution(type)
       otherInstitution.value = ''
       academicLevel.value = ''
+      program.value = ''
     } else if (!getInstitutions(type).some(option => option.value === institution.value)) {
       institution.value = getDefaultInstitution(type)
     }
   })
   const program = ref('')
+  watch(institution, (next, previous) => {
+    if (previous && next !== previous) program.value = ''
+  })
   const email = ref('')
   const password = ref('')
   const confirmPassword = ref('')
@@ -398,6 +406,11 @@
 
     if (!academicLevel.value) {
       errorMessage.value = 'Choose your current academic level.'
+      return
+    }
+
+    if (!program.value.trim()) {
+      errorMessage.value = 'Choose or enter your programme or department.'
       return
     }
 

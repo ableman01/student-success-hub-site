@@ -140,6 +140,9 @@ export async function signUp (input: {
   if (!input.institutionType || !input.institution.trim() || input.institution.trim().length > 180) {
     throw new Error('Choose a valid institution category and institution name (up to 180 characters).')
   }
+  if (!input.program.trim() || input.program.trim().length > 180) {
+    throw new Error('Choose or enter your programme or department (up to 180 characters).')
+  }
   const profileMetadata = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
