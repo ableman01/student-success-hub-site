@@ -118,6 +118,7 @@
         />
 
         <v-list-item
+          v-if="isLasuStudent"
           :active="route.path === '/lasu-updates'"
           prepend-icon="mdi-bullhorn-outline"
           rounded="lg"
@@ -225,8 +226,9 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useDisplay } from 'vuetify'
   import { useAppTheme } from '@/composables/useAppTheme'
-  import { hasAuthSession, signOut } from '@/lib/auth'
+  import { getCurrentUser, signOut } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { isLasuInstitution } from '@/lib/institutions'
   import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
   import { getNotifications, markNotificationsRead } from '@/services/resources'
@@ -236,6 +238,7 @@
   const { mobile: isMobile } = useDisplay()
   const { isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const isAuthenticated = ref(false)
+  const isLasuStudent = ref(false)
   const drawerOpen = ref(false)
   const signingOut = ref(false)
   const showNotifications = ref(false)
@@ -248,10 +251,13 @@
 
   async function refreshSession () {
     try {
-      isAuthenticated.value = await hasAuthSession()
+      const currentUser = await getCurrentUser()
+      isAuthenticated.value = Boolean(currentUser)
+      isLasuStudent.value = Boolean(currentUser && isLasuInstitution(currentUser.institutionType, currentUser.institution))
       if (isAuthenticated.value) await refreshNotificationCount()
     } catch {
       isAuthenticated.value = false
+      isLasuStudent.value = false
     }
   }
 
@@ -304,6 +310,7 @@
     try {
       await signOut()
       isAuthenticated.value = false
+      isLasuStudent.value = false
       await router.replace('/login')
     } catch (error) {
       notificationError.value = getErrorMessage(error, 'Could not sign out. Please try again.')
@@ -329,9 +336,12 @@
     await refreshSession()
     if (isSupabaseConfigured) {
       const { data } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
-        isAuthenticated.value = Boolean(session)
-        if (session) void refreshNotificationCount()
-        else unreadNotifications.value = 0
+        if (session) void refreshSession()
+        else {
+          isAuthenticated.value = false
+          isLasuStudent.value = false
+          unreadNotifications.value = 0
+        }
       })
       authSubscription = data.subscription
       refreshTimer = globalThis.setInterval(() => {

@@ -6,19 +6,49 @@
       <div class="news-heading">
         <div>
           <h1>Institution news</h1>
-          <p>Recent stories about {{ user?.institution || 'your institution' }}. Open a source to read the full story and confirm important notices.</p>
+          <p>Recent updates published on {{ user?.institution || 'your institution' }}’s official website.</p>
         </div>
+
         <div class="news-actions">
           <v-btn prepend-icon="mdi-view-dashboard-outline" rounded="pill" to="/dashboard" variant="text">Dashboard</v-btn>
-          <v-btn :loading="loading" prepend-icon="mdi-refresh" rounded="pill" variant="tonal" @click="loadNews">Refresh</v-btn>
+
+          <v-btn
+            :loading="loading"
+            prepend-icon="mdi-refresh"
+            rounded="pill"
+            variant="tonal"
+            @click="loadNews"
+          >Refresh</v-btn>
         </div>
       </div>
 
       <v-alert v-if="errorMessage" class="mb-5" type="info" variant="tonal">{{ errorMessage }}</v-alert>
+
+      <v-alert v-else-if="!officialSite && !loading" class="mb-5" type="info" variant="tonal">
+        We could not verify an official website for this institution in its education directory, so we are not showing third-party news.
+      </v-alert>
+
+      <v-alert
+        v-else-if="officialSite"
+        class="mb-5"
+        density="compact"
+        type="info"
+        variant="tonal"
+      >
+        Source: <a :href="officialSite" rel="noopener noreferrer" target="_blank">{{ officialSite }}</a>
+      </v-alert>
+
       <div v-if="loading && items.length === 0" class="news-state"><v-progress-circular color="primary" indeterminate /><span>Loading news for {{ user?.institution }}…</span></div>
 
-      <div v-else-if="items.length" class="news-grid">
-        <a v-for="item in items" :key="item.url" class="news-card" :href="item.url" rel="noopener noreferrer" target="_blank">
+      <div v-else-if="items.length > 0" class="news-grid">
+        <a
+          v-for="item in items"
+          :key="item.url"
+          class="news-card"
+          :href="item.url"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
           <span class="news-meta">{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
           <strong>{{ item.title }}</strong>
           <p v-if="item.summary">{{ item.summary }}</p>
@@ -26,26 +56,27 @@
         </a>
       </div>
 
-      <div v-else-if="!loading" class="news-state">
+      <div v-else-if="!loading && officialSite" class="news-state">
         <v-icon color="primary" size="34">mdi-newspaper-variant-outline</v-icon>
         <h2>No recent stories were found</h2>
-        <p>Try refreshing later. News results may include general coverage and are not necessarily official announcements.</p>
+        <p>No news posts were found on the official website. Try again later or visit the institution website directly.</p>
       </div>
 
-      <p class="news-attribution">News results via Google News and Bing News. Confirm deadlines and official notices with your institution.</p>
+      <p v-if="officialSite" class="news-attribution">News links come directly from the institution website. Confirm deadlines and important instructions on the official site.</p>
     </v-container>
   </main>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
-  import { getCurrentUser, type AppUser } from '@/lib/auth'
+  import { type AppUser, getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
 
   interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
   const user = ref<AppUser | null>(null)
   const items = ref<InstitutionNewsItem[]>([])
-  const loading = ref(false)
+  const officialSite = ref<string | null>(null)
+  const loading = ref(true)
   const errorMessage = ref('')
 
   function formatDate (value: string) {
@@ -58,10 +89,12 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      const response = await fetch(`/api/institution-news?institution=${encodeURIComponent(user.value.institution)}`)
-      const result = await response.json() as { items?: InstitutionNewsItem[], error?: string }
+      const params = new URLSearchParams({ institution: user.value.institution, type: user.value.institutionType })
+      const response = await fetch(`/api/institution-news?${params}`)
+      const result = await response.json() as { items?: InstitutionNewsItem[], officialSite?: string | null, error?: string }
       if (!response.ok) throw new Error(result.error || 'Institution news is temporarily unavailable.')
       items.value = result.items || []
+      officialSite.value = result.officialSite || null
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Institution news is temporarily unavailable.')
     } finally {
@@ -71,7 +104,11 @@
 
   onMounted(async () => {
     user.value = await getCurrentUser()
-    await loadNews()
+    if (user.value) {
+      await loadNews()
+    } else {
+      loading.value = false
+    }
   })
 </script>
 

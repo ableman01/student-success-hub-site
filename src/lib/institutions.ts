@@ -32,3 +32,8 @@ export function getInstitutionKey (type: string, institution: string) {
     : normalizedName
   return `${normalizedType}:${canonicalName}`
 }
+
+export function isLasuInstitution (type: string, institution: string) {
+  return type.trim().toLocaleLowerCase('en-US') === 'university'
+    && /^lagos state university(?: \(lasu\))?(?:, ojo(?:, lagos)?)?$/i.test(institution.trim().replace(/\s+/g, ' '))
+}

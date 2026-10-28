@@ -1,19 +1,20 @@
 ﻿import { createRouter, createWebHistory } from 'vue-router'
-import { hasAuthSession } from '@/lib/auth'
+import { getCurrentUser, hasAuthSession } from '@/lib/auth'
+import { isLasuInstitution } from '@/lib/institutions'
+import AboutMePage from '@/pages/about-me.vue'
+import AboutUsPage from '@/pages/about-us.vue'
 import DashboardPage from '@/pages/dashboard.vue'
 import EmailConfirmationPage from '@/pages/email-confirmation.vue'
 import HomePage from '@/pages/index.vue'
 import InstitutionNewsPage from '@/pages/institution-news.vue'
 import LasuUpdatesPage from '@/pages/lasu-updates.vue'
 import LoginPage from '@/pages/loginPage.vue'
+import ProfilePage from '@/pages/profile.vue'
 import SavedMaterialsPage from '@/pages/saved-materials.vue'
 import SignupPage from '@/pages/signup.vue'
 import StudyGroupsPage from '@/pages/study-groups.vue'
 import StudyRoomPage from '@/pages/study-room.vue'
 import TimetablePage from '@/pages/timetable.vue'
-import ProfilePage from '@/pages/profile.vue'
-import AboutMePage from '@/pages/about-me.vue'
-import AboutUsPage from '@/pages/about-us.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -23,7 +24,7 @@ const router = createRouter({
     { path: '/loginPage', redirect: '/login' },
     { path: '/signup', component: SignupPage },
     { path: '/auth/confirm', component: EmailConfirmationPage },
-    { path: '/lasu-updates', component: LasuUpdatesPage },
+    { path: '/lasu-updates', component: LasuUpdatesPage, meta: { requiresAuth: true } },
     { path: '/institution-news', component: InstitutionNewsPage, meta: { requiresAuth: true } },
     { path: '/about-me', component: AboutMePage, meta: { requiresAuth: true } },
     { path: '/about-us', component: AboutUsPage },
@@ -71,6 +72,13 @@ router.beforeEach(async to => {
       return { path: '/login', query: { redirect: to.fullPath } }
     }
 
+    if (to.path === '/lasu-updates' && isSignedIn) {
+      const currentUser = await getCurrentUser()
+      if (!currentUser || !isLasuInstitution(currentUser.institutionType, currentUser.institution)) {
+        return '/institution-news'
+      }
+    }
+
     if (isAuthPage && isSignedIn) {
       return '/dashboard'
     }
@@ -84,4 +92,3 @@ router.beforeEach(async to => {
 })
 
 export default router
-
