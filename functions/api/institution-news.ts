@@ -14,7 +14,8 @@ export async function onRequestGet ({ request }: PagesContext) {
   try {
     const officialSite = await getOfficialInstitutionSite(type, institution)
     const items = officialSite ? await getOfficialNews(officialSite) : []
-    return Response.json({ institution, officialSite, items, source: officialSite ? new URL(officialSite).hostname : null }, {
+    const newsSite = items.length > 0 ? new URL(items[0].url).origin : officialSite
+    return Response.json({ institution, officialSite: newsSite, items, source: newsSite ? new URL(newsSite).hostname : null }, {
       headers: { 'Cache-Control': 'public, max-age=900, s-maxage=900' },
     })
   } catch (error) {
