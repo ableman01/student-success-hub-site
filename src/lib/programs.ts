@@ -19,4 +19,4 @@ export const programmeOptions = [
   'Radiography', 'Religious Studies', 'Science Laboratory Technology', 'Sociology', 'Software Engineering',
   'Statistics', 'Surveying and Geoinformatics', 'Theatre Arts', 'Urban and Regional Planning', 'Veterinary Medicine',
   'Zoology',
-].sort((a, b) => a.localeCompare(b))
+].toSorted((a, b) => a.localeCompare(b))

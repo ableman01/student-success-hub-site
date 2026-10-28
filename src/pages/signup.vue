@@ -301,9 +301,9 @@
   import { useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { getAcademicLevels } from '@/lib/academics'
-  import { programmeOptions } from '@/lib/programs'
-  import { getDefaultInstitution, getInstitutions, institutionTypes, otherInstitutionValue } from '@/lib/institutions'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
+  import { getDefaultInstitution, getInstitutions, institutionTypes, otherInstitutionValue } from '@/lib/institutions'
+  import { programmeOptions } from '@/lib/programs'
 
   const router = useRouter()
   const { toggleTheme, themeIcon, themeLabel } = useAppTheme()

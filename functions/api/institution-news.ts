@@ -5,35 +5,45 @@ interface PagesContext {
   env: Env
 }
 
-export const onRequestGet = async ({ request }: PagesContext) => {
+export async function onRequestGet ({ request }: PagesContext) {
   const url = new URL(request.url)
   const institution = (url.searchParams.get('institution') || '').trim().replace(/\s+/g, ' ')
   if (institution.length < 2 || institution.length > 180) {
     return Response.json({ error: 'Provide a valid institution name.' }, { status: 400 })
   }
 
-  const query = encodeURIComponent(`"${institution}" Nigeria university OR polytechnic news`)
-  const feedUrl = `https://news.google.com/rss/search?q=${query}&hl=en-NG&gl=NG&ceid=NG:en`
+  const searchTerms = `"${institution}" Nigeria university OR polytechnic news`
+  const feeds = [
+    { url: `https://news.google.com/rss/search?q=${encodeURIComponent(searchTerms)}&hl=en-NG&gl=NG&ceid=NG:en`, label: 'Google News' },
+    { url: `https://www.bing.com/news/search?q=${encodeURIComponent(`"${institution}" Nigeria`)}&format=rss`, label: 'Bing News' },
+  ]
   try {
-    const response = await fetch(feedUrl, {
-      headers: { 'User-Agent': 'StudentSuccessHub/1.0 (institution news feed)' },
-      signal: AbortSignal.timeout(8000),
-    })
-    if (!response.ok) return Response.json({ error: 'The news feed is temporarily unavailable.' }, { status: 502 })
-    const xml = await response.text()
-    if (xml.length > 1_000_000) return Response.json({ error: 'The news feed response was too large.' }, { status: 502 })
+    let items: Array<{ title: string, url: string, source: string, published_at: string | null }> = []
+    let source = ''
+    for (const feed of feeds) {
+      try {
+        const response = await fetch(feed.url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 StudentSuccessHub/1.0 (institution news feed)' },
+          signal: AbortSignal.timeout(12_000),
+        })
+        if (!response.ok) {
+          continue
+        }
+        const xml = await response.text()
+        if (xml.length > 1_000_000) {
+          continue
+        }
+        items = parseFeed(xml, feed.label)
+        if (items.length > 0) {
+          source = feed.label
+          break
+        }
+      } catch {
+        // Try the next public RSS source when one provider is unavailable.
+      }
+    }
 
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 12).map(([, item]) => {
-      const read = (tag: string) => decodeXml(item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'))?.[1] || '')
-      const title = read('title')
-      const link = read('link')
-      const source = read('source') || 'Google News'
-      const publishedAt = read('pubDate')
-      if (!title || !link || !/^https:\/\//i.test(link)) return null
-      return { title, url: link, source, published_at: Number.isNaN(Date.parse(publishedAt)) ? null : new Date(publishedAt).toISOString() }
-    }).filter((item): item is NonNullable<typeof item> => Boolean(item))
-
-    return Response.json({ institution, items, source: 'Google News RSS' }, {
+    return Response.json({ institution, items, source: source ? `${source} RSS` : 'News RSS' }, {
       headers: { 'Cache-Control': 'public, max-age=900, s-maxage=900' },
     })
   } catch {
@@ -41,9 +51,27 @@ export const onRequestGet = async ({ request }: PagesContext) => {
   }
 }
 
+function parseFeed (xml: string, defaultSource: string) {
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 12).map(([, item]) => {
+    const read = (tag: string) => decodeXml(item.match(new RegExp(String.raw`<${tag}[^>]*>([\s\S]*?)<\/${tag}>`, 'i'))?.[1] || '')
+    const title = read('title')
+    const link = read('link')
+    const source = read('source') || defaultSource
+    const publishedAt = read('pubDate')
+    if (!title || !link || !/^https:\/\//i.test(link)) {
+      return null
+    }
+    return { title, url: link, source, published_at: Number.isNaN(Date.parse(publishedAt)) ? null : new Date(publishedAt).toISOString() }
+  }).filter(Boolean)
+}
+
 function decodeXml (value: string) {
   return value
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim()
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, '\'')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim()
 }

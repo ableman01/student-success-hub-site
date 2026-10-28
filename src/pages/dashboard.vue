@@ -143,22 +143,33 @@
             <h2 id="institution-news-heading">Institution news</h2>
             <p>Recent news about your institution, collected for your academic dashboard.</p>
           </div>
+
           <v-btn
             :loading="loadingInstitutionNews"
             prepend-icon="mdi-refresh"
             rounded="pill"
             variant="tonal"
             @click="loadInstitutionNews(user?.institution || '')"
-          >Refresh</v-btn>
+          >
+            Refresh
+          </v-btn>
         </div>
 
-        <v-alert v-if="institutionNewsError" class="mt-4" density="compact" type="info" variant="tonal">
+        <v-alert
+          v-if="institutionNewsError"
+          class="mt-4"
+          density="compact"
+          type="info"
+          variant="tonal"
+        >
           {{ institutionNewsError }}
         </v-alert>
+
         <div v-else-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
           Loading news for {{ user?.institution }}…
         </div>
-        <div v-else-if="institutionNews.length" class="institution-news-grid">
+
+        <div v-else-if="institutionNews.length > 0" class="institution-news-grid">
           <a
             v-for="item in institutionNews"
             :key="item.url"
@@ -167,15 +178,33 @@
             rel="noopener noreferrer"
             target="_blank"
           >
-            <span>{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
+            <span>
+              {{ item.source }}
+              <template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template>
+            </span>
+
             <strong>{{ item.title }}</strong>
-            <span class="institution-news-link">Read story <v-icon size="14">mdi-open-in-new</v-icon></span>
+
+            <span class="institution-news-link">
+              Read story
+              <v-icon size="14">mdi-open-in-new</v-icon>
+            </span>
           </a>
         </div>
-        <v-alert v-else class="mt-4" density="compact" type="info" variant="tonal">
+
+        <v-alert
+          v-else
+          class="mt-4"
+          density="compact"
+          type="info"
+          variant="tonal"
+        >
           No recent stories were found. Try again later. News results are collected from Google News and may not be official announcements.
         </v-alert>
-        <small class="institution-news-attribution">News results via Google News. Confirm important deadlines and notices with your institution.</small>
+
+        <small class="institution-news-attribution">
+          News results via Google News. Confirm important deadlines and notices with your institution.
+        </small>
       </section>
 
       <v-alert
