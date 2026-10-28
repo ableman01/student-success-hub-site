@@ -27,7 +27,7 @@ export function getInstitutionKey (type: string, institution: string) {
   const normalizedType = type.trim().toLocaleLowerCase('en-US')
   const normalizedName = institution.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US')
   const canonicalName = normalizedType === 'university'
-    && /^(lagos state university(?: \(lasu\))?(?:, ojo(?:, lagos)?)?)$/.test(normalizedName)
+    && /^lagos state university(?: \(lasu\))?(?:, ojo(?:, lagos)?)?$/.test(normalizedName)
     ? 'lagos state university (lasu), ojo'
     : normalizedName
   return `${normalizedType}:${canonicalName}`

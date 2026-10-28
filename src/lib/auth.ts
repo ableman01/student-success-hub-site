@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js'
-import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 import { getDefaultInstitution } from '@/lib/institutions'
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 const demoAccountKey = 'student-hub-demo-account'
 const demoSignedInKey = 'student-hub-demo-signed-in'
@@ -224,7 +224,9 @@ export async function resendSignUpConfirmation (email: string) {
     email: normalizedEmail,
     options: { emailRedirectTo: `${window.location.origin}/auth/confirm?confirmed=1` },
   })
-  if (error) throw error
+  if (error) {
+    throw error
+  }
 }
 
 function toDemoUser (account: DemoAccount): AppUser {
