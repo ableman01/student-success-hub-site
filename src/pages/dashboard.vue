@@ -136,6 +136,66 @@
         <img alt="" class="dashboard-hero-image" src="/study-dashboard.svg">
       </section>
 
+      <section v-if="user" aria-labelledby="institution-news-heading" class="institution-news-panel">
+        <div class="section-title-row">
+          <div>
+            <div class="section-kicker">{{ user.institution }}</div>
+            <h2 id="institution-news-heading">{{ isLasuStudent ? 'LASU updates' : 'Institution updates' }}</h2>
+            <p>Recent updates published on your institution’s official website.</p>
+          </div>
+
+          <v-btn
+            :loading="loadingInstitutionNews"
+            :prepend-icon="isLasuStudent ? 'mdi-bullhorn-outline' : 'mdi-newspaper-variant-outline'"
+            rounded="pill"
+            :to="isLasuStudent ? '/lasu-updates' : '/institution-news'"
+            variant="tonal"
+          >
+            {{ isLasuStudent ? 'View LASU updates' : 'View institution updates' }}
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="institutionNewsError"
+          class="mt-4"
+          density="compact"
+          type="info"
+          variant="tonal"
+        >
+          {{ institutionNewsError }}
+        </v-alert>
+
+        <div v-else-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
+          Loading updates for {{ user.institution }}…
+        </div>
+
+        <div v-else-if="institutionNews.length > 0" class="institution-news-grid">
+          <a
+            v-for="item in institutionNews.slice(0, 3)"
+            :key="item.url"
+            class="institution-news-item"
+            :href="item.url"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
+            <strong>{{ item.title }}</strong>
+            <p v-if="item.summary" class="institution-news-summary">{{ item.summary }}</p>
+            <span class="institution-news-link">Read update <v-icon size="14">mdi-open-in-new</v-icon></span>
+          </a>
+        </div>
+
+        <v-alert
+          v-else
+          class="mt-4"
+          density="compact"
+          type="info"
+          variant="tonal"
+        >
+          No recent updates were found on your institution’s official website.
+        </v-alert>
+      </section>
+
       <v-alert
         v-if="errorMessage && !showAssignmentForm && !showMaterialForm"
         class="mb-5"
@@ -1432,6 +1492,7 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { isLasuInstitution } from '@/lib/institutions'
   import { normalizeCourseLabel } from '@/lib/identity'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
@@ -1449,6 +1510,11 @@
   const route = useRoute()
   const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
+  interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
+  const institutionNews = ref<InstitutionNewsItem[]>([])
+  const loadingInstitutionNews = ref(false)
+  const institutionNewsError = ref('')
+  const isLasuStudent = computed(() => Boolean(user.value && isLasuInstitution(user.value.institutionType, user.value.institution)))
   // The raw lists are kept so the duplicate counters stay accurate; every
   // visible list is derived from them through the automatic sorter.
   const tasks = ref<Task[]>([])
@@ -1680,6 +1746,7 @@
       }
 
       user.value = currentUser
+      void loadInstitutionNews(currentUser)
       const moderator = await checkResourceModerator(currentUser.id)
       isResourceModerator.value = moderator
       const [loadedTasks, savedIds] = await Promise.all([
@@ -1694,6 +1761,26 @@
       errorMessage.value = getErrorMessage(error)
     } finally {
       loading.value = false
+    }
+  }
+
+  async function loadInstitutionNews (currentUser: AppUser) {
+    institutionNews.value = []
+    institutionNewsError.value = ''
+    loadingInstitutionNews.value = true
+    try {
+      const params = new URLSearchParams({ institution: currentUser.institution, type: currentUser.institutionType })
+      const response = await fetch(`/api/institution-news?${params}`)
+      const result = await response.json() as { items?: InstitutionNewsItem[], officialSite?: string | null, error?: string }
+      if (!response.ok) throw new Error(result.error || 'Institution updates are temporarily unavailable.')
+      institutionNews.value = result.items || []
+      if (!result.officialSite) {
+        institutionNewsError.value = 'We could not verify an official news website for this institution.'
+      }
+    } catch (error) {
+      institutionNewsError.value = getErrorMessage(error, 'Institution updates are temporarily unavailable.')
+    } finally {
+      loadingInstitutionNews.value = false
     }
   }
 
