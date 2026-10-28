@@ -3,6 +3,7 @@ import { hasAuthSession } from '@/lib/auth'
 import DashboardPage from '@/pages/dashboard.vue'
 import EmailConfirmationPage from '@/pages/email-confirmation.vue'
 import HomePage from '@/pages/index.vue'
+import InstitutionNewsPage from '@/pages/institution-news.vue'
 import LasuUpdatesPage from '@/pages/lasu-updates.vue'
 import LoginPage from '@/pages/loginPage.vue'
 import SavedMaterialsPage from '@/pages/saved-materials.vue'
@@ -23,6 +24,7 @@ const router = createRouter({
     { path: '/signup', component: SignupPage },
     { path: '/auth/confirm', component: EmailConfirmationPage },
     { path: '/lasu-updates', component: LasuUpdatesPage },
+    { path: '/institution-news', component: InstitutionNewsPage, meta: { requiresAuth: true } },
     { path: '/about-me', component: AboutMePage, meta: { requiresAuth: true } },
     { path: '/about-us', component: AboutUsPage },
     { path: '/timetable', component: TimetablePage, meta: { requiresAuth: true } },

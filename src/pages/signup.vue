@@ -46,49 +46,6 @@
             <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
 
             <v-col cols="12" sm="6">
-              <v-select
-                v-model="institutionType"
-                color="primary"
-                :items="institutionTypes"
-                label="Institution category"
-                prepend-inner-icon="mdi-domain"
-                required
-                :rules="[value => Boolean(value) || 'Choose your institution category']"
-                variant="outlined"
-              />
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <v-select
-                v-model="institution"
-                color="primary"
-                :disabled="!institutionType"
-                :items="institutionOptions"
-                label="Institution name"
-                prepend-inner-icon="mdi-school"
-                required
-                :rules="[value => Boolean(value) || 'Choose your institution']"
-                variant="outlined"
-              />
-            </v-col>
-
-            <v-col v-if="institution === otherInstitutionValue" cols="12" sm="6">
-              <v-text-field
-                v-model="otherInstitution"
-                color="primary"
-                label="Enter your institution name"
-                maxlength="180"
-                placeholder="Use the official institution name"
-                required
-                :rules="[
-                  value => Boolean(value?.trim()) || 'Enter your institution name',
-                  value => !value || value.trim().length <= 180 || 'Institution names must be 180 characters or fewer',
-                ]"
-                variant="outlined"
-              />
-            </v-col>
-
-            <v-col cols="12" sm="6">
               <v-text-field
                 v-model="firstName"
                 autocomplete="given-name"
@@ -143,6 +100,49 @@
             </v-col>
 
             <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
+
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="institutionType"
+                color="primary"
+                :items="institutionTypes"
+                label="Institution category"
+                prepend-inner-icon="mdi-domain"
+                required
+                :rules="[value => Boolean(value) || 'Choose your institution category']"
+                variant="outlined"
+              />
+            </v-col>
+
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="institution"
+                color="primary"
+                :disabled="!institutionType"
+                :items="institutionOptions"
+                label="Institution name"
+                prepend-inner-icon="mdi-school"
+                required
+                :rules="[value => Boolean(value) || 'Choose your institution']"
+                variant="outlined"
+              />
+            </v-col>
+
+            <v-col v-if="institution === otherInstitutionValue" cols="12" sm="6">
+              <v-text-field
+                v-model="otherInstitution"
+                color="primary"
+                label="Enter your institution name"
+                maxlength="180"
+                placeholder="Use the official institution name"
+                required
+                :rules="[
+                  value => Boolean(value?.trim()) || 'Enter your institution name',
+                  value => !value || value.trim().length <= 180 || 'Institution names must be 180 characters or fewer',
+                ]"
+                variant="outlined"
+              />
+            </v-col>
 
             <v-col cols="12" sm="6">
               <v-select

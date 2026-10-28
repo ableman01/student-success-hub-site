@@ -136,79 +136,6 @@
         <img alt="" class="dashboard-hero-image" src="/study-dashboard.svg">
       </section>
 
-      <section aria-labelledby="institution-news-heading" class="institution-news-panel">
-        <div class="section-title-row">
-          <div>
-            <div class="section-kicker">{{ user?.institution || 'YOUR SCHOOL' }}</div>
-            <h2 id="institution-news-heading">Institution news</h2>
-            <p>Recent news about your institution, collected for your academic dashboard.</p>
-          </div>
-
-          <v-btn
-            :loading="loadingInstitutionNews"
-            prepend-icon="mdi-refresh"
-            rounded="pill"
-            variant="tonal"
-            @click="loadInstitutionNews(user?.institution || '')"
-          >
-            Refresh
-          </v-btn>
-        </div>
-
-        <v-alert
-          v-if="institutionNewsError"
-          class="mt-4"
-          density="compact"
-          type="info"
-          variant="tonal"
-        >
-          {{ institutionNewsError }}
-        </v-alert>
-
-        <div v-else-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
-          Loading news for {{ user?.institution }}…
-        </div>
-
-        <div v-else-if="institutionNews.length > 0" class="institution-news-grid">
-          <a
-            v-for="item in institutionNews"
-            :key="item.url"
-            class="institution-news-item"
-            :href="item.url"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span>
-              {{ item.source }}
-              <template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template>
-            </span>
-
-            <strong>{{ item.title }}</strong>
-
-            <p v-if="item.summary" class="institution-news-summary">{{ item.summary }}</p>
-
-            <span class="institution-news-link">
-              Read story
-              <v-icon size="14">mdi-open-in-new</v-icon>
-            </span>
-          </a>
-        </div>
-
-        <v-alert
-          v-else
-          class="mt-4"
-          density="compact"
-          type="info"
-          variant="tonal"
-        >
-          No recent stories were found. Try again later. News results are collected from Google News and Bing News and may not be official announcements.
-        </v-alert>
-
-        <small class="institution-news-attribution">
-          News results via Google News and Bing News. Confirm important deadlines and notices with your institution.
-        </small>
-      </section>
-
       <v-alert
         v-if="errorMessage && !showAssignmentForm && !showMaterialForm"
         class="mb-5"
@@ -1522,10 +1449,6 @@
   const route = useRoute()
   const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
-  interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
-  const institutionNews = ref<InstitutionNewsItem[]>([])
-  const loadingInstitutionNews = ref(false)
-  const institutionNewsError = ref('')
   // The raw lists are kept so the duplicate counters stay accurate; every
   // visible list is derived from them through the automatic sorter.
   const tasks = ref<Task[]>([])
@@ -1757,7 +1680,6 @@
       }
 
       user.value = currentUser
-      void loadInstitutionNews(currentUser.institution)
       const moderator = await checkResourceModerator(currentUser.id)
       isResourceModerator.value = moderator
       const [loadedTasks, savedIds] = await Promise.all([
@@ -1772,22 +1694,6 @@
       errorMessage.value = getErrorMessage(error)
     } finally {
       loading.value = false
-    }
-  }
-
-  async function loadInstitutionNews (institution: string) {
-    if (!institution.trim()) return
-    loadingInstitutionNews.value = true
-    institutionNewsError.value = ''
-    try {
-      const response = await fetch(`/api/institution-news?institution=${encodeURIComponent(institution)}`)
-      const result = await response.json() as { items?: InstitutionNewsItem[], error?: string }
-      if (!response.ok) throw new Error(result.error || 'Institution news is temporarily unavailable.')
-      institutionNews.value = result.items || []
-    } catch (error) {
-      institutionNewsError.value = getErrorMessage(error, 'Institution news is temporarily unavailable.')
-    } finally {
-      loadingInstitutionNews.value = false
     }
   }
 

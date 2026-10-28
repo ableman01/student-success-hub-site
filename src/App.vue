@@ -109,6 +109,15 @@
         />
 
         <v-list-item
+          :active="route.path === '/institution-news'"
+          prepend-icon="mdi-newspaper-variant-outline"
+          rounded="lg"
+          title="Institution news"
+          to="/institution-news"
+          @click="closeMobileDrawer"
+        />
+
+        <v-list-item
           :active="route.path === '/lasu-updates'"
           prepend-icon="mdi-bullhorn-outline"
           rounded="lg"
