@@ -185,6 +185,8 @@
 
             <strong>{{ item.title }}</strong>
 
+            <p v-if="item.summary" class="institution-news-summary">{{ item.summary }}</p>
+
             <span class="institution-news-link">
               Read story
               <v-icon size="14">mdi-open-in-new</v-icon>
@@ -199,11 +201,11 @@
           type="info"
           variant="tonal"
         >
-          No recent stories were found. Try again later. News results are collected from Google News and may not be official announcements.
+          No recent stories were found. Try again later. News results are collected from Google News and Bing News and may not be official announcements.
         </v-alert>
 
         <small class="institution-news-attribution">
-          News results via Google News. Confirm important deadlines and notices with your institution.
+          News results via Google News and Bing News. Confirm important deadlines and notices with your institution.
         </small>
       </section>
 
@@ -1520,7 +1522,7 @@
   const route = useRoute()
   const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
-  interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null }
+  interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
   const institutionNews = ref<InstitutionNewsItem[]>([])
   const loadingInstitutionNews = ref(false)
   const institutionNewsError = ref('')
@@ -2336,6 +2338,13 @@
     color: #216b50;
     font-size: 12px;
     font-weight: 700;
+  }
+
+  .institution-news-summary {
+    margin: 0;
+    color: #61756c;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .institution-news-loading {

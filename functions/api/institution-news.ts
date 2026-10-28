@@ -16,6 +16,7 @@ export async function onRequestGet ({ request }: PagesContext) {
   const feeds = [
     { url: `https://news.google.com/rss/search?q=${encodeURIComponent(searchTerms)}&hl=en-NG&gl=NG&ceid=NG:en`, label: 'Google News' },
     { url: `https://www.bing.com/news/search?q=${encodeURIComponent(`"${institution}" Nigeria`)}&format=rss`, label: 'Bing News' },
+    { url: `https://r.jina.ai/https://www.bing.com/news/search?q=${encodeURIComponent(`"${institution}" Nigeria`)}&format=rss`, label: 'Bing News' },
   ]
   try {
     let items: Array<{ title: string, url: string, source: string, published_at: string | null }> = []
@@ -52,6 +53,17 @@ export async function onRequestGet ({ request }: PagesContext) {
 }
 
 function parseFeed (xml: string, defaultSource: string) {
+  if (!xml.includes('<item>')) {
+    return [...xml.matchAll(/^### \[([^\]]+)\]\((https?:\/\/[^)]+)\)/gim)]
+      .slice(0, 12)
+      .map(([, title, url]) => ({
+        title: decodeXml(title),
+        url,
+        source: defaultSource,
+        published_at: null,
+      }))
+  }
+
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].slice(0, 12).map(([, item]) => {
     const read = (tag: string) => decodeXml(item.match(new RegExp(String.raw`<${tag}[^>]*>([\s\S]*?)<\/${tag}>`, 'i'))?.[1] || '')
     const title = read('title')
