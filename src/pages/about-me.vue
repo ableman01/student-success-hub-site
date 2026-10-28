@@ -31,6 +31,14 @@
 
       <div class="about-fields">
         <div class="about-field">
+          <span class="about-label">Institution category</span>
+          <span class="about-value">{{ institutionTypeLabel }}</span>
+        </div>
+        <div class="about-field">
+          <span class="about-label">Institution</span>
+          <span class="about-value">{{ user?.institution || 'Not set' }}</span>
+        </div>
+        <div class="about-field">
           <span class="about-label">Academic level</span>
           <span class="about-value">{{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'Not set' }}</span>
         </div>
@@ -59,15 +67,17 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { getAcademicLevelLabel } from '@/lib/academics'
+  import { institutionTypes } from '@/lib/institutions'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
 
   const router = useRouter()
   const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
+  const institutionTypeLabel = computed(() => institutionTypes.find(item => item.value === user.value?.institutionType)?.title || 'University')
   const user = ref<AppUser | null>(null)
   const aboutMessage = ref('')
   const aboutError = ref('')

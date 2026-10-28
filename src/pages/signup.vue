@@ -97,6 +97,12 @@
             </v-col>
 
             <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
+            <v-col cols="12" sm="6">
+              <v-select v-model="institutionType" :items="institutionTypes" label="Institution category" prepend-inner-icon="mdi-domain" required :rules="[value => Boolean(value) || 'Choose your institution category']" variant="outlined" />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-select v-model="institution" :disabled="!institutionType" :items="institutionOptions" label="Institution name" prepend-inner-icon="mdi-school" required :rules="[value => Boolean(value) || 'Choose your institution']" variant="outlined" />
+            </v-col>
 
             <v-col cols="12" sm="6">
               <v-select
@@ -240,10 +246,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels } from '@/lib/academics'
+  import { getDefaultInstitution, getInstitutions, institutionTypes } from '@/lib/institutions'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
 
   const router = useRouter()
@@ -253,6 +260,12 @@
   const dateOfBirth = ref('')
   const gender = ref('')
   const academicLevel = ref('')
+  const institutionType = ref('')
+  const institution = ref('')
+  const institutionOptions = computed(() => getInstitutions(institutionType.value))
+  watch(institutionType, type => {
+    if (!getInstitutions(type).some(option => option.value === institution.value)) institution.value = getDefaultInstitution(type)
+  })
   const program = ref('')
   const email = ref('')
   const password = ref('')
@@ -331,6 +344,11 @@
       return
     }
 
+    if (!institutionType.value || !institution.value) {
+      errorMessage.value = 'Choose your institution category and institution.'
+      return
+    }
+
     if (password.value.length < 8) {
       errorMessage.value = 'Use a password of at least 8 characters.'
       return
@@ -357,6 +375,8 @@
         dateOfBirth: dateOfBirth.value,
         gender: gender.value,
         academicLevel: academicLevel.value,
+        institutionType: institutionType.value,
+        institution: institution.value,
         program: program.value,
       })
       if (!user) {

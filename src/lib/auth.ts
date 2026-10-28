@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
+import { getDefaultInstitution } from '@/lib/institutions'
 
 const demoAccountKey = 'student-hub-demo-account'
 const demoSignedInKey = 'student-hub-demo-signed-in'
@@ -13,6 +14,8 @@ export interface AppUser {
   gender?: string
   academicLevel: string
   program: string
+  institutionType: string
+  institution: string
 }
 
 interface DemoAccount extends AppUser {
@@ -30,6 +33,8 @@ function toAppUser (user: User): AppUser {
     gender: String(user.user_metadata.gender || ''),
     academicLevel: String(user.user_metadata.academic_level || ''),
     program: String(user.user_metadata.program || ''),
+    institutionType: String(user.user_metadata.institution_type || 'university'),
+    institution: String(user.user_metadata.institution || getDefaultInstitution('university')),
   }
 }
 
@@ -76,6 +81,8 @@ export async function getCurrentUser (): Promise<AppUser | null> {
           gender: account.gender || '',
           academicLevel: account.academicLevel || '',
           program: account.program || '',
+          institutionType: account.institutionType || 'university',
+          institution: account.institution || getDefaultInstitution('university'),
         }
       : null
   }
@@ -120,6 +127,8 @@ export async function signUp (input: {
   password: string
   academicLevel: string
   program: string
+  institutionType: string
+  institution: string
 }) {
   const email = input.email.trim().toLowerCase()
   const profileMetadata = {
@@ -129,6 +138,8 @@ export async function signUp (input: {
     gender: input.gender,
     academic_level: input.academicLevel,
     program: input.program.trim(),
+    institution_type: input.institutionType,
+    institution: input.institution,
   }
 
   if (isSupabaseConfigured) {
@@ -176,6 +187,8 @@ export async function signUp (input: {
     gender: input.gender,
     academicLevel: input.academicLevel,
     program: input.program.trim(),
+    institutionType: input.institutionType,
+    institution: input.institution,
     passwordHash: await hashPassword(input.password),
   }
 
@@ -215,6 +228,8 @@ function toDemoUser (account: DemoAccount): AppUser {
     gender: account.gender || '',
     academicLevel: account.academicLevel || '',
     program: account.program || '',
+    institutionType: account.institutionType || 'university',
+    institution: account.institution || getDefaultInstitution('university'),
   }
 }
 
@@ -249,10 +264,12 @@ export async function updateProfile (input: {
   lastName: string
   academicLevel: string
   program: string
+  institutionType: string
+  institution: string
   currentPassword: string
 }) {
-  if (!input.firstName.trim() || !input.lastName.trim() || !input.academicLevel || !input.currentPassword) {
-    throw new Error('Enter your name and academic level, then confirm with your current password.')
+  if (!input.firstName.trim() || !input.lastName.trim() || !input.academicLevel || !input.institutionType || !input.institution || !input.currentPassword) {
+    throw new Error('Enter your name, academic level, and institution, then confirm with your current password.')
   }
 
   if (!isSupabaseConfigured) {
@@ -270,6 +287,8 @@ export async function updateProfile (input: {
       lastName: input.lastName.trim(),
       academicLevel: input.academicLevel,
       program: input.program.trim(),
+      institutionType: input.institutionType,
+      institution: input.institution,
     }
     sessionStorage.setItem(demoAccountKey, JSON.stringify(updatedAccount))
     return toDemoUser(updatedAccount)
@@ -303,6 +322,8 @@ export async function updateProfile (input: {
     gender: String(currentData.user.user_metadata.gender || ''),
     academic_level: input.academicLevel,
     program: input.program.trim(),
+    institution_type: input.institutionType,
+    institution: input.institution,
   }
   const { data, error } = await getSupabaseClient().auth.updateUser({ data: metadata })
   if (error) {

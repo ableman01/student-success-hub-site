@@ -85,6 +85,26 @@
                   </v-col>
                   <v-col cols="12" md="6">
                     <v-select
+                      v-model="profileInstitutionType"
+                      color="primary"
+                      :disabled="!isEditingProfile"
+                      :items="institutionTypes"
+                      label="Institution category"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="profileInstitution"
+                      color="primary"
+                      :disabled="!isEditingProfile"
+                      :items="institutionOptions"
+                      label="Institution"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
                       v-model="profileAcademicLevel"
                       color="primary"
                       :disabled="!isEditingProfile"
@@ -186,9 +206,10 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { computed, onMounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { academicLevels } from '@/lib/academics'
+  import { getDefaultInstitution, getInstitutions, institutionTypes } from '@/lib/institutions'
   import { changePassword, getCurrentUser, updateProfile as updateUserProfile } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
 
@@ -201,6 +222,14 @@
   const profileLastName = ref('')
   const profileEmail = ref('')
   const profileAcademicLevel = ref('')
+  const profileInstitutionType = ref('university')
+  const profileInstitution = ref(getDefaultInstitution('university'))
+  const institutionOptions = computed(() => getInstitutions(profileInstitutionType.value))
+  watch(profileInstitutionType, type => {
+    if (!getInstitutions(type).some(option => option.value === profileInstitution.value)) {
+      profileInstitution.value = getDefaultInstitution(type)
+    }
+  })
   const profileProgram = ref('')
 
   const isEditingProfile = ref(false)
@@ -220,6 +249,8 @@
     profileLastName.value = user.value.lastName || ''
     profileEmail.value = user.value.email || ''
     profileAcademicLevel.value = user.value.academicLevel || ''
+    profileInstitutionType.value = user.value.institutionType || 'university'
+    profileInstitution.value = user.value.institution || getDefaultInstitution('university')
     profileProgram.value = user.value.program || ''
   }
 
@@ -249,6 +280,8 @@
         firstName: profileFirstName.value,
         lastName: profileLastName.value,
         academicLevel: profileAcademicLevel.value,
+        institutionType: profileInstitutionType.value,
+        institution: profileInstitution.value,
         program: profileProgram.value,
       })
       profileMessage.value = 'Profile updated successfully.'
