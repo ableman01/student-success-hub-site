@@ -20,3 +20,25 @@ export const programmeOptions = [
   'Statistics', 'Surveying and Geoinformatics', 'Theatre Arts', 'Urban and Regional Planning', 'Veterinary Medicine',
   'Zoology',
 ].toSorted((a, b) => a.localeCompare(b))
+
+/**
+ * Return programme suggestions for the selected school. Suggestions are
+ * generated on demand so a newly added institution is immediately usable;
+ * students can still enter an institution-specific programme not listed.
+ */
+export function getInstitutionProgrammes (institutionType: string, institution: string) {
+  if (!institution.trim()) return []
+
+  const name = institution.toLocaleLowerCase('en-US')
+  const institutionSpecific = name.includes('agriculture')
+    ? ['Agriculture', 'Agricultural Economics', 'Agricultural Engineering', 'Animal Science', 'Food Science and Technology', 'Forestry and Wildlife Management']
+    : name.includes('technology') || name.includes('science')
+      ? ['Biochemistry', 'Biology', 'Chemical Engineering', 'Chemistry', 'Computer Engineering', 'Computer Science', 'Electrical and Electronics Engineering', 'Information Technology', 'Mathematics', 'Microbiology', 'Physics', 'Software Engineering', 'Statistics']
+      : name.includes('education') || institutionType === 'education'
+        ? ['Adult Education', 'Education and Biology', 'Education and Chemistry', 'Education and English Language', 'Education and Mathematics', 'Education and Physics', 'Educational Administration', 'Guidance and Counselling']
+        : []
+
+  // The full catalogue remains available for schools whose public programme
+  // details are not represented by a specialised catalogue yet.
+  return [...new Set([...institutionSpecific, ...programmeOptions])].toSorted((a, b) => a.localeCompare(b))
+}

@@ -1,9 +1,9 @@
 <template>
   <main class="signup-page">
     <header class="signup-header">
-      <RouterLink aria-label="LASU Student Success Hub home" class="signup-brand" to="/">
+      <RouterLink aria-label="Student Success Hub home" class="signup-brand" to="/">
         <img alt="" src="/academic-mark.svg">
-        <strong>LASU Student Success Hub</strong>
+        <strong>Student Success Hub</strong>
       </RouterLink>
 
       <div class="signup-header-actions">
@@ -162,7 +162,8 @@
                 v-model="program"
                 autocomplete="organization-title"
                 color="primary"
-                :items="programmeOptions"
+                :disabled="!selectedInstitution"
+                :items="institutionProgrammeOptions"
                 label="Programme or department"
                 placeholder="Choose a suggestion or type your programme"
                 prepend-inner-icon="mdi-book-education-outline"
@@ -303,7 +304,7 @@
   import { getAcademicLevels } from '@/lib/academics'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
   import { getDefaultInstitution, getInstitutions, institutionTypes, otherInstitutionValue } from '@/lib/institutions'
-  import { programmeOptions } from '@/lib/programs'
+  import { getInstitutionProgrammes } from '@/lib/programs'
 
   const router = useRouter()
   const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
@@ -318,6 +319,7 @@
   const institutionOptions = computed(() => getInstitutions(institutionType.value))
   const levelOptions = computed(() => getAcademicLevels(institutionType.value))
   const selectedInstitution = computed(() => institution.value === otherInstitutionValue ? otherInstitution.value.trim() : institution.value)
+  const institutionProgrammeOptions = computed(() => getInstitutionProgrammes(institutionType.value, selectedInstitution.value))
   watch(institutionType, (type, previousType) => {
     if (previousType && previousType !== type) {
       institution.value = getDefaultInstitution(type)
