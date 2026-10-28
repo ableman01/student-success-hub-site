@@ -65,10 +65,19 @@ Deno.serve(async (request: Request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data: institutionProfile, error: profileError } = await adminClient
+    .from("student_profiles")
+    .select("institution_key")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (profileError || !institutionProfile) {
+    return jsonResponse(request, { error: "Your institution profile is not ready. Please sign in again or contact support." }, { status: 403 });
+  }
+
   const { data: group, error: groupError } = await adminClient
     .from("study_groups")
-    .insert({ name, course, description, owner_id: user.id })
-    .select("id, name, course, description, invite_code, owner_id")
+    .insert({ name, course, description, owner_id: user.id, institution_key: institutionProfile.institution_key })
+    .select("id, name, course, description, invite_code, owner_id, institution_key")
     .single();
 
   if (groupError || !group) {

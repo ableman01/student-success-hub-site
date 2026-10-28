@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getCurrentUser } from '@/lib/auth'
+import { getInstitutionKey } from '@/lib/institutions'
 import { getErrorMessage } from '@/lib/errors'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
@@ -16,6 +17,7 @@ export interface StudyGroup {
   description: string
   invite_code: string
   owner_id: string
+  institution_key: string
 }
 
 export interface StudyGroupPost {
@@ -33,6 +35,7 @@ export interface StudyGroupPost {
 export interface StudyMessage {
   id: string
   course: string
+  institution_key: string
   user_id: string
   sender_name: string
   message_type: StudyMessageType
@@ -43,6 +46,9 @@ export interface StudyMessage {
 }
 
 export async function getStudyGroups () {
+  const user = await getCurrentUser()
+  if (!user) return []
+  const institutionKey = getInstitutionKey(user.institutionType, user.institution)
   const client = requireSupabase()
   const { data: memberships, error: membershipError } = await client
     .from('study_group_members')
@@ -52,7 +58,7 @@ export async function getStudyGroups () {
   const groupIds = (memberships ?? []).map(item => item.group_id)
   if (groupIds.length === 0) return []
 
-  const { data, error } = await client.from('study_groups').select('*').in('id', groupIds).order('created_at', { ascending: false })
+  const { data, error } = await client.from('study_groups').select('*').eq('institution_key', institutionKey).in('id', groupIds).order('created_at', { ascending: false })
   if (error) throw getSchemaError(error)
   return data as StudyGroup[]
 }
@@ -168,10 +174,13 @@ function getSchemaError (error: { code?: string, message: string }) {
 }
 
 export async function getStudyMessages (course: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to join a study room.')
   const { data, error } = await requireSupabase()
     .from('study_messages')
     .select('*')
     .eq('course', normalizeStudyCourse(course))
+    .eq('institution_key', getInstitutionKey(user.institutionType, user.institution))
     .order('created_at', { ascending: true })
     .limit(100)
 
@@ -187,21 +196,27 @@ export async function openStudyRoom (courseInput: string) {
   if (!course) throw new Error('Choose a course before opening a room.')
 
   const client = requireSupabase()
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to open a study room.')
+  const institutionKey = getInstitutionKey(user.institutionType, user.institution)
   const { error: openError } = await client
     .from('study_rooms')
-    .upsert({ course }, { onConflict: 'course', ignoreDuplicates: true })
+    .upsert({ course, institution_key: institutionKey }, { onConflict: 'institution_key,course', ignoreDuplicates: true })
   if (openError) throw getSchemaError(openError)
 
-  const { data, error } = await client.from('study_rooms').select('course').eq('course', course).single()
+  const { data, error } = await client.from('study_rooms').select('course').eq('institution_key', institutionKey).eq('course', course).single()
   if (error) throw getSchemaError(error)
   return data.course as string
 }
 
 export async function deleteStudyRoom (courseInput: string) {
   const course = normalizeStudyCourse(courseInput)
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to manage a study room.')
   const { data, error } = await requireSupabase()
     .from('study_rooms')
     .delete()
+    .eq('institution_key', getInstitutionKey(user.institutionType, user.institution))
     .eq('course', course)
     .select('course')
     .maybeSingle()
@@ -217,6 +232,8 @@ export async function sendStudyMessage (
   image?: File | null,
 ) {
   course = normalizeStudyCourse(course)
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Sign in to post in a study room.')
   const text = content.trim()
   if (!text && !image) {
     throw new Error('Write a message or attach an image.')
@@ -230,6 +247,7 @@ export async function sendStudyMessage (
     .from('study_messages')
     .insert({
       course,
+      institution_key: getInstitutionKey(user.institutionType, user.institution),
       message_type: messageType,
       content: text,
       image_path: imagePath,
@@ -284,20 +302,21 @@ export async function subscribeToStudyRoom (
   }
 
   const client = requireSupabase()
+  const institutionKey = getInstitutionKey(user.institutionType, user.institution)
   const channel: RealtimeChannel = client.channel(
-    `study-room:${encodeURIComponent(course.toLocaleLowerCase())}`,
-    { config: { presence: { key: globalThis.crypto.randomUUID() } } },
+    `study-room:${institutionKey}:${encodeURIComponent(course.toLocaleLowerCase())}`,
+    { config: { private: true, presence: { key: globalThis.crypto.randomUUID() } } },
   )
   channel
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_messages' }, payload => {
       const message = payload.new as StudyMessage
-      if (message.course === course) {
+      if (message.course === course && message.institution_key === institutionKey) {
         void addStudyImageUrls([message]).then(items => onMessage(items[0]))
       }
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_rooms' }, payload => {
-      const deleted = payload.old as { course?: string }
-      if (deleted.course === course) onRoomClosed?.()
+      const deleted = payload.old as { course?: string, institution_key?: string }
+      if (deleted.course === course && deleted.institution_key === institutionKey) onRoomClosed?.()
     })
     .on('presence', { event: 'sync' }, () => {
       onPresence(Object.values(channel.presenceState()).reduce(

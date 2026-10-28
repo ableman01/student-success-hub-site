@@ -108,7 +108,7 @@
         <div>
           <div class="dashboard-kicker">
             <v-icon size="16">mdi-school-outline</v-icon>
-            MY ACADEMIC SPACE
+            {{ user?.institution || 'MY ACADEMIC SPACE' }}
           </div>
 
           <h1>{{ greeting }}, {{ user?.firstName || 'Student' }}.</h1>
@@ -1292,7 +1292,7 @@
                   <v-select
                     v-model="profileAcademicLevel"
                     :disabled="!isEditingProfile"
-                    :items="academicLevels"
+                    :items="profileLevelOptions"
                     label="Current academic level"
                     required
                   />
@@ -1421,6 +1421,7 @@
   import { useAppTheme } from '@/composables/useAppTheme'
   import {
     academicLevels,
+    getAcademicLevels,
     getAcademicLevelLabel,
     getCourseAcademicLevel,
   } from '@/lib/academics'
@@ -1580,6 +1581,7 @@
   const profileLastName = ref('')
   const profileEmail = ref('')
   const profileAcademicLevel = ref('')
+  const profileLevelOptions = computed(() => getAcademicLevels(user.value?.institutionType || 'university'))
   const profileProgram = ref('')
   const profileCurrentPassword = ref('')
   const currentPassword = ref('')

@@ -63,14 +63,26 @@ Deno.serve(async (request: Request) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data: institutionProfile, error: profileError } = await adminClient
+    .from("student_profiles")
+    .select("institution_key")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (profileError || !institutionProfile) {
+    return jsonResponse(request, { error: "Your institution profile is not ready. Please sign in again or contact support." }, { status: 403 });
+  }
+
   const { data: group, error: groupError } = await adminClient
     .from("study_groups")
-    .select("id, name, course, description")
+    .select("id, name, course, description, institution_key")
     .eq("invite_code", inviteCode)
     .maybeSingle();
 
   if (groupError || !group) {
     return jsonResponse(request, { error: "That invite link is invalid or has expired." }, { status: 404 });
+  }
+  if (group.institution_key !== institutionProfile.institution_key) {
+    return jsonResponse(request, { error: "That invitation is for a different institution." }, { status: 403 });
   }
 
   const { error: memberError } = await adminClient

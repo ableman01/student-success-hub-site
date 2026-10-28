@@ -3,6 +3,18 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 export interface Database {
   public: {
     Tables: {
+      student_profiles: {
+        Row: {
+          user_id: string
+          institution_type: string
+          institution: string
+          institution_key: string
+          created_at: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       tasks: {
         Row: {
           id: string
@@ -52,6 +64,7 @@ export interface Database {
           file_path: string
           uploaded_by: string
           uploaded_by_name: string
+          institution_key: string
           status: 'pending' | 'approved' | 'rejected'
           reviewed_at: string | null
           review_comment: string | null
@@ -69,6 +82,7 @@ export interface Database {
           file_path: string
           uploaded_by?: string
           uploaded_by_name?: string
+          institution_key?: string
           status?: 'pending' | 'approved' | 'rejected'
           reviewed_at?: string | null
           review_comment?: string | null
@@ -155,11 +169,13 @@ export interface Database {
       study_rooms: {
         Row: {
           course: string
+          institution_key: string
           created_by: string
           created_at: string
         }
         Insert: {
           course: string
+          institution_key?: string
           created_by?: string
           created_at?: string
         }
@@ -170,6 +186,7 @@ export interface Database {
         Row: {
           id: string
           course: string
+          institution_key: string
           user_id: string
           sender_name: string
           message_type: 'discussion' | 'assignment'
@@ -180,6 +197,7 @@ export interface Database {
         Insert: {
           id?: string
           course: string
+          institution_key?: string
           user_id?: string
           sender_name?: string
           message_type?: 'discussion' | 'assignment'

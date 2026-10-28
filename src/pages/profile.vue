@@ -87,19 +87,18 @@
                     <v-select
                       v-model="profileInstitutionType"
                       color="primary"
-                      :disabled="!isEditingProfile"
+                      disabled
                       :items="institutionTypes"
                       label="Institution category"
                       variant="outlined"
                     />
                   </v-col>
                   <v-col cols="12" md="6">
-                    <v-select
+                    <v-text-field
                       v-model="profileInstitution"
                       color="primary"
-                      :disabled="!isEditingProfile"
-                      :items="institutionOptions"
                       label="Institution"
+                      disabled
                       variant="outlined"
                     />
                   </v-col>
@@ -110,7 +109,7 @@
                       :disabled="!isEditingProfile"
                       item-title="title"
                       item-value="value"
-                      :items="academicLevels"
+                      :items="profileLevelOptions"
                       label="Academic level"
                       variant="outlined"
                     />
@@ -126,7 +125,7 @@
                   </v-col>
                 </v-row>
                 <p class="profile-hint">
-                  Profile details stay locked until you choose Edit profile details. Your email address is permanently locked after account creation.
+                  Profile details stay locked until you choose Edit profile details. Your institution is fixed at signup so content stays within your school. Your email address is permanently locked after account creation.
                   Confirm your current password to save other changes.
                 </p>
                 <v-text-field
@@ -206,10 +205,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { academicLevels } from '@/lib/academics'
-  import { getDefaultInstitution, getInstitutions, institutionTypes } from '@/lib/institutions'
+  import { getAcademicLevels } from '@/lib/academics'
+  import { getDefaultInstitution, institutionTypes } from '@/lib/institutions'
   import { changePassword, getCurrentUser, updateProfile as updateUserProfile } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
 
@@ -223,13 +222,8 @@
   const profileEmail = ref('')
   const profileAcademicLevel = ref('')
   const profileInstitutionType = ref('university')
+  const profileLevelOptions = computed(() => getAcademicLevels(profileInstitutionType.value))
   const profileInstitution = ref(getDefaultInstitution('university'))
-  const institutionOptions = computed(() => getInstitutions(profileInstitutionType.value))
-  watch(profileInstitutionType, type => {
-    if (!getInstitutions(type).some(option => option.value === profileInstitution.value)) {
-      profileInstitution.value = getDefaultInstitution(type)
-    }
-  })
   const profileProgram = ref('')
 
   const isEditingProfile = ref(false)

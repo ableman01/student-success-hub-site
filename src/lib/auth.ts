@@ -23,7 +23,13 @@ interface DemoAccount extends AppUser {
   passwordHash: string
 }
 
-function toAppUser (user: User): AppUser {
+async function toAppUser (user: User): Promise<AppUser> {
+  const { data: institutionProfile } = await getSupabaseClient()
+    .from('student_profiles')
+    .select('institution_type, institution')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
   return {
     id: user.id,
     email: user.email || '',
@@ -33,8 +39,8 @@ function toAppUser (user: User): AppUser {
     gender: String(user.user_metadata.gender || ''),
     academicLevel: String(user.user_metadata.academic_level || ''),
     program: String(user.user_metadata.program || ''),
-    institutionType: String(user.user_metadata.institution_type || 'university'),
-    institution: String(user.user_metadata.institution || getDefaultInstitution('university')),
+    institutionType: institutionProfile?.institution_type || String(user.user_metadata.institution_type || 'university'),
+    institution: institutionProfile?.institution || String(user.user_metadata.institution || getDefaultInstitution('university')),
   }
 }
 
@@ -102,7 +108,7 @@ export async function getCurrentUser (): Promise<AppUser | null> {
   if (error) {
     throw error
   }
-  return data.user ? toAppUser(data.user) : null
+  return data.user ? await toAppUser(data.user) : null
 }
 
 export async function hasAuthSession () {
@@ -131,6 +137,9 @@ export async function signUp (input: {
   institution: string
 }) {
   const email = input.email.trim().toLowerCase()
+  if (!input.institutionType || !input.institution.trim() || input.institution.trim().length > 180) {
+    throw new Error('Choose a valid institution category and institution name (up to 180 characters).')
+  }
   const profileMetadata = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
@@ -166,7 +175,7 @@ export async function signUp (input: {
       throw new Error('This email already has an account. Log in instead, or reset your password if needed.')
     }
 
-    return { user: data.user ? toAppUser(data.user) : null, hasSession: Boolean(data.session) }
+    return { user: data.user ? await toAppUser(data.user) : null, hasSession: Boolean(data.session) }
   }
 
   const existingAccount = getDemoAccount()
@@ -243,7 +252,7 @@ export async function signIn (email: string, password: string) {
     if (error) {
       throw error
     }
-    return data.user ? toAppUser(data.user) : null
+    return data.user ? await toAppUser(data.user) : null
   }
 
   const account = getDemoAccount()
@@ -322,8 +331,6 @@ export async function updateProfile (input: {
     gender: String(currentData.user.user_metadata.gender || ''),
     academic_level: input.academicLevel,
     program: input.program.trim(),
-    institution_type: input.institutionType,
-    institution: input.institution,
   }
   const { data, error } = await getSupabaseClient().auth.updateUser({ data: metadata })
   if (error) {
@@ -332,7 +339,7 @@ export async function updateProfile (input: {
   if (!data.user) {
     throw new Error('Supabase did not return the updated profile.')
   }
-  return toAppUser(data.user)
+  return await toAppUser(data.user)
 }
 
 export async function changePassword (currentPassword: string, newPassword: string) {

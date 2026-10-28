@@ -1,4 +1,5 @@
 import { getCourseAcademicLevel } from '@/lib/academics'
+import { getInstitutionKey } from '@/lib/institutions'
 import { type AppUser, getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
@@ -29,6 +30,7 @@ export interface Resource {
   file_path: string
   uploaded_by: string
   uploaded_by_name: string
+  institution_key: string
   status: ResourceStatus
   reviewed_at: string | null
   review_comment: string | null
@@ -62,7 +64,7 @@ const maxFileSize = 20 * 1024 * 1024
 
 function matchesAcademicLevel (resource: Resource, academicLevel: string) {
   const courseLevel = getCourseAcademicLevel(resource.course)
-  if (courseLevel) {
+  if (courseLevel && /^\d{3}$/.test(academicLevel)) {
     return courseLevel === academicLevel
   }
 
@@ -131,6 +133,10 @@ function validateResource (resource: NewResource) {
 }
 
 export async function getResources (kind: ResourceKind, academicLevel?: string) {
+  const user = await getCurrentUser()
+  if (!user) return []
+  const institutionKey = getInstitutionKey(user.institutionType, user.institution)
+
   if (!isSupabaseConfigured) {
     const rows = await localTransaction<Array<Resource & { blob: Blob }>>(
       'readonly',
@@ -139,6 +145,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
 
     return rows
       .filter(resource => resource.kind === kind)
+      .filter(resource => (resource.institution_key || 'university:lagos state university (lasu), ojo') === institutionKey)
       .filter(resource =>
         kind !== 'class_material'
         || !academicLevel
@@ -152,6 +159,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
         review_comment: resource.review_comment || null,
         category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
         uploaded_by_name: resource.uploaded_by_name || 'LASU student',
+        institution_key: resource.institution_key || 'university:lagos state university (lasu), ojo',
         url: URL.createObjectURL(blob),
       }))
   }
@@ -160,6 +168,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
     .from('resources')
     .select('*')
     .eq('kind', kind)
+    .eq('institution_key', institutionKey)
 
   const { data, error } = await query.order('created_at', { ascending: false })
 
@@ -171,7 +180,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
     }
     if (error.code === 'PGRST204' || error.code === '42703') {
       throw new Error(
-        'The Supabase resources table needs the latest category and contributor fields. Run the latest resource migration, then reload this page.',
+        'The Supabase resources table needs the institution isolation migration. Run the latest Supabase migration, then reload this page.',
       )
     }
 
@@ -366,6 +375,7 @@ export async function uploadResource (input: NewResource) {
       file_path: fileName,
       uploaded_by: user.id,
       uploaded_by_name: getContributorName(user),
+      institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'approved',
       reviewed_at: null,
       review_comment: null,
@@ -407,6 +417,7 @@ export async function uploadResource (input: NewResource) {
       file_path: filePath,
       uploaded_by: user.id,
       uploaded_by_name: getContributorName(user),
+      institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'pending',
     })
     .select('*')

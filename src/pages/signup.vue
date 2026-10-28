@@ -5,6 +5,7 @@
         <img alt="" src="/academic-mark.svg">
         <strong>LASU Student Success Hub</strong>
       </RouterLink>
+
       <div class="signup-header-actions">
         <v-btn
           :aria-label="themeLabel"
@@ -33,6 +34,7 @@
         <div class="signup-kicker"><v-icon size="16">mdi-school-outline</v-icon> YOUR ACADEMIC SPACE</div>
         <v-card-title class="signup-card-title">Join the student community</v-card-title>
         <v-card-subtitle>Set up your profile to plan coursework, share resources, and study with classmates.</v-card-subtitle>
+
         <div aria-label="Three signup steps" class="signup-steps">
           <span><b>1</b> About you</span><span><b>2</b> Your studies</span><span><b>3</b> Account</span>
         </div>
@@ -41,7 +43,51 @@
       <v-form @submit.prevent="register">
         <v-card-text class="signup-fields">
           <v-row density="compact">
-            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
+            <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>About you</strong><span>Your name and profile details</span></div></v-col>
+
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="institutionType"
+                color="primary"
+                :items="institutionTypes"
+                label="Institution category"
+                prepend-inner-icon="mdi-domain"
+                required
+                :rules="[value => Boolean(value) || 'Choose your institution category']"
+                variant="outlined"
+              />
+            </v-col>
+
+            <v-col cols="12" sm="6">
+              <v-select
+                v-model="institution"
+                color="primary"
+                :disabled="!institutionType"
+                :items="institutionOptions"
+                label="Institution name"
+                prepend-inner-icon="mdi-school"
+                required
+                :rules="[value => Boolean(value) || 'Choose your institution']"
+                variant="outlined"
+              />
+            </v-col>
+
+            <v-col v-if="institution === otherInstitutionValue" cols="12" sm="6">
+              <v-text-field
+                v-model="otherInstitution"
+                color="primary"
+                label="Enter your institution name"
+                maxlength="180"
+                placeholder="Use the official institution name"
+                required
+                :rules="[
+                  value => Boolean(value?.trim()) || 'Enter your institution name',
+                  value => !value || value.trim().length <= 180 || 'Institution names must be 180 characters or fewer',
+                ]"
+                variant="outlined"
+              />
+            </v-col>
+
             <v-col cols="12" sm="6">
               <v-text-field
                 v-model="firstName"
@@ -96,19 +142,13 @@
               />
             </v-col>
 
-            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
-            <v-col cols="12" sm="6">
-              <v-select v-model="institutionType" :items="institutionTypes" label="Institution category" prepend-inner-icon="mdi-domain" required :rules="[value => Boolean(value) || 'Choose your institution category']" variant="outlined" />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-select v-model="institution" :disabled="!institutionType" :items="institutionOptions" label="Institution name" prepend-inner-icon="mdi-school" required :rules="[value => Boolean(value) || 'Choose your institution']" variant="outlined" />
-            </v-col>
+            <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
 
             <v-col cols="12" sm="6">
               <v-select
                 v-model="academicLevel"
                 color="primary"
-                :items="academicLevels"
+                :items="levelOptions"
                 label="Current academic level"
                 prepend-inner-icon="mdi-school-outline"
                 required
@@ -129,9 +169,9 @@
               />
             </v-col>
 
-            <v-col cols="12" class="signup-full-row"><div class="signup-section-title"><strong>Account details</strong><span>Use an email address you can access</span></div></v-col>
+            <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>Account details</strong><span>Use an email address you can access</span></div></v-col>
 
-            <v-col cols="12" class="signup-full-row">
+            <v-col class="signup-full-row" cols="12">
               <v-text-field
                 v-model="email"
                 autocomplete="email"
@@ -179,7 +219,7 @@
               />
             </v-col>
 
-            <v-col cols="12" class="signup-full-row">
+            <v-col class="signup-full-row" cols="12">
               <v-expansion-panels class="mb-2">
                 <v-expansion-panel title="Read the site terms and conditions">
                   <v-expansion-panel-text>
@@ -195,6 +235,7 @@
                   </v-expansion-panel-text>
                 </v-expansion-panel>
               </v-expansion-panels>
+
               <v-checkbox
                 v-model="agreedToTerms"
                 color="secondary"
@@ -203,7 +244,7 @@
               />
             </v-col>
 
-            <v-col v-if="errorMessage" cols="12" class="signup-full-row">
+            <v-col v-if="errorMessage" class="signup-full-row" cols="12">
               <v-alert
                 class="mb-4"
                 type="error"
@@ -213,7 +254,7 @@
               </v-alert>
             </v-col>
 
-            <v-col v-if="successMessage" cols="12" class="signup-full-row">
+            <v-col v-if="successMessage" class="signup-full-row" cols="12">
               <v-alert
                 class="mb-4"
                 type="success"
@@ -222,8 +263,15 @@
                 {{ successMessage }}
               </v-alert>
             </v-col>
-            <v-col v-if="canResendConfirmation" cols="12" class="signup-full-row pt-0">
-              <v-btn :loading="resendingConfirmation" prepend-icon="mdi-email-sync-outline" rounded="pill" variant="tonal" @click="resendConfirmation">Resend confirmation email</v-btn>
+
+            <v-col v-if="canResendConfirmation" class="signup-full-row pt-0" cols="12">
+              <v-btn
+                :loading="resendingConfirmation"
+                prepend-icon="mdi-email-sync-outline"
+                rounded="pill"
+                variant="tonal"
+                @click="resendConfirmation"
+              >Resend confirmation email</v-btn>
             </v-col>
           </v-row>
         </v-card-text>
@@ -249,8 +297,8 @@
   import { computed, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
-  import { academicLevels } from '@/lib/academics'
-  import { getDefaultInstitution, getInstitutions, institutionTypes } from '@/lib/institutions'
+  import { getAcademicLevels } from '@/lib/academics'
+  import { getDefaultInstitution, getInstitutions, institutionTypes, otherInstitutionValue } from '@/lib/institutions'
   import { resendSignUpConfirmation, signUp } from '@/lib/auth'
 
   const router = useRouter()
@@ -262,9 +310,18 @@
   const academicLevel = ref('')
   const institutionType = ref('')
   const institution = ref('')
+  const otherInstitution = ref('')
   const institutionOptions = computed(() => getInstitutions(institutionType.value))
-  watch(institutionType, type => {
-    if (!getInstitutions(type).some(option => option.value === institution.value)) institution.value = getDefaultInstitution(type)
+  const levelOptions = computed(() => getAcademicLevels(institutionType.value))
+  const selectedInstitution = computed(() => institution.value === otherInstitutionValue ? otherInstitution.value.trim() : institution.value)
+  watch(institutionType, (type, previousType) => {
+    if (previousType && previousType !== type) {
+      institution.value = getDefaultInstitution(type)
+      otherInstitution.value = ''
+      academicLevel.value = ''
+    } else if (!getInstitutions(type).some(option => option.value === institution.value)) {
+      institution.value = getDefaultInstitution(type)
+    }
   })
   const program = ref('')
   const email = ref('')
@@ -344,7 +401,7 @@
       return
     }
 
-    if (!institutionType.value || !institution.value) {
+    if (!institutionType.value || !selectedInstitution.value) {
       errorMessage.value = 'Choose your institution category and institution.'
       return
     }
@@ -376,7 +433,7 @@
         gender: gender.value,
         academicLevel: academicLevel.value,
         institutionType: institutionType.value,
-        institution: institution.value,
+        institution: selectedInstitution.value,
         program: program.value,
       })
       if (!user) {
