@@ -27,16 +27,19 @@ export const programmeOptions = [
  * students can still enter an institution-specific programme not listed.
  */
 export function getInstitutionProgrammes (institutionType: string, institution: string) {
-  if (!institution.trim()) return []
+  if (!institution.trim()) {
+    return []
+  }
 
   const name = institution.toLocaleLowerCase('en-US')
-  const institutionSpecific = name.includes('agriculture')
-    ? ['Agriculture', 'Agricultural Economics', 'Agricultural Engineering', 'Animal Science', 'Food Science and Technology', 'Forestry and Wildlife Management']
-    : name.includes('technology') || name.includes('science')
-      ? ['Biochemistry', 'Biology', 'Chemical Engineering', 'Chemistry', 'Computer Engineering', 'Computer Science', 'Electrical and Electronics Engineering', 'Information Technology', 'Mathematics', 'Microbiology', 'Physics', 'Software Engineering', 'Statistics']
-      : name.includes('education') || institutionType === 'education'
-        ? ['Adult Education', 'Education and Biology', 'Education and Chemistry', 'Education and English Language', 'Education and Mathematics', 'Education and Physics', 'Educational Administration', 'Guidance and Counselling']
-        : []
+  let institutionSpecific: string[] = []
+  if (name.includes('agriculture')) {
+    institutionSpecific = ['Agriculture', 'Agricultural Economics', 'Agricultural Engineering', 'Animal Science', 'Food Science and Technology', 'Forestry and Wildlife Management']
+  } else if (name.includes('technology') || name.includes('science')) {
+    institutionSpecific = ['Biochemistry', 'Biology', 'Chemical Engineering', 'Chemistry', 'Computer Engineering', 'Computer Science', 'Electrical and Electronics Engineering', 'Information Technology', 'Mathematics', 'Microbiology', 'Physics', 'Software Engineering', 'Statistics']
+  } else if (name.includes('education') || institutionType === 'education') {
+    institutionSpecific = ['Adult Education', 'Education and Biology', 'Education and Chemistry', 'Education and English Language', 'Education and Mathematics', 'Education and Physics', 'Educational Administration', 'Guidance and Counselling']
+  }
 
   // The full catalogue remains available for schools whose public programme
   // details are not represented by a specialised catalogue yet.
