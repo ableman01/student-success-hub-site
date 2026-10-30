@@ -8,33 +8,21 @@
       <header class="about-us-heading">
         <span class="about-us-kicker">WHY WE BUILT THIS</span>
         <h1>About the Student Success Hub</h1>
-        <p>A practical study space created to help LASU students find useful resources, plan their work, and learn together.</p>
+        <p>A practical study space created to help university students find useful resources, plan their work, and learn together.</p>
       </header>
 
       <v-card class="creator-card pa-5 pa-md-8" elevation="0" rounded="xl">
-        <div class="creator-photo-wrap">
-          <v-img
-            alt="The creator of the Student Success Hub"
-            class="creator-photo"
-            cover
-            src="@/assets/creator.png"
-          />
-        </div>
         <div class="creator-copy">
-          <span class="about-us-kicker">THE CREATOR</span>
-          <h2>Built with students in mind</h2>
+          <h2>Why this hub was created</h2>
           <p>This hub was created to make the everyday parts of studying easier to manage: finding class materials and past questions, keeping assignments and deadlines together, and having a place to discuss coursework with classmates.</p>
           <p>Students often spend valuable time searching across different places for study resources and trying to keep track of what is due. The goal is to bring those tools into one welcoming space, so students can spend more time learning and supporting one another.</p>
           <p>The hub is a community resource. Shared materials are contributed by students, and everyone is encouraged to upload honestly, respect other people’s work, and help keep the library useful.</p>
-          <v-btn color="primary" prepend-icon="mdi-view-dashboard-outline" rounded="pill" to="/dashboard">
-            Visit the dashboard
-          </v-btn>
         </div>
       </v-card>
 
       <section id="about-app" aria-labelledby="about-app-heading" class="about-app-section">
         <div class="about-study-hero">
-          <img alt="LASU students studying together in a library with Student Success Hub text overlay" src="/about-study-group.jpg">
+          <img alt="Students studying together in a library" src="/about-study-group.jpg">
           <div class="about-study-shade" />
         </div>
 
@@ -71,13 +59,6 @@
 
           <article class="about-app-card">
             <span class="pillar-number">04</span>
-            <v-icon color="primary" size="25">mdi-briefcase-search-outline</v-icon>
-            <h3>Where can I find opportunities?</h3>
-            <p>Discover scholarships, internships, competitions, volunteering, mentorship, and student projects.</p>
-          </article>
-
-          <article class="about-app-card">
-            <span class="pillar-number">05</span>
             <v-icon color="primary" size="25">mdi-account-group-outline</v-icon>
             <h3>Who can help me?</h3>
             <p>Connect with a trusted student community, peer mentors, academic support, and appropriate campus services.</p>
@@ -106,10 +87,8 @@
 .about-us-kicker { color: #4b7960; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
 .about-us-heading h1 { margin: 12px 0; color: #1e3c2e; font-size: clamp(2rem, 5vw, 3.3rem); letter-spacing: -.045em; line-height: 1.08; }
 .about-us-heading p { margin: 0 auto; max-width: 650px; color: #687a70; line-height: 1.7; }
-.creator-card { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(0, 1.2fr); align-items: center; gap: clamp(24px, 5vw, 56px); border: 1px solid #e1e8df; background: #fffefa; }
-.creator-photo-wrap { overflow: hidden; border-radius: 18px; background: #eaf0e9; }
-.creator-photo { min-height: 430px; }
-.creator-copy h2 { margin: 10px 0 14px; color: #1e3c2e; font-size: clamp(1.5rem, 3vw, 2rem); }
+.creator-card { max-width: 900px; margin: 0 auto; border: 1px solid #e1e8df; background: #fffefa; }
+.creator-copy h2 { margin: 0 0 14px; color: #1e3c2e; font-size: clamp(1.5rem, 3vw, 2rem); }
 .creator-copy p,.pillar-card p { color: #687a70; line-height: 1.7; }
 .creator-copy .v-btn { margin-top: 8px; }
 .pillar-card { height: 100%; border: 1px solid #e1e8df; background: #fffefa; }
@@ -132,5 +111,4 @@
 .about-app-footer p { max-width: 640px; margin: 0; color: #596b61; line-height: 1.65; }
 @media (max-width: 800px) { .success-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .success-pillars { grid-template-columns: 1fr; } .about-app-footer { align-items: stretch; flex-direction: column; padding: 17px; } .about-study-hero { min-height: 220px; } }
-@media (max-width: 700px) { .creator-card { grid-template-columns: 1fr; } .creator-photo { min-height: 350px; max-height: 520px; } }
 </style>
