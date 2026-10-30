@@ -7,7 +7,7 @@
 
           <span class="brand-copy">
             <strong>Student Success Hub</strong>
-            <span>Learn together. Go further.</span>
+            <span>Supporting LASU students and beyond</span>
           </span>
         </RouterLink>
 
