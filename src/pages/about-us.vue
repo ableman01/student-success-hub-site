@@ -24,6 +24,7 @@
         <div class="about-study-hero">
           <img alt="Students studying together in a library" src="/about-study-group.jpg">
           <div class="about-study-shade" />
+          <h2 class="about-study-title">UNIVERSITY STUDENT SUCCESS HUB</h2>
         </div>
 
         <div class="about-app-heading">
@@ -99,6 +100,7 @@
 .about-study-hero img,.about-study-shade { position: absolute; inset: 0; width: 100%; height: 100%; }
 .about-study-hero img { object-fit: cover; object-position: center 48%; }
 .about-study-shade { background: linear-gradient(90deg, rgb(10 31 33 / 76%), rgb(10 31 33 / 12%)); }
+.about-study-title { position: absolute; top: 24px; left: 26px; z-index: 1; max-width: calc(100% - 52px); margin: 0; color: #fff; font-size: clamp(1.45rem, 4.2vw, 3rem); font-weight: 800; letter-spacing: .015em; line-height: 1.1; text-shadow: 0 2px 12px rgb(0 0 0 / 25%); }
 .about-app-heading { max-width: 760px; margin-bottom: 22px; }
 .about-app-heading h2 { margin: 8px 0; color: #20394a; font-size: clamp(1.8rem, 4vw, 2.5rem); letter-spacing: -.04em; }
 .about-app-heading p,.about-app-card p { margin: 0; color: #718087; line-height: 1.65; }
@@ -110,5 +112,5 @@
 .about-app-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; border: 1px solid #e4e9e1; border-radius: 18px; padding: 18px 22px; background: #f6f8f3; }
 .about-app-footer p { max-width: 640px; margin: 0; color: #596b61; line-height: 1.65; }
 @media (max-width: 800px) { .success-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .success-pillars { grid-template-columns: 1fr; } .about-app-footer { align-items: stretch; flex-direction: column; padding: 17px; } .about-study-hero { min-height: 220px; } }
+@media (max-width: 560px) { .success-pillars { grid-template-columns: 1fr; } .about-app-footer { align-items: stretch; flex-direction: column; padding: 17px; } .about-study-hero { min-height: 220px; } .about-study-title { top: 18px; left: 18px; max-width: calc(100% - 36px); font-size: clamp(1.3rem, 6vw, 1.8rem); } }
 </style>
