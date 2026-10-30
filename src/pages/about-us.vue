@@ -66,7 +66,7 @@
         </div>
 
         <div class="about-app-footer">
-          <p>The Hub brings these five needs together, so every student can find the next useful step in one welcoming place.</p>
+          <p>The Hub brings these four needs together, so every student can find the next useful step in one welcoming place.</p>
 
           <v-btn color="primary" rounded="pill" :to="currentUser ? '/timetable' : '/signup'">
             {{ currentUser ? 'Build my study week' : 'Join the student hub' }}
