@@ -7,7 +7,7 @@
         <p>A short, self-playing tour of the tools students use to plan, learn, and stay connected.</p>
       </div>
 
-      <v-btn color="primary" rounded="pill" to="/preview" variant="tonal">Try the interactive preview <v-icon end>mdi-arrow-right</v-icon></v-btn>
+      
     </div>
 
     <div class="tour-player" :class="{ 'tour-paused': !isPlaying }">
