@@ -12,7 +12,7 @@
         </RouterLink>
 
         <nav aria-label="Main navigation" class="header-actions">
-          <a class="header-link" href="#past-questions">Explore resources</a>
+          <a class="header-link" href="#dashboard-tour-heading">How it works</a> <a class="header-link" href="#past-questions">Explore resources</a>
           <RouterLink class="header-link" to="/about-us">About us</RouterLink>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
           <a class="header-link" :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">WhatsApp support</a>
@@ -122,7 +122,7 @@
         </div>
       </section>
 
-      <section aria-label="What you can do" class="feature-strip">
+      <DashboardVideoTour class="home-tour" /><section aria-label="What you can do" class="feature-strip">
         <article class="feature-item">
           <span class="feature-icon feature-icon-blue"><v-icon>mdi-book-open-variant</v-icon></span>
 
@@ -616,7 +616,7 @@
 
 <script setup lang="ts">
   import type { Resource } from '@/services/resources'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'; import DashboardVideoTour from '@/components/DashboardVideoTour.vue'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
@@ -1260,7 +1260,7 @@ const filteredPastQuestions = computed(() => {
     box-shadow: 0 8px 28px rgb(30 53 54 / 4%);
   }
 
-  .about-app-section {
+  .home-tour.tour-section{margin:8px 0 48px}.about-app-section {
     scroll-margin-top: 24px;
     margin: 0 0 70px;
   }
