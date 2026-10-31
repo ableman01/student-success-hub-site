@@ -100,7 +100,7 @@
               </a>
             </template>
 
-            <RouterLink class="hero-secondary" to="/study">
+            <RouterLink class="hero-secondary preview-link" to="/preview">Explore the dashboard <v-icon end size="18">mdi-eye-outline</v-icon></RouterLink> <a class="hero-secondary" href="#dashboard-tour-heading">Watch a quick tour <v-icon end size="18">mdi-play-circle-outline</v-icon></a> <RouterLink class="hero-secondary" to="/study">
               Join a live study room
               <v-icon end size="18">mdi-account-group-outline</v-icon>
             </RouterLink>
