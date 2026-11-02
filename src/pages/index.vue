@@ -12,7 +12,7 @@
         </RouterLink>
 
         <nav aria-label="Main navigation" class="header-actions">
-          <a class="header-link" href="#dashboard-tour-heading">How it works</a>
+          <a v-if="!currentUser" class="header-link" href="#dashboard-tour-heading">How it works</a>
           <a class="header-link" href="#past-questions">Explore resources</a>
           <RouterLink class="header-link" to="/about-us">About us</RouterLink>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
@@ -62,7 +62,7 @@
         </nav>
       </header>
 
-      <section class="hero-panel">
+      <section v-if="!currentUser" class="hero-panel">
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot" />
@@ -139,7 +139,7 @@
         </div>
       </section>
 
-      <DashboardVideoTour class="home-tour" />
+      <DashboardVideoTour v-if="!currentUser" class="home-tour" />
 
       <section aria-label="What you can do" class="feature-strip">
         <article class="feature-item">

@@ -109,7 +109,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-select
                       v-model="profileAcademicLevel"
                       color="primary"
@@ -122,7 +122,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-text-field
                       v-model="profileProgram"
                       color="primary"
