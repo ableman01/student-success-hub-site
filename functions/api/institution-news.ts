@@ -363,35 +363,54 @@ function parseLasuNews (html: string): NewsItem[] {
 }
 
 async function searchInstitutionNews (institution: string) {
-  const url = new URL('https://news.google.com/rss/search')
-  url.searchParams.set('q', `"${institution}"`)
-  url.searchParams.set('hl', 'en-NG')
-  url.searchParams.set('gl', 'NG')
-  url.searchParams.set('ceid', 'NG:en')
-
-  const response = await fetch(url.href, {
-    headers: { 'User-Agent': 'StudentSuccessHub/1.0 (+institution news search)' },
-    signal: AbortSignal.timeout(7000),
-  })
-  if (!response.ok) {
-    throw new Error(`News search returned HTTP ${response.status}`)
-  }
-  const xml = await response.text()
-  if (xml.length > 1_500_000) {
-    throw new Error('News search response is too large')
-  }
+  const bingUrl = new URL('https://www.bing.com/news/search')
+  bingUrl.searchParams.set('q', `"${institution}"`)
+  bingUrl.searchParams.set('format', 'RSS')
+  const googleUrl = new URL('https://news.google.com/rss/search')
+  googleUrl.searchParams.set('q', `"${institution}"`)
+  googleUrl.searchParams.set('hl', 'en-NG')
+  googleUrl.searchParams.set('gl', 'NG')
+  googleUrl.searchParams.set('ceid', 'NG:en')
   const normalizedInstitution = normalizeName(institution)
   const ignoredTerms = new Set(['university', 'polytechnic', 'college', 'education', 'federal', 'state', 'of', 'the', 'and', 'institute', 'technology', 'technical'])
   const terms = normalizedInstitution.split(' ').filter(term => term.length > 2 && !ignoredTerms.has(term))
   const aliases = normalizedInstitution.includes('yaba college of technology') ? ['yabatech'] : []
   const timestamp = (date: string | null) => date ? Date.parse(date) || 0 : 0
-  return parseFeed(xml, url.href, url.origin)
-    .filter(item => {
-      const title = normalizeName(item.title)
-      return [...terms, ...aliases].some(term => title.includes(term))
-    })
-    .toSorted((left, right) => timestamp(right.published_at) - timestamp(left.published_at))
-    .slice(0, 12)
+
+  let successfulResponses = 0
+  let lastError: unknown
+  for (const url of [bingUrl, googleUrl]) {
+    try {
+      const response = await fetch(url.href, {
+        headers: { 'User-Agent': 'StudentSuccessHub/1.0 (+institution news search)' },
+        signal: AbortSignal.timeout(7000),
+      })
+      if (!response.ok) {
+        throw new Error(`News search at ${url.hostname} returned HTTP ${response.status}`)
+      }
+      const xml = await response.text()
+      if (xml.length > 1_500_000) {
+        throw new Error(`News search at ${url.hostname} returned a response that is too large`)
+      }
+      successfulResponses++
+      const items = parseFeed(xml, url.href, url.origin)
+        .filter(item => {
+          const title = normalizeName(item.title)
+          return [...terms, ...aliases].some(term => title.includes(term))
+        })
+        .toSorted((left, right) => timestamp(right.published_at) - timestamp(left.published_at))
+      if (items.length > 0) {
+        return items.slice(0, 12)
+      }
+    } catch (error) {
+      console.warn('Institution news provider failed; trying the next provider:', url.hostname, error)
+      lastError = error
+    }
+  }
+  if (successfulResponses === 0 && lastError) {
+    throw lastError
+  }
+  return []
 }
 
 async function getWordPressNews (origin: string): Promise<NewsItem[]> {
@@ -425,11 +444,32 @@ function parseFeed (xml: string, base: string, origin: string): NewsItem[] {
     const link = decodeEntities(linkTag || linkText || '').trim()
     const dateText = cleanText(entry.match(/<(?:pubDate|published|updated|dc:date)[^>]*>([\s\S]*?)<\//i)?.[1] || '')
     const publication = cleanText(entry.match(/<source\b[^>]*>([\s\S]*?)<\/source>/i)?.[1] || '')
-    if (!title || !link || !isSameOfficialSite(new URL(link, base).href, origin)) {
+    if (!title || !link) {
       return null
     }
-    return { title, url: new URL(link, base).href, source: publication || new URL(origin).hostname, published_at: Number.isNaN(Date.parse(dateText)) ? null : new Date(dateText).toISOString() }
+    const feedUrl = new URL(link, base)
+    if (!isSameOfficialSite(feedUrl.href, origin)) {
+      return null
+    }
+    const articleUrl = getBingArticleUrl(feedUrl) || feedUrl
+    return { title, url: articleUrl.href, source: publication || articleUrl.hostname, published_at: Number.isNaN(Date.parse(dateText)) ? null : new Date(dateText).toISOString() }
   }).filter((item): item is NewsItem => item !== null)
+}
+
+function getBingArticleUrl (url: URL) {
+  if (url.hostname !== 'www.bing.com' || url.pathname !== '/news/apiclick.aspx') {
+    return null
+  }
+  const target = url.searchParams.get('url')
+  if (!target) {
+    return null
+  }
+  try {
+    const articleUrl = new URL(target)
+    return ['http:', 'https:'].includes(articleUrl.protocol) ? articleUrl : null
+  } catch {
+    return null
+  }
 }
 
 function parseOfficialPage (html: string, pageUrl: string, origin: string): NewsItem[] {

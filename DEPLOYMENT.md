@@ -44,7 +44,7 @@ If using a custom SMTP sender, configure and verify it in Supabase Auth. Store S
 
 ## Institution news
 
-Cloudflare Pages deploys the `/functions/api/institution-news` handler alongside the static app. It checks official institutional sources first. If an official news feed cannot be verified or read, it falls back to Google News search results and labels them as non-official; search results can include unrelated coverage, so students should verify important information with their institution. Some regulator listings do not publish an institution website, in which case the page links to the relevant directory and news search.
+Cloudflare Pages deploys the `/functions/api/institution-news` handler alongside the static app. It checks official institutional sources first. If an official news feed cannot be verified or read, it searches Bing News RSS and then Google News RSS, labelling results as non-official; search results can include unrelated coverage, so students should verify important information with their institution. Some regulator listings do not publish an institution website, in which case the page links to the relevant directory and news search.
 
 ## 4. Release flow
 
