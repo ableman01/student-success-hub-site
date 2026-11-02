@@ -68,36 +68,6 @@
               />
             </v-col>
 
-            <v-col cols="12" sm="6">
-              <v-text-field
-                v-model="dateOfBirth"
-                autocomplete="bday"
-                color="primary"
-                label="Date of birth"
-                :max="latestDateOfBirth"
-                required
-                :rules="[
-                  value => Boolean(value) || 'Date of birth is required',
-                  value => !value || value <= latestDateOfBirth || 'Date of birth cannot be in the future',
-                ]"
-                type="date"
-                variant="outlined"
-              />
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <v-select
-                v-model="gender"
-                color="primary"
-                :items="genderOptions"
-                label="Sex"
-                prepend-inner-icon="mdi-account-outline"
-                required
-                :rules="[value => Boolean(value) || 'Choose male or female']"
-                variant="outlined"
-              />
-            </v-col>
-
             <v-col class="signup-full-row" cols="12"><div class="signup-section-title"><strong>Your studies</strong><span>Help us organise your academic space</span></div></v-col>
 
             <v-col cols="12" sm="6">
@@ -310,8 +280,6 @@
   const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const firstName = ref('')
   const lastName = ref('')
-  const dateOfBirth = ref('')
-  const gender = ref('')
   const academicLevel = ref('')
   const institutionType = ref('')
   const institution = ref('')
@@ -345,11 +313,6 @@
   const canResendConfirmation = ref(false)
   const successMessage = ref('')
   const errorMessage = ref('')
-  const genders = new Set(['Female', 'Male'])
-  const genderOptions = [...genders]
-  const latestDateOfBirth = new Date(
-    Date.now() - new Date().getTimezoneOffset() * 60_000,
-  ).toISOString().slice(0, 10)
   const emailRules = [
     (value: string) => Boolean(value?.trim()) || 'Email is required',
     (value: string) => /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(value || '')
@@ -379,16 +342,6 @@
 
     if (!firstName.value.trim() || !lastName.value.trim()) {
       errorMessage.value = 'Enter your first and last name.'
-      return
-    }
-
-    if (!dateOfBirth.value || dateOfBirth.value > latestDateOfBirth) {
-      errorMessage.value = 'Enter a valid date of birth that is not in the future.'
-      return
-    }
-
-    if (!genders.has(gender.value)) {
-      errorMessage.value = 'Choose male or female.'
       return
     }
 
@@ -444,8 +397,6 @@
         password: password.value,
         firstName: firstName.value.trim(),
         lastName: lastName.value.trim(),
-        dateOfBirth: dateOfBirth.value,
-        gender: gender.value,
         academicLevel: academicLevel.value,
         institutionType: institutionType.value,
         institution: selectedInstitution.value,

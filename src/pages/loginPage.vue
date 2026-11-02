@@ -112,7 +112,30 @@
               variant="outlined"
             />
 
+            <div class="recovery-link-row">
+              <v-btn
+                v-if="!recovering"
+                :disabled="!isSupabaseConfigured"
+                size="small"
+                variant="text"
+                @click="recovering = true; errorMessage = ''; recoveryMessage = ''"
+              >Forgot password?</v-btn>
+
+              <span v-if="!isSupabaseConfigured" class="text-caption">Available on live accounts</span>
+            </div>
+
+            <v-alert
+              v-if="recoveryMessage"
+              class="mb-4"
+              role="status"
+              type="success"
+              variant="tonal"
+            >
+              {{ recoveryMessage }}
+            </v-alert>
+
             <v-text-field
+              v-if="!recovering"
               v-model="password"
               :append-inner-icon="visible ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
               autocomplete="current-password"
@@ -143,10 +166,21 @@
               size="large"
               type="submit"
             >
-              Log in to your dashboard
+              {{ recovering ? 'Send recovery link' : 'Log in to your dashboard' }}
               <v-icon end>mdi-arrow-right</v-icon>
             </v-btn>
           </v-form>
+
+          <v-btn
+            v-if="recovering"
+            block
+            class="mt-2"
+            rounded="lg"
+            variant="text"
+            @click="recovering = false; recoveryMessage = ''; errorMessage = ''"
+          >
+            Back to log in
+          </v-btn>
 
           <div class="login-divider"><span>YOUR ACADEMIC SPACE</span></div>
 
@@ -175,7 +209,7 @@
   import { ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
-  import { signIn } from '@/lib/auth'
+  import { requestPasswordRecovery, signIn } from '@/lib/auth'
   import { isSupabaseConfigured } from '@/lib/supabase'
 
   const route = useRoute()
@@ -186,6 +220,8 @@
   const password = ref('')
   const loading = ref(false)
   const errorMessage = ref('')
+  const recoveryMessage = ref('')
+  const recovering = ref(false)
   function getErrorMessage (error: unknown) {
     return error instanceof Error
       ? error.message
@@ -194,9 +230,15 @@
 
   async function login () {
     errorMessage.value = ''
+    recoveryMessage.value = ''
     loading.value = true
 
     try {
+      if (recovering.value) {
+        await requestPasswordRecovery(email.value)
+        recoveryMessage.value = 'If an account uses that email, a password recovery link will arrive shortly. Check your inbox and spam folder.'
+        return
+      }
       const user = await signIn(email.value, password.value)
       if (!user) {
         throw new Error('Login did not return a user. Please try again.')

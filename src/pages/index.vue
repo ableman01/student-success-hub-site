@@ -301,8 +301,13 @@
                   v-model="resourceCourse"
                   label="Course"
                   placeholder="e.g. BIO 201"
+                  required
                 />
               </v-col>
+
+              <v-col cols="12" sm="6"><v-text-field v-model="resourceAcademicYear" label="Academic year" placeholder="2026/2027" required /></v-col>
+              <v-col cols="12" sm="6"><v-select v-model="resourceSemester" :items="['First semester', 'Second semester', 'Summer']" label="Semester" required /></v-col>
+              <v-col cols="12"><v-text-field v-model="resourceSource" label="Source" placeholder="e.g. Department course pack or lecturer" required /></v-col>
 
               <v-col cols="12" md="6">
                 <v-select
@@ -408,8 +413,8 @@
 
                   <p class="text-caption text-medium-emphasis mt-1">
                     {{ resource.course || 'Course not specified' }}
-                    ·
-                    {{ formatDate(resource.created_at) }}
+                    <span aria-hidden="true"> · </span>{{ resource.academic_year || 'Academic year not provided' }}
+                    <span aria-hidden="true"> · </span>{{ resource.semester || 'Semester not provided' }}
                   </p>
 
                   <div class="resource-attribution">
@@ -424,7 +429,8 @@
                       {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved - see notifications' }}
                     </v-chip>
 
-                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'Student' }}</strong></span>
+                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'Student Contributor' }}</strong></span>
+                    <span class="resource-source">Source: {{ resource.source || 'Not provided' }}</span>
 
                     <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">
                       {{ getAcademicLevelLabel(getQuestionLevel(resource)) }}
@@ -473,6 +479,16 @@
                 Discuss with classmates
                 <v-icon end>mdi-forum-outline</v-icon>
               </v-btn>
+
+              <v-btn
+                v-if="currentUser && resource.status === 'approved' && currentUser.id !== resource.uploaded_by"
+                block
+                class="mt-2"
+                prepend-icon="mdi-flag-outline"
+                rounded="pill"
+                variant="text"
+                @click="openReport(resource)"
+              >Report resource</v-btn>
 
               <v-btn
                 v-if="isResourceModerator"
@@ -634,6 +650,28 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog aria-labelledby="resource-report-title" max-width="520" :model-value="Boolean(reportingResource)" @update:model-value="value => { if (!value) reportingResource = null }">
+      <v-card class="pa-5" rounded="xl">
+        <h2 id="resource-report-title" class="text-h5 mb-2">Report this resource</h2>
+        <p class="text-body-2 text-medium-emphasis mb-4">Reports are reviewed by a moderator at your institution.</p>
+        <v-select v-model="reportReason" :items="reportReasons" label="Reason" required />
+        <v-textarea
+          v-model="reportDetails"
+          auto-grow
+          counter="1000"
+          label="Additional details (optional)"
+          maxlength="1000"
+          rows="2"
+        />
+        <v-alert v-if="reportError" class="mb-3" type="error" variant="tonal">{{ reportError }}</v-alert>
+
+        <div class="d-flex justify-end ga-2">
+          <v-btn rounded="pill" variant="text" @click="reportingResource = null">Cancel</v-btn>
+          <v-btn color="primary" :loading="submittingReport" rounded="pill" @click="submitReport">Send report</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
@@ -653,6 +691,7 @@
     deleteResource,
     getResources,
     getSavedResourceIds,
+    reportResource,
     setResourceSaved,
     updateResource,
     uploadResource,
@@ -665,6 +704,9 @@
   const pastQuestions = ref<Resource[]>([])
   const resourceTitle = ref('')
   const resourceCourse = ref('')
+  const resourceAcademicYear = ref('2026/2027')
+  const resourceSemester = ref('First semester')
+  const resourceSource = ref('')
   const resourceAcademicLevel = ref<string | null>(null)
   const resourceDescription = ref('')
   const resourceFile = ref<File | File[] | null>(null)
@@ -694,6 +736,16 @@
     },
   })
   const errorMessage = ref('')
+  const reportingResource = ref<Resource | null>(null)
+  const reportReason = ref('incorrect')
+  const reportReasons = [
+    { title: 'Incorrect details or file', value: 'incorrect' },
+    { title: 'Duplicate upload', value: 'duplicate' },
+    { title: 'Inappropriate content', value: 'inappropriate' },
+  ]
+  const reportDetails = ref('')
+  const reportError = ref('')
+  const submittingReport = ref(false)
   const questionSearch = ref('')
   const questionCourse = ref<string | null>(null)
   const questionLevel = ref<string | null>(null)
@@ -805,11 +857,17 @@
         description: resourceDescription.value,
         kind: 'past_question',
         academic_level: getCourseAcademicLevel(resourceCourse.value) || resourceAcademicLevel.value,
+        academic_year: resourceAcademicYear.value,
+        semester: resourceSemester.value,
+        source: resourceSource.value,
         file,
       })
       pastQuestions.value.unshift(resource)
       resourceTitle.value = ''
       resourceCourse.value = ''
+      resourceAcademicYear.value = '2026/2027'
+      resourceSemester.value = 'First semester'
+      resourceSource.value = ''
       resourceAcademicLevel.value = null
       resourceDescription.value = ''
       resourceFile.value = null
@@ -822,6 +880,29 @@
       errorMessage.value = getErrorMessage(error, 'Could not upload this past question.')
     } finally {
       uploading.value = false
+    }
+  }
+
+  function openReport (resource: Resource) {
+    reportingResource.value = resource
+    reportReason.value = 'incorrect'
+    reportDetails.value = ''
+    reportError.value = ''
+  }
+
+  async function submitReport () {
+    if (!reportingResource.value) return
+    submittingReport.value = true
+    reportError.value = ''
+    try {
+      await reportResource(reportingResource.value.id, reportReason.value as 'incorrect' | 'duplicate' | 'inappropriate', reportDetails.value)
+      reportingResource.value = null
+      successMessage.value = 'Thank you. Your report has been sent for review.'
+      successSnackbar.value = true
+    } catch (error) {
+      reportError.value = getErrorMessage(error, 'Could not send this report.')
+    } finally {
+      submittingReport.value = false
     }
   }
 
@@ -881,10 +962,6 @@
     } finally {
       deleting.value = false
     }
-  }
-
-  function formatDate (date: string) {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(date))
   }
 
   onMounted(loadPastQuestions)

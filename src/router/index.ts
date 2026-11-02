@@ -9,6 +9,7 @@ const router = createRouter({
     { path: '/loginPage', redirect: '/login' },
     { path: '/signup', component: () => import('@/pages/signup.vue') },
     { path: '/auth/confirm', component: () => import('@/pages/email-confirmation.vue') },
+    { path: '/auth/recover', component: () => import('@/pages/password-recovery.vue') },
     { path: '/lasu-updates', component: () => import('@/pages/lasu-updates.vue'), meta: { requiresAuth: true } },
     { path: '/institution-news', component: () => import('@/pages/institution-news.vue'), meta: { requiresAuth: true } },
     { path: '/about-us', component: () => import('@/pages/about-us.vue') },

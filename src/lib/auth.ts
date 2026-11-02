@@ -10,8 +10,6 @@ export interface AppUser {
   email: string
   firstName: string
   lastName: string
-  dateOfBirth?: string
-  gender?: string
   academicLevel: string
   program: string
   institutionType: string
@@ -35,8 +33,6 @@ async function toAppUser (user: User): Promise<AppUser> {
     email: user.email || '',
     firstName: String(user.user_metadata.first_name || user.email || 'Student'),
     lastName: String(user.user_metadata.last_name || ''),
-    dateOfBirth: String(user.user_metadata.date_of_birth || ''),
-    gender: String(user.user_metadata.gender || ''),
     academicLevel: String(user.user_metadata.academic_level || ''),
     program: String(user.user_metadata.program || ''),
     institutionType: institutionProfile?.institution_type || String(user.user_metadata.institution_type || 'university'),
@@ -83,8 +79,6 @@ export async function getCurrentUser (): Promise<AppUser | null> {
           email: account.email,
           firstName: account.firstName,
           lastName: account.lastName,
-          dateOfBirth: account.dateOfBirth || '',
-          gender: account.gender || '',
           academicLevel: account.academicLevel || '',
           program: account.program || '',
           institutionType: account.institutionType || 'university',
@@ -127,8 +121,6 @@ export async function hasAuthSession () {
 export async function signUp (input: {
   firstName: string
   lastName: string
-  dateOfBirth: string
-  gender: string
   email: string
   password: string
   academicLevel: string
@@ -146,8 +138,6 @@ export async function signUp (input: {
   const profileMetadata = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
-    date_of_birth: input.dateOfBirth,
-    gender: input.gender,
     academic_level: input.academicLevel,
     program: input.program.trim(),
     institution_type: input.institutionType,
@@ -195,8 +185,6 @@ export async function signUp (input: {
     email,
     firstName: input.firstName.trim(),
     lastName: input.lastName.trim(),
-    dateOfBirth: input.dateOfBirth,
-    gender: input.gender,
     academicLevel: input.academicLevel,
     program: input.program.trim(),
     institutionType: input.institutionType,
@@ -238,8 +226,6 @@ function toDemoUser (account: DemoAccount): AppUser {
     email: account.email,
     firstName: account.firstName,
     lastName: account.lastName,
-    dateOfBirth: account.dateOfBirth || '',
-    gender: account.gender || '',
     academicLevel: account.academicLevel || '',
     program: account.program || '',
     institutionType: account.institutionType || 'university',
@@ -271,6 +257,38 @@ export async function signIn (email: string, password: string) {
 
   sessionStorage.setItem(demoSignedInKey, 'true')
   return toDemoUser(account)
+}
+
+export async function requestPasswordRecovery (email: string) {
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!normalizedEmail || !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new Error('Enter the email address linked to your student account.')
+  }
+  if (!isSupabaseConfigured) {
+    throw new Error('Password recovery is available when the live account service is connected.')
+  }
+  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(normalizedEmail, {
+    redirectTo: `${window.location.origin}/auth/recover`,
+  })
+  if (error) {
+    throw error
+  }
+}
+
+export async function finishPasswordRecovery (newPassword: string) {
+  if (newPassword.length < 8) {
+    throw new Error('Use a password of at least 8 characters.')
+  }
+  if (!isSupabaseConfigured) {
+    throw new Error('The account service is unavailable.')
+  }
+  const { data, error } = await getSupabaseClient().auth.updateUser({ password: newPassword })
+  if (error) {
+    throw error
+  }
+  if (!data.user) {
+    throw new Error('Your password could not be updated. Request a new recovery link.')
+  }
 }
 
 export async function updateProfile (input: {
@@ -332,8 +350,6 @@ export async function updateProfile (input: {
   const metadata = {
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
-    date_of_birth: String(currentData.user.user_metadata.date_of_birth || ''),
-    gender: String(currentData.user.user_metadata.gender || ''),
     academic_level: input.academicLevel,
     program: input.program.trim(),
   }

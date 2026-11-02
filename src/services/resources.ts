@@ -1,5 +1,5 @@
 import { getCourseAcademicLevel } from '@/lib/academics'
-import { type AppUser, getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
 import { getInstitutionKey } from '@/lib/institutions'
@@ -26,6 +26,9 @@ export interface Resource {
   kind: ResourceKind
   category: ResourceCategory
   academic_level: string | null
+  academic_year: string | null
+  semester: string | null
+  source: string | null
   file_name: string
   file_path: string
   uploaded_by: string
@@ -55,6 +58,22 @@ export interface NewResource {
   category?: ResourceCategory
   file: File
   academic_level?: string | null
+  academic_year: string
+  semester: string
+  source: string
+}
+
+export type ResourceReportReason = 'incorrect' | 'duplicate' | 'inappropriate'
+export interface ResourceReport {
+  id: string
+  resource_id: string
+  reporter_id: string
+  reason: ResourceReportReason
+  details: string | null
+  status: 'pending' | 'resolved' | 'dismissed'
+  created_at: string
+  resource_title: string
+  course: string
 }
 
 const databaseName = 'student-success-hub'
@@ -71,9 +90,8 @@ function matchesAcademicLevel (resource: Resource, academicLevel: string) {
   return !resource.academic_level || resource.academic_level === academicLevel
 }
 
-function getContributorName (user: AppUser) {
-  const firstName = user.firstName === user.email ? '' : user.firstName
-  return [firstName, user.lastName].filter(Boolean).join(' ').trim() || 'LASU student'
+function getContributorName () {
+  return 'Student Contributor'
 }
 
 function openLocalDatabase () {
@@ -122,6 +140,12 @@ function validateResource (resource: NewResource) {
   if (!resource.title.trim()) {
     throw new Error('Add a title for this PDF.')
   }
+  if (!resource.course.trim() || !resource.academic_year.trim() || !resource.semester.trim() || !resource.source.trim()) {
+    throw new Error('Add the course, academic year, semester, and source before uploading.')
+  }
+  if (resource.academic_year.trim().length > 20 || resource.semester.trim().length > 40 || resource.source.trim().length > 240) {
+    throw new Error('Keep the academic year within 20 characters, semester within 40, and source within 240.')
+  }
   const fileExtension = resource.file.name.toLowerCase().split('.').pop()
   const isPdf = resource.file.type === 'application/pdf' || fileExtension === 'pdf'
   if (!isPdf) {
@@ -160,7 +184,7 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
         reviewed_at: resource.reviewed_at || null,
         review_comment: resource.review_comment || null,
         category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
-        uploaded_by_name: resource.uploaded_by_name || 'LASU student',
+        uploaded_by_name: 'Student Contributor',
         institution_key: resource.institution_key || 'university:lagos state university (lasu), ojo',
         url: URL.createObjectURL(blob),
       }))
@@ -373,10 +397,13 @@ export async function uploadResource (input: NewResource) {
       kind: input.kind,
       category: input.category || (input.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
       academic_level: input.academic_level || null,
+      academic_year: input.academic_year.trim(),
+      semester: input.semester.trim(),
+      source: input.source.trim(),
       file_name: fileName,
       file_path: fileName,
       uploaded_by: user.id,
-      uploaded_by_name: getContributorName(user),
+      uploaded_by_name: getContributorName(),
       institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'approved',
       reviewed_at: null,
@@ -415,10 +442,13 @@ export async function uploadResource (input: NewResource) {
       kind: input.kind,
       category: input.category || (input.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
       academic_level: input.academic_level || null,
+      academic_year: input.academic_year.trim(),
+      semester: input.semester.trim(),
+      source: input.source.trim(),
       file_name: fileName,
       file_path: filePath,
       uploaded_by: user.id,
-      uploaded_by_name: getContributorName(user),
+      uploaded_by_name: getContributorName(),
       institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'pending',
     })
@@ -439,6 +469,73 @@ export async function uploadResource (input: NewResource) {
   }
 
   return normalizeResource(data)
+}
+
+export async function reportResource (resourceId: string, reason: ResourceReportReason, details = '') {
+  const user = await getCurrentUser()
+  if (!user) {
+    throw new Error('Sign in before reporting a resource.')
+  }
+  if (!isSupabaseConfigured) {
+    throw new Error('Reporting is available on live student accounts.')
+  }
+  const { error } = await getSupabaseClient().from('resource_reports').insert({
+    resource_id: resourceId,
+    reporter_id: user.id,
+    reason,
+    details: details.trim() || null,
+  })
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('You have already reported this resource.')
+    }
+    throw new Error(getErrorMessage(error))
+  }
+}
+
+export async function getPendingResourceReports (): Promise<ResourceReport[]> {
+  if (!isSupabaseConfigured) {
+    return []
+  }
+  const { data, error } = await getSupabaseClient()
+    .from('resource_reports')
+    .select('id, resource_id, reporter_id, reason, details, status, created_at')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
+  const reports = data || []
+  if (reports.length === 0) {
+    return []
+  }
+  const { data: resources, error: resourceError } = await getSupabaseClient()
+    .from('resources')
+    .select('id, title, course')
+    .in('id', reports.map(report => report.resource_id))
+  if (resourceError) {
+    throw new Error(getErrorMessage(resourceError))
+  }
+  const resourceById = new Map((resources || []).map(resource => [resource.id, resource]))
+  return reports.map(report => ({
+    ...report,
+    resource_title: resourceById.get(report.resource_id)?.title || 'Resource removed',
+    course: resourceById.get(report.resource_id)?.course || '',
+  }))
+}
+
+export async function reviewResourceReport (reportId: string, status: 'resolved' | 'dismissed') {
+  const user = await getCurrentUser()
+  if (!user || !await isResourceModerator(user.id) || !isSupabaseConfigured) {
+    throw new Error('Only an institution moderator can review resource reports.')
+  }
+  const { error } = await getSupabaseClient().from('resource_reports').update({
+    status,
+    reviewed_at: new Date().toISOString(),
+  }).eq('id', reportId)
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
 }
 
 export async function deleteResource (resource: Resource) {

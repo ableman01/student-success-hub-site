@@ -135,6 +135,35 @@
         </div>
       </section>
 
+      <section v-if="isResourceModerator" aria-labelledby="reports-heading" class="moderation-panel report-review-panel">
+        <div class="section-title-row">
+          <div>
+            <div class="section-kicker">STUDENT REPORTS</div>
+            <h2 id="reports-heading">Resource reports</h2>
+            <p>Review incorrect, duplicate, or inappropriate uploads reported by students.</p>
+          </div>
+
+          <v-chip color="error" prepend-icon="mdi-flag-outline" variant="tonal">{{ pendingResourceReports.length }} open</v-chip>
+        </div>
+
+        <v-alert v-if="pendingResourceReports.length === 0" class="mt-4" type="success" variant="tonal">There are no open student reports.</v-alert>
+
+        <div v-else class="moderation-list">
+          <article v-for="report in pendingResourceReports" :key="report.id" class="moderation-item">
+            <div class="moderation-copy">
+              <strong>{{ reportReasonLabel(report.reason) }}</strong>
+              <span>{{ report.resource_title }}<template v-if="report.course"> · {{ report.course }}</template> · {{ formatDate(report.created_at) }}</span>
+              <p v-if="report.details">{{ report.details }}</p>
+            </div>
+
+            <div class="moderation-actions">
+              <v-btn rounded="pill" variant="text" @click="reviewReport(report.id, 'dismissed')">Dismiss report</v-btn>
+              <v-btn color="primary" rounded="pill" @click="reviewReport(report.id, 'resolved')">Mark resolved</v-btn>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section aria-label="Study together" class="dashboard-hero">
         <div class="dashboard-hero-copy">
           <span class="dashboard-hero-kicker">A GOOD DAY TO LEARN</span>
@@ -256,7 +285,7 @@
             <div class="moderation-copy">
               <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
               <strong>{{ resource.title }}</strong>
-              <span>{{ resource.course || 'Course not specified' }} Â· {{ resource.uploaded_by_name }} Â· {{ formatDate(resource.created_at) }}</span>
+              <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
 
               <v-textarea
@@ -990,7 +1019,8 @@
                   {{ getResourceCategoryLabel(resource.category) }}
                 </v-chip>
 
-                <span>Shared by {{ resource.uploaded_by_name || 'Student' }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }}</span>
+                <span>Source: {{ resource.source || 'Not provided' }}</span>
               </div>
 
               <v-chip
@@ -1001,7 +1031,7 @@
                 size="small"
                 variant="tonal"
               >
-                {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
+                {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved · upload a corrected PDF' }}
               </v-chip>
 
               <p v-if="resource.description" class="material-description">
@@ -1157,6 +1187,12 @@
                     readonly
                   />
                 </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" sm="6"><v-text-field v-model="resourceAcademicYear" label="Academic year" placeholder="2026/2027" required /></v-col>
+                <v-col cols="12" sm="6"><v-select v-model="resourceSemester" :items="['First semester', 'Second semester', 'Summer']" label="Semester" required /></v-col>
+                <v-col cols="12"><v-text-field v-model="resourceSource" label="Source" placeholder="e.g. Department course pack or lecturer" required /></v-col>
               </v-row>
 
               <v-select
@@ -1515,7 +1551,7 @@
 
 <script setup lang="ts">
   import type { AppUser } from '@/lib/auth'
-  import type { AppNotification, Resource, ResourceCategory } from '@/services/resources'
+  import type { AppNotification, Resource, ResourceCategory, ResourceReport } from '@/services/resources'
   import type { Task } from '@/services/tasks'
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
@@ -1535,7 +1571,7 @@
   import { isLasuInstitution } from '@/lib/institutions'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
+  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResourceReports, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
   import {
     createTask,
     deduplicateAndSortTasks,
@@ -1563,6 +1599,7 @@
   const savedResourceIds = ref<string[]>([])
   const savingResourceId = ref('')
   const pendingResources = ref<Resource[]>([])
+  const pendingResourceReports = ref<ResourceReport[]>([])
   const notifications = ref<AppNotification[]>([])
   const isResourceModerator = ref(false)
   const showNotifications = ref(false)
@@ -1680,6 +1717,9 @@
   const errorMessage = ref('')
   const resourceTitle = ref('')
   const resourceCourse = ref('')
+  const resourceAcademicYear = ref('2026/2027')
+  const resourceSemester = ref('First semester')
+  const resourceSource = ref('')
   const resourceAcademicLevel = computed(() =>
     getCourseAcademicLevel(resourceCourse.value) || user.value?.academicLevel || '',
   )
@@ -1803,14 +1843,31 @@
   async function refreshDashboardSignals (moderator = isResourceModerator.value) {
     if (!isSupabaseConfigured) return
     try {
-      const [loadedNotifications, pending] = await Promise.all([
+      const [loadedNotifications, pending, reports] = await Promise.all([
         getNotifications(),
         moderator ? getPendingResources() : Promise.resolve([]),
+        moderator ? getPendingResourceReports() : Promise.resolve([]),
       ])
       notifications.value = loadedNotifications
       pendingResources.value = pending
+      pendingResourceReports.value = reports
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not refresh notifications and upload approvals.')
+    }
+  }
+
+  function reportReasonLabel (reason: ResourceReport['reason']) {
+    return ({ incorrect: 'Incorrect details or file', duplicate: 'Duplicate upload', inappropriate: 'Inappropriate content' })[reason]
+  }
+
+  async function reviewReport (reportId: string, status: 'resolved' | 'dismissed') {
+    try {
+      await reviewResourceReport(reportId, status)
+      pendingResourceReports.value = pendingResourceReports.value.filter(report => report.id !== reportId)
+      successMessage.value = status === 'resolved' ? 'Report marked resolved.' : 'Report dismissed.'
+      successSnackbar.value = true
+    } catch (error) {
+      errorMessage.value = getErrorMessage(error, 'Could not update this report.')
     }
   }
 
@@ -1873,7 +1930,7 @@
       return { ...task, course: taskCourse || cleanedCode }
     }
 
-    return { ...task, course: taskCourse ? `${cleanedCode} Â· ${taskCourse}` : cleanedCode }
+    return { ...task, course: taskCourse ? `${cleanedCode} · ${taskCourse}` : cleanedCode }
   }
 
   async function addTask () {
@@ -1969,11 +2026,17 @@
         category: resourceCategory.value,
         file,
         academic_level: sharedLevel,
+        academic_year: resourceAcademicYear.value,
+        semester: resourceSemester.value,
+        source: resourceSource.value,
       })
       classMaterials.value = [resource, ...classMaterials.value]
       showMaterialForm.value = false
       resourceTitle.value = ''
       resourceCourse.value = ''
+      resourceAcademicYear.value = '2026/2027'
+      resourceSemester.value = 'First semester'
+      resourceSource.value = ''
       resourceCategory.value = 'lecture_notes'
       resourceDescription.value = ''
       resourceFile.value = null

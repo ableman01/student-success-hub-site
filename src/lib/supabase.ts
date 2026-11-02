@@ -60,6 +60,9 @@ export interface Database {
           kind: 'class_material' | 'past_question'
           category: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level: string | null
+          academic_year: string | null
+          semester: string | null
+          source: string | null
           file_name: string
           file_path: string
           uploaded_by: string
@@ -78,6 +81,9 @@ export interface Database {
           kind: 'class_material' | 'past_question'
           category?: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level?: string | null
+          academic_year?: string | null
+          semester?: string | null
+          source?: string | null
           file_name: string
           file_path: string
           uploaded_by?: string
@@ -96,6 +102,9 @@ export interface Database {
           kind?: 'class_material' | 'past_question'
           category?: 'past_question' | 'lecture_notes' | 'course_handout' | 'study_guide'
           academic_level?: string | null
+          academic_year?: string | null
+          semester?: string | null
+          source?: string | null
           file_name?: string
           file_path?: string
           uploaded_by?: string
@@ -119,6 +128,38 @@ export interface Database {
           created_at?: string
         }
         Update: never
+        Relationships: []
+      }
+      resource_reports: {
+        Row: {
+          id: string
+          resource_id: string
+          reporter_id: string
+          institution_key: string
+          reason: 'incorrect' | 'duplicate' | 'inappropriate'
+          details: string | null
+          status: 'pending' | 'resolved' | 'dismissed'
+          moderator_comment: string | null
+          created_at: string
+          reviewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          resource_id: string
+          reporter_id: string
+          institution_key?: string
+          reason: 'incorrect' | 'duplicate' | 'inappropriate'
+          details?: string | null
+          status?: 'pending' | 'resolved' | 'dismissed'
+          moderator_comment?: string | null
+          created_at?: string
+          reviewed_at?: string | null
+        }
+        Update: {
+          status?: 'pending' | 'resolved' | 'dismissed'
+          moderator_comment?: string | null
+          reviewed_at?: string | null
+        }
         Relationships: []
       }
       timetable_entries: {
