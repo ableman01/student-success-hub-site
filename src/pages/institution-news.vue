@@ -48,11 +48,12 @@
           target="_blank"
         >
           <span class="news-icon"><v-icon size="26">mdi-bullhorn-outline</v-icon></span>
+
           <span class="news-content">
-          <span class="news-meta">{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
-          <strong>{{ item.title }}</strong>
-          <p v-if="item.summary">{{ item.summary }}</p>
-          <span class="news-link">Read story <v-icon size="14">mdi-open-in-new</v-icon></span>
+            <span class="news-meta">{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
+            <strong>{{ item.title }}</strong>
+            <p v-if="item.summary">{{ item.summary }}</p>
+            <span class="news-link">Read story <v-icon size="14">mdi-open-in-new</v-icon></span>
           </span>
         </a>
       </div>
