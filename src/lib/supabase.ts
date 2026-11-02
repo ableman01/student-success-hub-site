@@ -68,6 +68,8 @@ export interface Database {
           uploaded_by: string
           uploaded_by_name: string
           institution_key: string
+          institution_name: string | null
+          institution_type: string | null
           status: 'pending' | 'approved' | 'rejected'
           reviewed_at: string | null
           review_comment: string | null
@@ -89,6 +91,8 @@ export interface Database {
           uploaded_by?: string
           uploaded_by_name?: string
           institution_key?: string
+          institution_name?: string | null
+          institution_type?: string | null
           status?: 'pending' | 'approved' | 'rejected'
           reviewed_at?: string | null
           review_comment?: string | null
@@ -109,6 +113,8 @@ export interface Database {
           file_path?: string
           uploaded_by?: string
           uploaded_by_name?: string
+          institution_name?: string | null
+          institution_type?: string | null
           status?: 'pending' | 'approved' | 'rejected'
           reviewed_at?: string | null
           review_comment?: string | null
@@ -136,24 +142,30 @@ export interface Database {
           resource_id: string
           reporter_id: string
           institution_key: string
-          reason: 'incorrect' | 'duplicate' | 'inappropriate'
+          institution_name: string | null
+          institution_type: string | null
+          reason: 'comment' | 'incorrect' | 'duplicate' | 'inappropriate'
           details: string | null
           status: 'pending' | 'resolved' | 'dismissed'
           moderator_comment: string | null
           created_at: string
           reviewed_at: string | null
+          moderator_comment: string | null
         }
         Insert: {
           id?: string
           resource_id: string
           reporter_id: string
           institution_key?: string
-          reason: 'incorrect' | 'duplicate' | 'inappropriate'
+          institution_name?: string | null
+          institution_type?: string | null
+          reason: 'comment' | 'incorrect' | 'duplicate' | 'inappropriate'
           details?: string | null
           status?: 'pending' | 'resolved' | 'dismissed'
           moderator_comment?: string | null
           created_at?: string
           reviewed_at?: string | null
+          moderator_comment?: string | null
         }
         Update: {
           status?: 'pending' | 'resolved' | 'dismissed'

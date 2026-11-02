@@ -140,23 +140,29 @@
           <div>
             <div class="section-kicker">STUDENT REPORTS</div>
             <h2 id="reports-heading">Resource reports</h2>
-            <p>Review incorrect, duplicate, or inappropriate uploads reported by students.</p>
+            <p>Review student comments and upload reports from every institution.</p>
           </div>
 
-          <v-chip color="error" prepend-icon="mdi-flag-outline" variant="tonal">{{ pendingResourceReports.length }} open</v-chip>
+          <v-chip color="error" prepend-icon="mdi-flag-outline" variant="tonal">{{ openResourceReportCount }} open · {{ resourceReports.length }} total</v-chip>
         </div>
 
-        <v-alert v-if="pendingResourceReports.length === 0" class="mt-4" type="success" variant="tonal">There are no open student reports.</v-alert>
+        <v-alert v-if="resourceReports.length === 0" class="mt-4" type="success" variant="tonal">There are no student comments or reports yet.</v-alert>
 
         <div v-else class="moderation-list">
-          <article v-for="report in pendingResourceReports" :key="report.id" class="moderation-item">
+          <article v-for="report in resourceReports" :key="report.id" class="moderation-item">
             <div class="moderation-copy">
-              <strong>{{ reportReasonLabel(report.reason) }}</strong>
+              <div class="d-flex flex-wrap align-center ga-2">
+                <strong>{{ reportReasonLabel(report.reason) }}</strong>
+                <v-chip :color="report.status === 'pending' ? 'warning' : 'success'" size="x-small" variant="tonal">{{ report.status }}</v-chip>
+              </div>
+
+              <span>{{ report.institution_type || 'Institution' }} · {{ report.institution_name || report.institution_key }}</span>
               <span>{{ report.resource_title }}<template v-if="report.course"> · {{ report.course }}</template> · {{ formatDate(report.created_at) }}</span>
               <p v-if="report.details">{{ report.details }}</p>
+              <p v-if="report.moderator_comment">Moderator note: {{ report.moderator_comment }}</p>
             </div>
 
-            <div class="moderation-actions">
+            <div v-if="report.status === 'pending'" class="moderation-actions">
               <v-btn rounded="pill" variant="text" @click="reviewReport(report.id, 'dismissed')">Dismiss report</v-btn>
               <v-btn color="primary" rounded="pill" @click="reviewReport(report.id, 'resolved')">Mark resolved</v-btn>
             </div>
@@ -268,7 +274,7 @@
           <div>
             <div class="section-kicker">CREATOR TOOLS</div>
             <h2 id="moderation-heading">Upload approvals</h2>
-            <p>Review new past questions and course PDFs before students can access them.</p>
+            <p>Review new past questions and course PDFs from every institution before students can access them.</p>
           </div>
 
           <v-chip color="warning" prepend-icon="mdi-clock-outline" variant="tonal">
@@ -285,6 +291,7 @@
             <div class="moderation-copy">
               <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
               <strong>{{ resource.title }}</strong>
+              <span v-if="resource.institution_name">{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name }}</span>
               <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
 
@@ -1052,6 +1059,8 @@
                 <v-icon end>mdi-open-in-new</v-icon>
               </v-btn>
 
+              <ResourceFeedback :resource="resource" :viewer-id="user?.id" />
+
               <v-btn
                 v-if="isResourceModerator"
                 aria-label="Edit material"
@@ -1555,6 +1564,7 @@
   import type { Task } from '@/services/tasks'
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import ResourceFeedback from '@/components/ResourceFeedback.vue'
   import { useAppTheme } from '@/composables/useAppTheme'
   import {
     getAcademicLevelLabel,
@@ -1571,7 +1581,7 @@
   import { isLasuInstitution } from '@/lib/institutions'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResourceReports, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
+  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResourceReports, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
   import {
     createTask,
     deduplicateAndSortTasks,
@@ -1599,7 +1609,8 @@
   const savedResourceIds = ref<string[]>([])
   const savingResourceId = ref('')
   const pendingResources = ref<Resource[]>([])
-  const pendingResourceReports = ref<ResourceReport[]>([])
+  const resourceReports = ref<ResourceReport[]>([])
+  const openResourceReportCount = computed(() => resourceReports.value.filter(report => report.status === 'pending').length)
   const notifications = ref<AppNotification[]>([])
   const isResourceModerator = ref(false)
   const showNotifications = ref(false)
@@ -1846,24 +1857,24 @@
       const [loadedNotifications, pending, reports] = await Promise.all([
         getNotifications(),
         moderator ? getPendingResources() : Promise.resolve([]),
-        moderator ? getPendingResourceReports() : Promise.resolve([]),
+        moderator ? getResourceReports() : Promise.resolve([]),
       ])
       notifications.value = loadedNotifications
       pendingResources.value = pending
-      pendingResourceReports.value = reports
+      resourceReports.value = reports
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not refresh notifications and upload approvals.')
     }
   }
 
   function reportReasonLabel (reason: ResourceReport['reason']) {
-    return ({ incorrect: 'Incorrect details or file', duplicate: 'Duplicate upload', inappropriate: 'Inappropriate content' })[reason]
+    return ({ comment: 'Student comment', incorrect: 'Incorrect details or file', duplicate: 'Duplicate upload', inappropriate: 'Inappropriate content' })[reason]
   }
 
   async function reviewReport (reportId: string, status: 'resolved' | 'dismissed') {
     try {
       await reviewResourceReport(reportId, status)
-      pendingResourceReports.value = pendingResourceReports.value.filter(report => report.id !== reportId)
+      resourceReports.value = resourceReports.value.map(report => report.id === reportId ? { ...report, status } : report)
       successMessage.value = status === 'resolved' ? 'Report marked resolved.' : 'Report dismissed.'
       successSnackbar.value = true
     } catch (error) {

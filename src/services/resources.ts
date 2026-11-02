@@ -34,6 +34,8 @@ export interface Resource {
   uploaded_by: string
   uploaded_by_name: string
   institution_key: string
+  institution_name?: string | null
+  institution_type?: string | null
   status: ResourceStatus
   reviewed_at: string | null
   review_comment: string | null
@@ -63,15 +65,20 @@ export interface NewResource {
   source: string
 }
 
-export type ResourceReportReason = 'incorrect' | 'duplicate' | 'inappropriate'
+export type ResourceReportReason = 'comment' | 'incorrect' | 'duplicate' | 'inappropriate'
 export interface ResourceReport {
   id: string
   resource_id: string
   reporter_id: string
+  institution_key: string
+  institution_name: string | null
+  institution_type: string | null
   reason: ResourceReportReason
   details: string | null
   status: 'pending' | 'resolved' | 'dismissed'
+  moderator_comment: string | null
   created_at: string
+  reviewed_at: string | null
   resource_title: string
   course: string
 }
@@ -487,21 +494,20 @@ export async function reportResource (resourceId: string, reason: ResourceReport
   })
   if (error) {
     if (error.code === '23505') {
-      throw new Error('You have already reported this resource.')
+      throw new Error('You have already sent feedback for this resource. The admin can still review it.')
     }
     throw new Error(getErrorMessage(error))
   }
 }
 
-export async function getPendingResourceReports (): Promise<ResourceReport[]> {
+export async function getResourceReports (): Promise<ResourceReport[]> {
   if (!isSupabaseConfigured) {
     return []
   }
   const { data, error } = await getSupabaseClient()
     .from('resource_reports')
-    .select('id, resource_id, reporter_id, reason, details, status, created_at')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: true })
+    .select('id, resource_id, reporter_id, institution_key, institution_name, institution_type, reason, details, status, moderator_comment, created_at, reviewed_at')
+    .order('created_at', { ascending: false })
   if (error) {
     throw new Error(getErrorMessage(error))
   }
@@ -511,7 +517,7 @@ export async function getPendingResourceReports (): Promise<ResourceReport[]> {
   }
   const { data: resources, error: resourceError } = await getSupabaseClient()
     .from('resources')
-    .select('id, title, course')
+    .select('id, title, course, institution_name, institution_type')
     .in('id', reports.map(report => report.resource_id))
   if (resourceError) {
     throw new Error(getErrorMessage(resourceError))
@@ -521,13 +527,15 @@ export async function getPendingResourceReports (): Promise<ResourceReport[]> {
     ...report,
     resource_title: resourceById.get(report.resource_id)?.title || 'Resource removed',
     course: resourceById.get(report.resource_id)?.course || '',
+    institution_name: report.institution_name || resourceById.get(report.resource_id)?.institution_name || null,
+    institution_type: report.institution_type || resourceById.get(report.resource_id)?.institution_type || null,
   }))
 }
 
 export async function reviewResourceReport (reportId: string, status: 'resolved' | 'dismissed') {
   const user = await getCurrentUser()
   if (!user || !await isResourceModerator(user.id) || !isSupabaseConfigured) {
-    throw new Error('Only an institution moderator can review resource reports.')
+    throw new Error('Only an authorized moderator can review resource reports.')
   }
   const { error } = await getSupabaseClient().from('resource_reports').update({
     status,

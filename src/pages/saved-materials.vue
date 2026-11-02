@@ -90,6 +90,8 @@
                   variant="tonal"
                 >Open PDF</v-btn>
               </div>
+
+              <ResourceFeedback :resource="resource" :viewer-id="user?.id" />
             </div>
           </v-card>
         </div>
@@ -122,6 +124,7 @@
   import type { AppUser } from '@/lib/auth'
   import type { Resource } from '@/services/resources'
   import { computed, onMounted, ref } from 'vue'
+  import ResourceFeedback from '@/components/ResourceFeedback.vue'
   import { getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { deduplicateAndSortResources, getResourceCategoryLabel, getResources, getSavedResourceIds, setResourceSaved } from '@/services/resources'

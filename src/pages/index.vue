@@ -480,15 +480,7 @@
                 <v-icon end>mdi-forum-outline</v-icon>
               </v-btn>
 
-              <v-btn
-                v-if="currentUser && resource.status === 'approved' && currentUser.id !== resource.uploaded_by"
-                block
-                class="mt-2"
-                prepend-icon="mdi-flag-outline"
-                rounded="pill"
-                variant="text"
-                @click="openReport(resource)"
-              >Report resource</v-btn>
+              <ResourceFeedback :resource="resource" :viewer-id="currentUser?.id" />
 
               <v-btn
                 v-if="isResourceModerator"
@@ -651,27 +643,6 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog aria-labelledby="resource-report-title" max-width="520" :model-value="Boolean(reportingResource)" @update:model-value="value => { if (!value) reportingResource = null }">
-      <v-card class="pa-5" rounded="xl">
-        <h2 id="resource-report-title" class="text-h5 mb-2">Report this resource</h2>
-        <p class="text-body-2 text-medium-emphasis mb-4">Reports are reviewed by a moderator at your institution.</p>
-        <v-select v-model="reportReason" :items="reportReasons" label="Reason" required />
-        <v-textarea
-          v-model="reportDetails"
-          auto-grow
-          counter="1000"
-          label="Additional details (optional)"
-          maxlength="1000"
-          rows="2"
-        />
-        <v-alert v-if="reportError" class="mb-3" type="error" variant="tonal">{{ reportError }}</v-alert>
-
-        <div class="d-flex justify-end ga-2">
-          <v-btn rounded="pill" variant="text" @click="reportingResource = null">Cancel</v-btn>
-          <v-btn color="primary" :loading="submittingReport" rounded="pill" @click="submitReport">Send report</v-btn>
-        </div>
-      </v-card>
-    </v-dialog>
   </main>
 </template>
 
@@ -679,6 +650,7 @@
   import type { Resource } from '@/services/resources'
   import { computed, onMounted, ref } from 'vue'
   import DashboardVideoTour from '@/components/DashboardVideoTour.vue'
+  import ResourceFeedback from '@/components/ResourceFeedback.vue'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
@@ -691,7 +663,6 @@
     deleteResource,
     getResources,
     getSavedResourceIds,
-    reportResource,
     setResourceSaved,
     updateResource,
     uploadResource,
@@ -736,16 +707,6 @@
     },
   })
   const errorMessage = ref('')
-  const reportingResource = ref<Resource | null>(null)
-  const reportReason = ref('incorrect')
-  const reportReasons = [
-    { title: 'Incorrect details or file', value: 'incorrect' },
-    { title: 'Duplicate upload', value: 'duplicate' },
-    { title: 'Inappropriate content', value: 'inappropriate' },
-  ]
-  const reportDetails = ref('')
-  const reportError = ref('')
-  const submittingReport = ref(false)
   const questionSearch = ref('')
   const questionCourse = ref<string | null>(null)
   const questionLevel = ref<string | null>(null)
@@ -880,29 +841,6 @@
       errorMessage.value = getErrorMessage(error, 'Could not upload this past question.')
     } finally {
       uploading.value = false
-    }
-  }
-
-  function openReport (resource: Resource) {
-    reportingResource.value = resource
-    reportReason.value = 'incorrect'
-    reportDetails.value = ''
-    reportError.value = ''
-  }
-
-  async function submitReport () {
-    if (!reportingResource.value) return
-    submittingReport.value = true
-    reportError.value = ''
-    try {
-      await reportResource(reportingResource.value.id, reportReason.value as 'incorrect' | 'duplicate' | 'inappropriate', reportDetails.value)
-      reportingResource.value = null
-      successMessage.value = 'Thank you. Your report has been sent for review.'
-      successSnackbar.value = true
-    } catch (error) {
-      reportError.value = getErrorMessage(error, 'Could not send this report.')
-    } finally {
-      submittingReport.value = false
     }
   }
 
