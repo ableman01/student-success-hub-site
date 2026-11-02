@@ -175,7 +175,7 @@
           <div>
             <div class="section-kicker">STUDENT-SHARED LIBRARY</div>
             <h2>Give your next exam a head start.</h2>
-            <p>Find questions by course and level. Every upload shows the student who shared it.</p>
+            <p>Find past questions by course and level. Every upload shows the student who shared it.</p>
           </div>
 
           <v-btn
