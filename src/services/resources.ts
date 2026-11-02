@@ -1,8 +1,8 @@
 import { getCourseAcademicLevel } from '@/lib/academics'
-import { getInstitutionKey } from '@/lib/institutions'
 import { type AppUser, getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
 import { findDuplicateIds, getResourceIdentityKey } from '@/lib/identity'
+import { getInstitutionKey } from '@/lib/institutions'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 export type ResourceKind = 'class_material' | 'past_question'
@@ -134,7 +134,9 @@ function validateResource (resource: NewResource) {
 
 export async function getResources (kind: ResourceKind, academicLevel?: string) {
   const user = await getCurrentUser()
-  if (!user) return []
+  if (!user) {
+    return []
+  }
   const institutionKey = getInstitutionKey(user.institutionType, user.institution)
 
   if (!isSupabaseConfigured) {
@@ -478,13 +480,11 @@ export async function updateResource (
 
   const moderator = await isResourceModerator(user.id)
 
-  
-
   // Only the site admin (resource moderator) can edit shared resources.
   if (!moderator) {
     throw new Error('Only the admin can edit class materials and past questions.')
   }
-if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured) {
     const existing = await localTransaction<Resource & { blob: Blob } | undefined>(
       'readonly',
       store => store.get(resourceId),

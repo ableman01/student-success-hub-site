@@ -7,7 +7,6 @@
         <p>A short, self-playing tour of the tools students use to plan, learn, and stay connected.</p>
       </div>
 
-      
     </div>
 
     <div class="tour-player" :class="{ 'tour-paused': !isPlaying }">

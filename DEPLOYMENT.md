@@ -42,6 +42,10 @@ For a first-time setup, run [`supabase/schema.sql`](./supabase/schema.sql) in th
 
 If using a custom SMTP sender, configure and verify it in Supabase Auth. Store SMTP credentials in Supabase settings, never in this repository or browser environment variables.
 
+## Institution news
+
+Cloudflare Pages deploys the `/functions/api/institution-news` handler alongside the static app. It checks official institutional sources first. If an official news feed cannot be verified or read, it falls back to Google News search results and labels them as non-official; search results can include unrelated coverage, so students should verify important information with their institution. Some regulator listings do not publish an institution website, in which case the page links to the relevant directory and news search.
+
 ## 4. Release flow
 
 - Opening a pull request runs lint, type checking, and a build in GitHub Actions.

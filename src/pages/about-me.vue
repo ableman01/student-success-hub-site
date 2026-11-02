@@ -1,82 +1,118 @@
 <template>
-<main class="about-me-page">
-  <div class="about-container">
-    <header class="about-header">
-      <div>
-        <div class="about-kicker">
-          <v-icon size="16">mdi-account-outline</v-icon>
-          ABOUT ME
-        </div>
-        <h1>About me</h1>
-        <p>Your personal academic profile and study information.</p>
-      </div>
-      <v-btn color="primary" prepend-icon="mdi-arrow-left" rounded="pill" to="/dashboard" variant="tonal">
-        Back to dashboard
-      </v-btn>
-    </header>
+  <main class="about-me-page">
+    <div class="about-container">
+      <header class="about-header">
+        <div>
+          <div class="about-kicker">
+            <v-icon size="16">mdi-account-outline</v-icon>
+            ABOUT ME
+          </div>
 
-    <v-alert v-if="aboutMessage" class="about-alert" closable density="compact" :text="aboutMessage" type="success" variant="tonal" @click:close="aboutMessage = ''" />
-    <v-alert v-if="aboutError" class="about-alert" closable density="compact" :text="aboutError" type="error" variant="tonal" @click:close="aboutError = ''" />
+          <h1>About me</h1>
+          <p>Your personal academic profile and study information.</p>
+        </div>
 
-    <v-card class="about-card" elevation="0" rounded="xl">
-      <div class="about-card-header">
-        <v-avatar size="96" class="about-avatar">
-          <v-icon>mdi-account-circle</v-icon>
-        </v-avatar>
-        <div class="about-info">
-          <h2>{{ user?.firstName || '' }} {{ user?.lastName || '' }}</h2>
-          <p class="about-email">{{ user?.email }}</p>
-        </div>
-      </div>
-
-      <div class="about-fields">
-        <div class="about-field">
-          <span class="about-label">Institution category</span>
-          <span class="about-value">{{ institutionTypeLabel }}</span>
-        </div>
-        <div class="about-field">
-          <span class="about-label">Institution</span>
-          <span class="about-value">{{ user?.institution || 'Not set' }}</span>
-        </div>
-        <div class="about-field">
-          <span class="about-label">Academic level</span>
-          <span class="about-value">{{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'Not set' }}</span>
-        </div>
-        <div class="about-field">
-          <span class="about-label">Programme / department</span>
-          <span class="about-value">{{ user?.program || 'Not set' }}</span>
-        </div>
-        <div class="about-field">
-          <span class="about-label">Member since</span>
-          <span class="about-value">{{ user?.createdAt || 'Joined the hub' }}</span>
-        </div>
-      </div>
-
-      <div class="about-actions">
-        <v-btn color="primary" prepend-icon="mdi-pencil-outline" rounded="pill" to="/profile" variant="tonal">
-          Edit profile details
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-arrow-left"
+          rounded="pill"
+          to="/dashboard"
+          variant="tonal"
+        >
+          Back to dashboard
         </v-btn>
-      </div>
-    </v-card>
+      </header>
 
-    <div class="about-note">
-      <p>Your personal page is visible only to you. Use it to keep track of your academic details and progress.</p>
+      <v-alert
+        v-if="aboutMessage"
+        class="about-alert"
+        closable
+        density="compact"
+        :text="aboutMessage"
+        type="success"
+        variant="tonal"
+        @click:close="aboutMessage = ''"
+      />
+
+      <v-alert
+        v-if="aboutError"
+        class="about-alert"
+        closable
+        density="compact"
+        :text="aboutError"
+        type="error"
+        variant="tonal"
+        @click:close="aboutError = ''"
+      />
+
+      <v-card class="about-card" elevation="0" rounded="xl">
+        <div class="about-card-header">
+          <v-avatar class="about-avatar" size="96">
+            <v-icon>mdi-account-circle</v-icon>
+          </v-avatar>
+
+          <div class="about-info">
+            <h2>{{ user?.firstName || '' }} {{ user?.lastName || '' }}</h2>
+            <p class="about-email">{{ user?.email }}</p>
+          </div>
+        </div>
+
+        <div class="about-fields">
+          <div class="about-field">
+            <span class="about-label">Institution category</span>
+            <span class="about-value">{{ institutionTypeLabel }}</span>
+          </div>
+
+          <div class="about-field">
+            <span class="about-label">Institution</span>
+            <span class="about-value">{{ user?.institution || 'Not set' }}</span>
+          </div>
+
+          <div class="about-field">
+            <span class="about-label">Academic level</span>
+            <span class="about-value">{{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'Not set' }}</span>
+          </div>
+
+          <div class="about-field">
+            <span class="about-label">Programme / department</span>
+            <span class="about-value">{{ user?.program || 'Not set' }}</span>
+          </div>
+
+          <div class="about-field">
+            <span class="about-label">Member since</span>
+            <span class="about-value">{{ user?.createdAt || 'Joined the hub' }}</span>
+          </div>
+        </div>
+
+        <div class="about-actions">
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-pencil-outline"
+            rounded="pill"
+            to="/profile"
+            variant="tonal"
+          >
+            Edit profile details
+          </v-btn>
+        </div>
+      </v-card>
+
+      <div class="about-note">
+        <p>Your personal page is visible only to you. Use it to keep track of your academic details and progress.</p>
+      </div>
     </div>
-  </div>
-</main>
+  </main>
 </template>
 
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useAppTheme } from '@/composables/useAppTheme'
   import { getAcademicLevelLabel } from '@/lib/academics'
-  import { institutionTypes } from '@/lib/institutions'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { institutionTypes } from '@/lib/institutions'
 
   const router = useRouter()
-  const { toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const institutionTypeLabel = computed(() => institutionTypes.find(item => item.value === user.value?.institutionType)?.title || 'University')
   const user = ref<AppUser | null>(null)
   const aboutMessage = ref('')

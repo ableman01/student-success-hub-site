@@ -2,12 +2,13 @@
   <main class="groups-page">
     <v-container class="groups-shell py-5 py-md-8" fluid>
       <header class="page-header">
-        <RouterLink aria-label="LASU Student Success Hub home" class="brand" to="/">
+        <RouterLink aria-label="Student Success Hub home" class="brand" to="/">
           <img alt="" src="/academic-mark.svg">
-          <span><strong>LASU Student Success Hub</strong><small>Learn together. Go further.</small></span>
+          <span><strong>Student Success Hub</strong><small>Learn together. Go further.</small></span>
         </RouterLink>
+
         <div class="header-actions">
-          <v-btn rounded="pill" to="/study" variant="text" prepend-icon="mdi-forum-outline">Live course chat</v-btn>
+          <v-btn prepend-icon="mdi-forum-outline" rounded="pill" to="/study" variant="text">Live course chat</v-btn>
           <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
         </div>
       </header>
@@ -17,25 +18,85 @@
           <div class="eyebrow"><v-icon size="17">mdi-account-group-outline</v-icon> YOUR PRIVATE STUDY SPACE</div>
           <h1>Better together.<br><span>One question at a time.</span></h1>
           <p>Create a focused group, invite classmates you trust, and share messages or photos of your worked solutions as you study.</p>
+
           <div class="hero-actions">
-            <v-btn color="primary" prepend-icon="mdi-account-multiple-plus" rounded="pill" size="large" @click="showCreateGroup = !showCreateGroup">Create a study group</v-btn>
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-account-multiple-plus"
+              rounded="pill"
+              size="large"
+              @click="showCreateGroup = !showCreateGroup"
+            >Create a study group</v-btn>
+
             <span><v-icon size="17">mdi-lock-outline</v-icon> Private to group members</span>
           </div>
         </div>
-        <div class="hero-visual"><div class="visual-glow"></div><img src="/study-together.svg" alt="Classmates studying together"></div>
+
+        <div class="hero-visual"><div class="visual-glow" /><img alt="Classmates studying together" src="/study-together.svg"></div>
       </section>
 
-      <v-alert v-if="groupError" class="notice" closable type="error" variant="tonal" @click:close="groupError = ''">{{ groupError }}</v-alert>
-      <v-alert v-if="groupNotice" class="notice" closable type="success" variant="tonal" @click:close="groupNotice = ''">{{ groupNotice }}</v-alert>
+      <v-alert
+        v-if="groupError"
+        class="notice"
+        closable
+        type="error"
+        variant="tonal"
+        @click:close="groupError = ''"
+      >{{ groupError }}</v-alert>
+
+      <v-alert
+        v-if="groupNotice"
+        class="notice"
+        closable
+        type="success"
+        variant="tonal"
+        @click:close="groupNotice = ''"
+      >{{ groupNotice }}</v-alert>
 
       <v-expand-transition>
         <v-card v-if="showCreateGroup" class="create-card pa-5 pa-md-7" rounded="xl">
           <div class="card-heading"><div><div class="eyebrow">GET STARTED</div><h2>Create your group</h2><p>Give your study circle a name and course. You can invite classmates as soon as it’s ready.</p></div><v-btn aria-label="Close form" icon="mdi-close" variant="text" @click="showCreateGroup = false" /></div>
+
           <v-form class="create-form" @submit.prevent="createGroup">
-            <v-text-field v-model="newGroupName" label="Group name" maxlength="80" placeholder="BIO 101 revision circle" prepend-inner-icon="mdi-account-group-outline" required variant="outlined" />
-            <v-text-field v-model="newGroupCourse" label="Course" maxlength="80" placeholder="BIO 101" prepend-inner-icon="mdi-book-open-variant" required variant="outlined" />
-            <v-text-field v-model="newGroupDescription" label="Study goal (optional)" maxlength="300" placeholder="Solve past questions together" prepend-inner-icon="mdi-target" variant="outlined" />
-            <div class="form-actions"><v-btn :loading="creatingGroup" color="primary" prepend-icon="mdi-check" rounded="pill" size="large" type="submit">Create and open group</v-btn><v-btn rounded="pill" variant="text" @click="showCreateGroup = false">Cancel</v-btn></div>
+            <v-text-field
+              v-model="newGroupName"
+              label="Group name"
+              maxlength="80"
+              placeholder="BIO 101 revision circle"
+              prepend-inner-icon="mdi-account-group-outline"
+              required
+              variant="outlined"
+            />
+
+            <v-text-field
+              v-model="newGroupCourse"
+              label="Course"
+              maxlength="80"
+              placeholder="BIO 101"
+              prepend-inner-icon="mdi-book-open-variant"
+              required
+              variant="outlined"
+            />
+
+            <v-text-field
+              v-model="newGroupDescription"
+              label="Study goal (optional)"
+              maxlength="300"
+              placeholder="Solve past questions together"
+              prepend-inner-icon="mdi-target"
+              variant="outlined"
+            />
+
+            <div class="form-actions"><v-btn
+                                        color="primary"
+                                        :loading="creatingGroup"
+                                        prepend-icon="mdi-check"
+                                        rounded="pill"
+                                        size="large"
+                                        type="submit"
+                                      >Create and open group</v-btn>
+
+              <v-btn rounded="pill" variant="text" @click="showCreateGroup = false">Cancel</v-btn></div>
           </v-form>
         </v-card>
       </v-expand-transition>
@@ -46,51 +107,150 @@
         <v-card class="invite-card pa-4 pa-md-5" rounded="xl">
           <div class="invite-icon"><v-icon>mdi-link-variant</v-icon></div>
           <div class="invite-copy"><strong>Joining a classmate’s group?</strong><span>Paste their invitation link or code below.</span></div>
-          <v-text-field v-model="inviteCodeInput" class="invite-field" density="comfortable" hide-details label="Invite link or code" prepend-inner-icon="mdi-key-link" variant="outlined" @keydown.enter.prevent="joinGroup" />
-          <v-btn :loading="joiningGroup" color="primary" rounded="pill" @click="joinGroup">Join group</v-btn>
+
+          <v-text-field
+            v-model="inviteCodeInput"
+            class="invite-field"
+            density="comfortable"
+            hide-details
+            label="Invite link or code"
+            prepend-inner-icon="mdi-key-link"
+            variant="outlined"
+            @keydown.enter.prevent="joinGroup"
+          />
+
+          <v-btn color="primary" :loading="joiningGroup" rounded="pill" @click="joinGroup">Join group</v-btn>
         </v-card>
 
-        <div v-if="groups.length" class="group-list">
-          <v-card v-for="group in groups" :key="group.id" class="group-card" rounded="xl" variant="outlined">
+        <div v-if="groups.length > 0" class="group-list">
+          <v-card
+            v-for="group in groups"
+            :key="group.id"
+            class="group-card"
+            rounded="xl"
+            variant="outlined"
+          >
             <div class="group-heading">
-              <button class="group-toggle" :aria-expanded="expandedGroupIds.includes(group.id)" @click="toggleGroup(group.id)">
+              <button :aria-expanded="expandedGroupIds.includes(group.id)" class="group-toggle" @click="toggleGroup(group.id)">
                 <span class="group-avatar"><v-icon>mdi-account-group</v-icon></span>
                 <span class="group-title"><strong>{{ group.name }}</strong><small>{{ group.course }}<template v-if="group.description"> · {{ group.description }}</template></small></span>
                 <v-icon class="expand-icon">{{ expandedGroupIds.includes(group.id) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
               </button>
+
               <div class="group-actions">
-                <v-btn :aria-label="`Copy invitation for ${group.name}`" color="primary" icon="mdi-share-variant-outline" rounded="pill" variant="tonal" @click="copyGroupInvite(group)" />
-                <v-btn :aria-label="group.owner_id === currentUserId ? `Delete ${group.name}` : `Leave ${group.name}`" :color="group.owner_id === currentUserId ? 'error' : 'secondary'" :disabled="!currentUserId" :icon="group.owner_id === currentUserId ? 'mdi-trash-can-outline' : 'mdi-logout'" rounded="pill" variant="text" @click="groupToRemove = group" />
+                <v-btn
+                  :aria-label="`Copy invitation for ${group.name}`"
+                  color="primary"
+                  icon="mdi-share-variant-outline"
+                  rounded="pill"
+                  variant="tonal"
+                  @click="copyGroupInvite(group)"
+                />
+
+                <v-btn
+                  :aria-label="group.owner_id === currentUserId ? `Delete ${group.name}` : `Leave ${group.name}`"
+                  :color="group.owner_id === currentUserId ? 'error' : 'secondary'"
+                  :disabled="!currentUserId"
+                  :icon="group.owner_id === currentUserId ? 'mdi-trash-can-outline' : 'mdi-logout'"
+                  rounded="pill"
+                  variant="text"
+                  @click="groupToRemove = group"
+                />
               </div>
             </div>
+
             <div v-if="expandedGroupIds.includes(group.id)" class="group-body">
-              <v-progress-linear v-if="loadingGroupIds.includes(group.id)" class="my-3" color="primary" indeterminate rounded />
-              <div v-else class="post-list" aria-live="polite">
+              <v-progress-linear
+                v-if="loadingGroupIds.includes(group.id)"
+                class="my-3"
+                color="primary"
+                indeterminate
+                rounded
+              />
+
+              <div v-else aria-live="polite" class="post-list">
                 <div v-if="!groupPostsById[group.id]?.length" class="empty-chat"><span class="empty-icon"><v-icon>mdi-message-text-outline</v-icon></span><strong>Start the conversation</strong><span>Ask a question or share a solved problem with your group.</span></div>
+
                 <article v-for="post in groupPostsById[group.id] || []" :key="post.id" class="group-post">
                   <div class="post-meta"><strong>{{ post.sender_name }}</strong><v-chip size="x-small" variant="tonal">{{ groupPostLabels[post.post_type] }}</v-chip><time :datetime="post.created_at">{{ formatTime(post.created_at) }}</time></div>
                   <p v-if="post.content" class="post-content">{{ post.content }}</p>
-                  <a v-if="post.image_url" :href="post.image_url" target="_blank" rel="noopener noreferrer" class="post-image-link"><img :src="post.image_url" alt="Image shared in the group chat" class="post-image"></a>
+
+                  <a
+                    v-if="post.image_url"
+                    class="post-image-link"
+                    :href="post.image_url"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  ><img alt="Image shared in the group chat" class="post-image" :src="post.image_url"></a>
                 </article>
               </div>
+
               <v-form class="post-composer" @submit.prevent="postToGroup(group)">
-                <v-select v-model="groupPostTypes[group.id]" class="post-type" hide-details item-title="title" item-value="value" :items="groupPostOptions" label="Post type" variant="outlined" />
-                <v-textarea v-model="groupDrafts[group.id]" auto-grow class="post-input" hide-details label="Write a message or describe your solution" maxlength="2000" rows="2" variant="outlined" />
-                <div class="composer-actions"><v-file-input v-model="groupImages[group.id]" accept="image/jpeg,image/png,image/webp,image/gif" class="image-input" density="comfortable" hide-details label="Add a solution photo (max 5 MB)" prepend-icon="mdi-image-plus-outline" show-size variant="outlined" /><v-btn color="primary" :disabled="!(groupDrafts[group.id] || '').trim() && !groupImages[group.id]" :loading="sendingGroupId === group.id" prepend-icon="mdi-send" rounded="pill" size="large" type="submit">Send message</v-btn></div>
+                <v-select
+                  v-model="groupPostTypes[group.id]"
+                  class="post-type"
+                  hide-details
+                  item-title="title"
+                  item-value="value"
+                  :items="groupPostOptions"
+                  label="Post type"
+                  variant="outlined"
+                />
+
+                <v-textarea
+                  v-model="groupDrafts[group.id]"
+                  auto-grow
+                  class="post-input"
+                  hide-details
+                  label="Write a message or describe your solution"
+                  maxlength="2000"
+                  rows="2"
+                  variant="outlined"
+                />
+
+                <div class="composer-actions"><v-file-input
+                                                v-model="groupImages[group.id]"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                class="image-input"
+                                                density="comfortable"
+                                                hide-details
+                                                label="Add a solution photo (max 5 MB)"
+                                                prepend-icon="mdi-image-plus-outline"
+                                                show-size
+                                                variant="outlined"
+                                              />
+
+                  <v-btn
+                    color="primary"
+                    :disabled="!(groupDrafts[group.id] || '').trim() && !groupImages[group.id]"
+                    :loading="sendingGroupId === group.id"
+                    prepend-icon="mdi-send"
+                    rounded="pill"
+                    size="large"
+                    type="submit"
+                  >Send message</v-btn></div>
               </v-form>
             </div>
           </v-card>
+
           <p class="privacy-note"><v-icon size="17">mdi-shield-check-outline</v-icon> Group conversations and shared images are visible to group members.</p>
         </div>
 
         <v-card v-else class="empty-groups pa-8 pa-md-12" rounded="xl">
           <span class="empty-icon large"><v-icon>mdi-account-multiple-plus-outline</v-icon></span>
           <h3>Your study circle starts here</h3><p>Create a private group for your classmates, or join one with an invitation link or code.</p>
-          <v-btn class="mt-2" color="primary" prepend-icon="mdi-plus" rounded="pill" @click="showCreateGroup = true">Create your first group</v-btn>
+
+          <v-btn
+            class="mt-2"
+            color="primary"
+            prepend-icon="mdi-plus"
+            rounded="pill"
+            @click="showCreateGroup = true"
+          >Create your first group</v-btn>
         </v-card>
       </section>
 
-      <v-dialog :model-value="Boolean(groupToRemove)" max-width="440" @update:model-value="value => { if (!value) groupToRemove = null }">
+      <v-dialog max-width="440" :model-value="Boolean(groupToRemove)" @update:model-value="value => { if (!value) groupToRemove = null }">
         <v-card rounded="xl"><v-card-title>{{ groupToRemove?.owner_id === currentUserId ? 'Delete this group?' : 'Leave this group?' }}</v-card-title><v-card-text><template v-if="groupToRemove?.owner_id === currentUserId">“{{ groupToRemove?.name }}” and its discussion will be permanently deleted for every member.</template><template v-else>You will lose access to “{{ groupToRemove?.name }}”. You can rejoin with an invite link.</template></v-card-text><v-card-actions class="pa-4 pt-0"><v-spacer /><v-btn rounded="pill" variant="text" @click="groupToRemove = null">Cancel</v-btn><v-btn :color="groupToRemove?.owner_id === currentUserId ? 'error' : 'primary'" :loading="Boolean(groupToRemove && removingGroupId === groupToRemove.id)" rounded="pill" @click="removeGroup">{{ groupToRemove?.owner_id === currentUserId ? 'Delete group' : 'Leave group' }}</v-btn></v-card-actions></v-card>
       </v-dialog>
 
@@ -270,8 +430,7 @@
     removingGroupId.value = group.id
     groupError.value = ''
     try {
-      if (group.owner_id === currentUserId.value) await deleteStudyGroup(group.id)
-      else await leaveStudyGroupMembership(group.id)
+      await (group.owner_id === currentUserId.value ? deleteStudyGroup(group.id) : leaveStudyGroupMembership(group.id))
       const channel = groupChannels.get(group.id)
       if (channel) await leaveStudyGroup(channel)
       groupChannels.delete(group.id)
@@ -309,7 +468,9 @@
     if (inviteCodeInput.value) await joinGroup()
   })
 
-  onBeforeUnmount(() => { void closeGroupChannels() })
+  onBeforeUnmount(() => {
+    void closeGroupChannels()
+  })
 </script>
 
 <style scoped>

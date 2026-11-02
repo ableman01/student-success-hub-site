@@ -1,58 +1,44 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { getCurrentUser, hasAuthSession } from '@/lib/auth'
 import { isLasuInstitution } from '@/lib/institutions'
-import AboutMePage from '@/pages/about-me.vue'
-import AboutUsPage from '@/pages/about-us.vue'
-import DashboardPage from '@/pages/dashboard.vue'
-import EmailConfirmationPage from '@/pages/email-confirmation.vue'
-import HomePage from '@/pages/index.vue'
-import InstitutionNewsPage from '@/pages/institution-news.vue'
-import LasuUpdatesPage from '@/pages/lasu-updates.vue'
-import LoginPage from '@/pages/loginPage.vue'; import PreviewPage from '@/pages/preview.vue'
-import ProfilePage from '@/pages/profile.vue'
-import SavedMaterialsPage from '@/pages/saved-materials.vue'
-import SignupPage from '@/pages/signup.vue'
-import StudyGroupsPage from '@/pages/study-groups.vue'
-import StudyRoomPage from '@/pages/study-room.vue'
-import TimetablePage from '@/pages/timetable.vue'
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: HomePage },
-    { path: '/login', component: LoginPage },
+    { path: '/', component: () => import('@/pages/index.vue') },
+    { path: '/login', component: () => import('@/pages/loginPage.vue') },
     { path: '/loginPage', redirect: '/login' },
-    { path: '/signup', component: SignupPage },
-    { path: '/auth/confirm', component: EmailConfirmationPage },
-    { path: '/lasu-updates', component: LasuUpdatesPage, meta: { requiresAuth: true } },
-    { path: '/institution-news', component: InstitutionNewsPage, meta: { requiresAuth: true } },
-    { path: '/about-me', component: AboutMePage, meta: { requiresAuth: true } },
-    { path: '/about-us', component: AboutUsPage }, { path: '/preview', component: PreviewPage },
-    { path: '/timetable', component: TimetablePage, meta: { requiresAuth: true } },
+    { path: '/signup', component: () => import('@/pages/signup.vue') },
+    { path: '/auth/confirm', component: () => import('@/pages/email-confirmation.vue') },
+    { path: '/lasu-updates', component: () => import('@/pages/lasu-updates.vue'), meta: { requiresAuth: true } },
+    { path: '/institution-news', component: () => import('@/pages/institution-news.vue'), meta: { requiresAuth: true } },
+    { path: '/about-us', component: () => import('@/pages/about-us.vue') },
+    { path: '/about-me', component: () => import('@/pages/about-me.vue'), meta: { requiresAuth: true } },
+    { path: '/timetable', component: () => import('@/pages/timetable.vue'), meta: { requiresAuth: true } },
+    { path: '/preview', component: () => import('@/pages/preview.vue') },
     {
       path: '/study',
-      component: StudyRoomPage,
+      component: () => import('@/pages/study-room.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: '/study-groups',
-      component: StudyGroupsPage,
+      component: () => import('@/pages/study-groups.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: '/dashboard',
-      component: DashboardPage,
+      component: () => import('@/pages/dashboard.vue'),
       meta: { requiresAuth: true },
     },
 
     {
       path: '/saved-materials',
-      component: SavedMaterialsPage,
+      component: () => import('@/pages/saved-materials.vue'),
       meta: { requiresAuth: true },
     },
     {
       path: '/profile',
-      component: ProfilePage,
+      component: () => import('@/pages/profile.vue'),
       meta: { requiresAuth: true },
     },
   ],

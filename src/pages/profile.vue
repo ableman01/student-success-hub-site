@@ -7,9 +7,11 @@
             <v-icon size="16">mdi-account-circle-outline</v-icon>
             MY PROFILE
           </div>
+
           <h1>My profile</h1>
           <p>Manage your personal information, academic details, and account security.</p>
         </div>
+
         <v-btn
           color="primary"
           prepend-icon="mdi-arrow-left"
@@ -65,6 +67,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="profileLastName"
@@ -74,6 +77,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12">
                     <v-text-field
                       v-model="profileEmail"
@@ -83,6 +87,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="profileInstitutionType"
@@ -93,15 +98,17 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="profileInstitution"
                       color="primary"
-                      label="Institution"
                       disabled
+                      label="Institution"
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="6">
                     <v-select
                       v-model="profileAcademicLevel"
@@ -114,6 +121,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="6">
                     <v-text-field
                       v-model="profileProgram"
@@ -124,10 +132,12 @@
                     />
                   </v-col>
                 </v-row>
+
                 <p class="profile-hint">
                   Profile details stay locked until you choose Edit profile details. Your institution is fixed at signup so content stays within your school. Your email address is permanently locked after account creation.
                   Confirm your current password to save other changes.
                 </p>
+
                 <v-text-field
                   v-if="isEditingProfile"
                   v-model="profileCurrentPassword"
@@ -138,10 +148,19 @@
                   variant="outlined"
                 />
               </v-card-text>
+
               <v-card-actions class="profile-actions">
-                <v-btn v-if="!isEditingProfile" color="primary" rounded="pill" variant="tonal" @click="beginProfileEdit">Edit profile details</v-btn>
+                <v-btn
+                  v-if="!isEditingProfile"
+                  color="primary"
+                  rounded="pill"
+                  variant="tonal"
+                  @click="beginProfileEdit"
+                >Edit profile details</v-btn>
+
                 <template v-else>
                   <v-btn rounded="pill" variant="text" @click="cancelProfileEdit">Cancel</v-btn>
+
                   <v-btn
                     color="primary"
                     :disabled="!profileCurrentPassword.trim()"
@@ -171,6 +190,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="4">
                     <v-text-field
                       v-model="newPassword"
@@ -181,6 +201,7 @@
                       variant="outlined"
                     />
                   </v-col>
+
                   <v-col cols="12" md="4">
                     <v-text-field
                       v-model="confirmPassword"
@@ -193,8 +214,15 @@
                   </v-col>
                 </v-row>
               </v-card-text>
+
               <v-card-actions class="profile-actions">
-                <v-btn color="primary" :loading="updatingPassword" rounded="pill" type="submit" variant="elevated">Update password</v-btn>
+                <v-btn
+                  color="primary"
+                  :loading="updatingPassword"
+                  rounded="pill"
+                  type="submit"
+                  variant="elevated"
+                >Update password</v-btn>
               </v-card-actions>
             </v-form>
           </v-window-item>
@@ -208,9 +236,9 @@
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { getAcademicLevels } from '@/lib/academics'
-  import { getDefaultInstitution, institutionTypes } from '@/lib/institutions'
   import { changePassword, getCurrentUser, updateProfile as updateUserProfile } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { getDefaultInstitution, institutionTypes } from '@/lib/institutions'
 
   const router = useRouter()
 

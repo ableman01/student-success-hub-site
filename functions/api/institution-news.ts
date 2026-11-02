@@ -11,17 +11,58 @@ export async function onRequestGet ({ request }: PagesContext) {
   if (institution.length < 2 || institution.length > 180 || !['university', 'polytechnic', 'education', 'monotechnic'].includes(type)) {
     return Response.json({ error: 'Provide a valid institution and category.' }, { status: 400 })
   }
+  let officialSite: string | null = null
+  let items: NewsItem[] = []
+  let sourceType: 'official' | 'search' | null = null
+  let note = ''
   try {
-    const officialSite = await getOfficialInstitutionSite(type, institution)
-    const items = officialSite ? await getOfficialNews(officialSite) : []
-    const newsSite = items.length > 0 ? new URL(items[0].url).origin : officialSite
-    return Response.json({ institution, officialSite: newsSite, items, source: newsSite ? new URL(newsSite).hostname : null }, {
-      headers: { 'Cache-Control': 'public, max-age=900, s-maxage=900' },
-    })
+    officialSite = await getOfficialInstitutionSite(type, institution)
+    if (officialSite) {
+      items = await getOfficialNews(officialSite)
+      if (items.length > 0) {
+        sourceType = 'official'
+      }
+    }
   } catch (error) {
-    console.error('Could not load official institution news:', institution, error)
-    return Response.json({ error: 'Could not check this institution’s official website right now.' }, { status: 502 })
+    console.error('Institution news lookup failed:', institution, type, error)
+    note = 'We couldn\'t reach your institution\'s website right now. Please try again later.'
   }
+
+  if (items.length === 0) {
+    try {
+      items = await searchInstitutionNews(institution)
+      if (items.length > 0) {
+        sourceType = 'search'
+        note = 'These news search results may include unrelated coverage and are not official notices. Confirm important information with your school.'
+      }
+    } catch (error) {
+      console.error('Institution news search failed:', institution, type, error)
+      if (!note) {
+        note = 'Recent news mentions are temporarily unavailable. Please check your institution’s official channels.'
+      }
+    }
+  }
+
+  if (items.length === 0 && !note) {
+    note = officialSite
+      ? 'No recent updates were found on your institution’s official website.'
+      : 'We couldn’t verify an official website for this institution yet.'
+  }
+
+  const newsSite = sourceType === 'official' && items.length > 0 ? new URL(items[0].url).origin : officialSite
+  return Response.json({
+    institution,
+    type,
+    officialSite: newsSite,
+    directoryUrl: getInstitutionDirectoryUrl(type, institution),
+    searchUrl: getInstitutionNewsSearchUrl(institution),
+    items,
+    source: newsSite ? new URL(newsSite).hostname : null,
+    sourceType,
+    note,
+  }, {
+    headers: { 'Cache-Control': 'public, max-age=900, s-maxage=900' },
+  })
 }
 
 async function getOfficialInstitutionSite (type: string, institution: string) {
@@ -45,17 +86,46 @@ async function getOfficialInstitutionSite (type: string, institution: string) {
         site = await findNbteSite(institution, type)
         break
       }
-      case 'education': { {
+      case 'education': {
         site = await findCollegeSite(institution)
-      // No default
-      }
-      break
+        break
       }
     }
   }
 
-  siteCache.set(key, { site, expiresAt: Date.now() + 86_400_000 })
+  // Cache successful matches for a day, but retry misses frequently in case a
+  // regulator website is temporarily unavailable or a directory has changed.
+  siteCache.set(key, { site, expiresAt: Date.now() + (site ? 86_400_000 : 5 * 60_000) })
   return site
+}
+
+function getInstitutionDirectoryUrl (type: string, institution: string) {
+  switch (type) {
+    case 'university': {
+      return 'https://enuc.nuc.edu.ng/nus'
+    }
+    case 'polytechnic':
+    case 'monotechnic': {
+      const url = new URL('https://digitalnbte.nbte.gov.ng/Public/Institutions')
+      url.searchParams.set('q', institution)
+      url.searchParams.set('type', type)
+      return url.href
+    }
+    case 'education': {
+      return 'https://www.ncce.gov.ng/AccreditedColleges/Index'
+    }
+    default: {
+      return null
+    }
+  }
+}
+
+function getInstitutionNewsSearchUrl (institution: string) {
+  const url = new URL('https://news.google.com/search')
+  url.searchParams.set('q', `"${institution}"`)
+  url.searchParams.set('hl', 'en-NG')
+  url.searchParams.set('gl', 'NG')
+  return url.href
 }
 
 function isLasuName (name: string) {
@@ -64,7 +134,7 @@ function isLasuName (name: string) {
 
 async function findUniversitySite (institution: string) {
   const registryPages = [
-    'https://www.nuc.edu.ng/nigerian-univerisities/federal-univeristies/',
+    'https://www.nuc.edu.ng/federal-univeristies/',
     'https://www.nuc.edu.ng/nigerian-univerisities/state-univerisity/',
     'https://www.nuc.edu.ng/nigerian-univerisities/private-univeristies/',
   ]
@@ -80,8 +150,10 @@ async function findUniversitySite (institution: string) {
 }
 
 async function findNbteSite (institution: string, type: string) {
-  const listUrl = `https://www.digitalnbte.nbte.gov.ng/Public/Institutions?type=${type}`
-  const html = await getText(listUrl)
+  const listUrl = new URL('https://www.digitalnbte.nbte.gov.ng/Public/Institutions')
+  listUrl.searchParams.set('q', institution)
+  listUrl.searchParams.set('type', type)
+  const html = await getText(listUrl.href)
   const rows = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)].map(([, attributes, body]) => {
     const href = readAttribute(attributes, 'href')
     if (!/\/Public\/Institutions\/\d+/.test(href)) {
@@ -141,7 +213,7 @@ function parseUniversityRows (html: string) {
     const name = cleanText(cells[1])
     const site = extractOfficialUrls(cells[3])[0]
     return name && site ? { name, url: site.replace(/\/$/, '') } : null
-  }).filter(Boolean)
+  }).filter((row): row is { name: string, url: string } => row !== null)
 }
 
 function bestSiteMatch (institution: string, rows: Array<{ name: string, url: string }>) {
@@ -154,6 +226,17 @@ function bestNameMatch (institution: string, rows: Array<{ name: string, url: st
   if (exact) {
     return exact
   }
+
+  // Official directories often use a campus name where students enter the
+  // city (for example, “University of Abuja, Gwagwalada” vs “... Abuja”).
+  // Compare the institution name before the first comma, but only when that
+  // core name uniquely identifies one directory entry.
+  const targetCore = normalizeName(institution.split(',', 1)[0] || '')
+  const coreMatches = rows.filter(row => normalizeName(row.name.split(',', 1)[0] || '') === targetCore && row.url)
+  if (targetCore.split(' ').length >= 2 && coreMatches.length === 1) {
+    return coreMatches[0]
+  }
+
   const ranked = rows.map(row => ({ row, score: nameScore(target, normalizeName(row.name)) }))
     .filter(candidate => candidate.row.url)
     .toSorted((a, b) => b.score - a.score)
@@ -247,7 +330,7 @@ async function getOfficialNews (officialSite: string): Promise<NewsItem[]> {
     }
   }))
   const items: NewsItem[] = []
-  for (const page of pages.filter(Boolean)) {
+  for (const page of pages.filter((page): page is { url: string, text: string } => page !== null)) {
     const feedItems = parseFeed(page.text, page.url, origin)
     if (feedItems.length > 0) {
       return feedItems
@@ -276,7 +359,39 @@ function parseLasuNews (html: string): NewsItem[] {
       source: 'LASU official website',
       published_at: Number.isNaN(Date.parse(date)) ? null : new Date(date).toISOString(),
     }
-  }).filter(Boolean).slice(0, 12)
+  }).filter((item): item is NewsItem => item !== null).slice(0, 12)
+}
+
+async function searchInstitutionNews (institution: string) {
+  const url = new URL('https://news.google.com/rss/search')
+  url.searchParams.set('q', `"${institution}"`)
+  url.searchParams.set('hl', 'en-NG')
+  url.searchParams.set('gl', 'NG')
+  url.searchParams.set('ceid', 'NG:en')
+
+  const response = await fetch(url.href, {
+    headers: { 'User-Agent': 'StudentSuccessHub/1.0 (+institution news search)' },
+    signal: AbortSignal.timeout(7000),
+  })
+  if (!response.ok) {
+    throw new Error(`News search returned HTTP ${response.status}`)
+  }
+  const xml = await response.text()
+  if (xml.length > 1_500_000) {
+    throw new Error('News search response is too large')
+  }
+  const normalizedInstitution = normalizeName(institution)
+  const ignoredTerms = new Set(['university', 'polytechnic', 'college', 'education', 'federal', 'state', 'of', 'the', 'and', 'institute', 'technology', 'technical'])
+  const terms = normalizedInstitution.split(' ').filter(term => term.length > 2 && !ignoredTerms.has(term))
+  const aliases = normalizedInstitution.includes('yaba college of technology') ? ['yabatech'] : []
+  const timestamp = (date: string | null) => date ? Date.parse(date) || 0 : 0
+  return parseFeed(xml, url.href, url.origin)
+    .filter(item => {
+      const title = normalizeName(item.title)
+      return [...terms, ...aliases].some(term => title.includes(term))
+    })
+    .toSorted((left, right) => timestamp(right.published_at) - timestamp(left.published_at))
+    .slice(0, 12)
 }
 
 async function getWordPressNews (origin: string): Promise<NewsItem[]> {
@@ -309,11 +424,12 @@ function parseFeed (xml: string, base: string, origin: string): NewsItem[] {
     const linkText = entry.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]
     const link = decodeEntities(linkTag || linkText || '').trim()
     const dateText = cleanText(entry.match(/<(?:pubDate|published|updated|dc:date)[^>]*>([\s\S]*?)<\//i)?.[1] || '')
+    const publication = cleanText(entry.match(/<source\b[^>]*>([\s\S]*?)<\/source>/i)?.[1] || '')
     if (!title || !link || !isSameOfficialSite(new URL(link, base).href, origin)) {
       return null
     }
-    return { title, url: new URL(link, base).href, source: new URL(origin).hostname, published_at: Number.isNaN(Date.parse(dateText)) ? null : new Date(dateText).toISOString() }
-  }).filter(Boolean)
+    return { title, url: new URL(link, base).href, source: publication || new URL(origin).hostname, published_at: Number.isNaN(Date.parse(dateText)) ? null : new Date(dateText).toISOString() }
+  }).filter((item): item is NewsItem => item !== null)
 }
 
 function parseOfficialPage (html: string, pageUrl: string, origin: string): NewsItem[] {

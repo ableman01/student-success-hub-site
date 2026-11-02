@@ -12,10 +12,10 @@
 
           <v-btn
             :href="customerCareWhatsAppUrl"
-            target="_blank"
-            rel="noopener noreferrer"
             prepend-icon="mdi-whatsapp"
+            rel="noopener noreferrer"
             rounded="pill"
+            target="_blank"
             variant="tonal"
           >
             WhatsApp support
@@ -72,7 +72,7 @@
       </v-alert>
 
       <section class="groups-invitation">
-        <img src="/study-together.svg" alt="" aria-hidden="true">
+        <img alt="" aria-hidden="true" src="/study-together.svg">
         <div><div class="section-kicker">YOUR OWN STUDY CIRCLE</div><h2>Bring your classmates together</h2><p>Create a private group chat, invite classmates with a link, and share solved questions and images as you study.</p></div>
         <v-btn color="primary" prepend-icon="mdi-account-multiple-plus" rounded="pill" :to="{ path: '/study-groups', query: activeCourse ? { course: activeCourse } : undefined }">Open study groups<v-icon end>mdi-arrow-right</v-icon></v-btn>
       </section>
@@ -85,7 +85,7 @@
                 <div class="section-kicker">LIVE COURSE ROOM</div>
                 <h2>{{ activeCourse || 'Choose a course' }}</h2>
 
-              <v-chip class="presence-summary" color="success" size="small" variant="tonal">
+                <v-chip class="presence-summary" color="success" size="small" variant="tonal">
                   <v-icon class="mr-1" color="success" size="16">mdi-circle</v-icon>
                   {{ onlineCount }} {{ onlineCount === 1 ? 'student' : 'students' }} here now
                 </v-chip>
@@ -104,6 +104,7 @@
                 prepend-inner-icon="mdi-book-open-variant"
                 variant="outlined"
               />
+
               <v-btn
                 v-if="isRoomAdmin && activeCourse"
                 class="room-admin-delete"
@@ -116,6 +117,7 @@
               >
                 Delete live room
               </v-btn>
+
               <p v-if="userAcademicLevel && !loadingResources && courseOptions.length === 0" class="course-picker-hint">
                 No course PDFs are listed for your level yet. You can enter a course code for your level.
               </p>
@@ -165,7 +167,14 @@
                 </div>
 
                 <p>{{ message.content }}</p>
-                <a v-if="message.image_url" :href="message.image_url" target="_blank" rel="noopener noreferrer" class="chat-image-link"><img :src="message.image_url" alt="Image shared in the study room" class="chat-image"></a>
+
+                <a
+                  v-if="message.image_url"
+                  class="chat-image-link"
+                  :href="message.image_url"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                ><img alt="Image shared in the study room" class="chat-image" :src="message.image_url"></a>
               </article>
 
               <div ref="messageEnd" />
@@ -197,7 +206,16 @@
                 rows="3"
               />
 
-              <v-file-input v-model="roomImage" accept="image/jpeg,image/png,image/webp,image/gif" class="chat-image-input" density="compact" hide-details label="Attach image (max 5 MB)" prepend-icon="mdi-image-plus" show-size />
+              <v-file-input
+                v-model="roomImage"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                class="chat-image-input"
+                density="compact"
+                hide-details
+                label="Attach image (max 5 MB)"
+                prepend-icon="mdi-image-plus"
+                show-size
+              />
 
               <v-btn
                 color="primary"
@@ -211,14 +229,17 @@
               </v-btn>
             </v-form>
 
-            <div class="discussion-starters" aria-label="Discussion starters">
+            <div aria-label="Discussion starters" class="discussion-starters">
               <span>Need a starting point?</span>
+
               <v-chip size="small" variant="outlined" @click="messageText = 'Which part of this topic should we review first?'">
                 Review a topic
               </v-chip>
+
               <v-chip size="small" variant="outlined" @click="messageText = 'Can someone explain how they approached this problem?'">
                 Explain a problem
               </v-chip>
+
               <v-chip size="small" variant="outlined" @click="messageText = 'What are the key ideas we should remember for this course?'">
                 Share key ideas
               </v-chip>
@@ -262,7 +283,8 @@
                 <div class="room-resource-copy">
                   <strong>{{ resource.title }}</strong>
                   <small>{{ resource.course || 'Course not specified' }}</small>
-                  <v-chip size="x-small" color="secondary" variant="tonal">
+
+                  <v-chip color="secondary" size="x-small" variant="tonal">
                     {{ getResourceCategoryLabel(resource.category) }}
                   </v-chip>
                 </div>
@@ -304,16 +326,20 @@
 
           <v-card class="focus-card mt-5 pa-5" rounded="xl">
             <div class="section-kicker">FOCUS SESSION</div>
-            <div class="focus-timer" role="timer" aria-label="Time remaining" aria-live="off">
+
+            <div aria-label="Time remaining" aria-live="off" class="focus-timer" role="timer">
               {{ formatFocusTime(focusRemaining) }}
             </div>
+
             <p class="focus-caption">A short, focused study sprint for {{ activeCourse || 'your next course' }}.</p>
+
             <v-progress-linear
               class="my-4"
               color="secondary"
               :model-value="focusProgress"
               rounded
             />
+
             <v-text-field
               v-model="focusGoal"
               density="compact"
@@ -323,13 +349,16 @@
               prepend-inner-icon="mdi-target"
               variant="outlined"
             />
+
             <div class="focus-actions">
               <v-btn color="primary" rounded="pill" @click="toggleFocusTimer">
                 {{ focusRunning ? 'Pause sprint' : 'Start 25-minute sprint' }}
                 <v-icon end>{{ focusRunning ? 'mdi-pause' : 'mdi-play' }}</v-icon>
               </v-btn>
+
               <v-btn aria-label="Reset focus timer" icon="mdi-restart" variant="text" @click="resetFocusTimer" />
             </div>
+
             <p v-if="focusRemaining === 0" class="focus-complete">Sprint complete. Take a short break and celebrate your progress.</p>
           </v-card>
 
@@ -340,15 +369,17 @@
           </v-card>
 
           <v-card id="study-guidance" class="guide-card mt-5 pa-5" rounded="xl">
-            <img class="guide-art" src="/study-planner.svg" alt="Illustrated study planner with completed tasks and a course book">
+            <img alt="Illustrated study planner with completed tasks and a course book" class="guide-art" src="/study-planner.svg">
             <div class="section-kicker">A SIMPLE STUDY ROUTINE</div>
             <h3 class="mt-2">Make each session count</h3>
+
             <ol class="study-routine">
               <li><strong>Choose one clear goal.</strong><span>Write what you’ll understand or finish before the session ends.</span></li>
               <li><strong>Try active recall.</strong><span>Close your notes and explain the idea from memory before checking.</span></li>
               <li><strong>Practise in short rounds.</strong><span>Attempt a past question, compare approaches, then correct your work.</span></li>
               <li><strong>Return to it later.</strong><span>Review the same topic tomorrow and again later in the week.</span></li>
             </ol>
+
             <v-btn class="mt-2" rounded="pill" to="/dashboard" variant="tonal">Plan your study week<v-icon end>mdi-arrow-right</v-icon></v-btn>
           </v-card>
         </v-col>
@@ -364,9 +395,11 @@
       <v-dialog v-model="deleteRoomDialog" max-width="480">
         <v-card rounded="xl">
           <v-card-title>Delete {{ activeCourse }} live room?</v-card-title>
+
           <v-card-text>
             This permanently closes the room and removes its discussion history. Students can reopen this course room later.
           </v-card-text>
+
           <v-card-actions class="px-5 pb-4">
             <v-spacer />
             <v-btn rounded="pill" variant="text" @click="deleteRoomDialog = false">Cancel</v-btn>
@@ -380,14 +413,13 @@
 </template>
 
 <script setup lang="ts">
-  import type { Resource } from '@/services/resources'
-  import type { ResourceCategory } from '@/services/resources'
+  import type { Resource, ResourceCategory } from '@/services/resources'
   import type { StudyMessage, StudyMessageType } from '@/services/study'
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { useRoute } from 'vue-router'
-  import { getCurrentUser } from '@/lib/auth'
   import { getCourseAcademicLevel } from '@/lib/academics'
+  import { getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { customerCareWhatsAppUrl } from '@/lib/support'
   import { getResourceCategoryLabel, getResources, isResourceModerator, resourceCategories } from '@/services/resources'
@@ -455,7 +487,7 @@
   }
   const courseOptions = computed(() => [
     ...new Set(courseResources.value
-      .filter(isResourceForUserLevel)
+      .filter(resource => isResourceForUserLevel(resource))
       .map(resource => resource.course.trim())
       .filter(Boolean)),
   ].toSorted((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })))
@@ -518,7 +550,7 @@
         getResources('past_question'),
         getResources('class_material'),
       ])
-      courseResources.value = [...questions, ...materials].filter(isResourceForUserLevel)
+      courseResources.value = [...questions, ...materials].filter(resource => isResourceForUserLevel(resource))
     } catch (error) {
       resourceError.value = getErrorMessage(error, 'Could not load the shared course PDFs.')
     } finally {

@@ -68,10 +68,24 @@
           >
             My profile
           </v-btn>
-          <v-btn class="shared-link" prepend-icon="mdi-account-outline" rounded="pill" to="/about-me" variant="text">
+
+          <v-btn
+            class="shared-link"
+            prepend-icon="mdi-account-outline"
+            rounded="pill"
+            to="/about-me"
+            variant="text"
+          >
             About me
           </v-btn>
-          <v-btn class="shared-link" prepend-icon="mdi-information-outline" rounded="pill" to="/about-us" variant="text">
+
+          <v-btn
+            class="shared-link"
+            prepend-icon="mdi-information-outline"
+            rounded="pill"
+            to="/about-us"
+            variant="text"
+          >
             About us
           </v-btn>
 
@@ -141,7 +155,7 @@
           <div>
             <div class="section-kicker">{{ user.institution }}</div>
             <h2 id="institution-news-heading">{{ isLasuStudent ? 'LASU updates' : 'Institution updates' }}</h2>
-            <p>Recent updates published on your institution’s official website.</p>
+            <p>{{ institutionNewsSourceType === 'search' ? 'News search results for your school. Results may include unrelated coverage.' : 'Recent updates from your institution, when available.' }}</p>
           </div>
 
           <v-btn
@@ -165,7 +179,17 @@
           {{ institutionNewsError }}
         </v-alert>
 
-        <div v-else-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
+        <v-alert
+          v-else-if="institutionNewsNote"
+          class="mt-4"
+          density="compact"
+          type="info"
+          variant="tonal"
+        >
+          {{ institutionNewsNote }}
+        </v-alert>
+
+        <div v-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
           Loading updates for {{ user.institution }}…
         </div>
 
@@ -186,14 +210,19 @@
         </div>
 
         <v-alert
-          v-else
+          v-else-if="!loadingInstitutionNews && !institutionNewsError && !institutionNewsNote"
           class="mt-4"
           density="compact"
           type="info"
           variant="tonal"
         >
-          No recent updates were found on your institution’s official website.
+          No institution news is available right now.
         </v-alert>
+
+        <p v-if="institutionNews.length > 0" class="institution-news-attribution">
+          <template v-if="institutionNewsSourceType === 'official'">These updates are from an official institution website.</template>
+          <template v-else>These are news search results, not official school notices. Confirm important information with your school.</template>
+        </p>
       </section>
 
       <v-alert
@@ -430,7 +459,7 @@
 
             <div v-else class="assignment-list">
               <v-card
-              v-for="task in paginatedTasks"
+                v-for="task in paginatedTasks"
                 :key="task.id"
                 class="assignment-card"
                 :class="{ 'assignment-done': task.completed }"
@@ -504,6 +533,7 @@
                 />
               </v-card>
             </div>
+
             <div v-if="filteredTasks.length > taskPerPage" class="d-flex justify-center mt-5">
               <v-pagination v-model="taskPage" :length="taskTotalPages" rounded="circle" />
             </div>
@@ -930,86 +960,97 @@
               class="material-card pa-4"
               rounded="xl"
             >
-                <div class="material-heading">
-                  <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
-                  <div class="min-width-0">
-                    <h3>{{ resource.title }}</h3>
-                    <p>
-                      {{ resource.course || 'Course not specified' }}
-                      · {{ formatDate(resource.created_at) }}
-                    </p>
-                  </div>
-                  <v-btn
-                    v-if="resource.status === 'approved'"
-                    :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
-                    class="material-save-button"
-                    :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
-                    :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
-                    :loading="savingResourceId === resource.id"
-                    size="small"
-                    variant="tonal"
-                    @click="toggleSavedMaterial(resource)"
-                  />
+              <div class="material-heading">
+                <div class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></div>
+
+                <div class="min-width-0">
+                  <h3>{{ resource.title }}</h3>
+
+                  <p>
+                    {{ resource.course || 'Course not specified' }}
+                    · {{ formatDate(resource.created_at) }}
+                  </p>
                 </div>
-                <div class="material-meta">
-                  <v-chip color="primary" size="x-small" variant="tonal">
-                    {{ getResourceCategoryLabel(resource.category) }}
-                  </v-chip>
-                  <span>Shared by {{ resource.uploaded_by_name || 'LASU student' }}</span>
-                </div>
-                <v-chip
-                  v-if="resource.status !== 'approved'"
-                  class="mt-3 align-self-start"
-                  :color="resource.status === 'pending' ? 'warning' : 'error'"
-                  prepend-icon="mdi-clock-outline"
+
+                <v-btn
+                  v-if="resource.status === 'approved'"
+                  :aria-label="savedResourceIds.includes(resource.id) ? `Remove ${resource.title} from saved materials` : `Save ${resource.title} to your profile`"
+                  class="material-save-button"
+                  :color="savedResourceIds.includes(resource.id) ? 'primary' : 'secondary'"
+                  :icon="savedResourceIds.includes(resource.id) ? 'mdi-bookmark' : 'mdi-bookmark-outline'"
+                  :loading="savingResourceId === resource.id"
                   size="small"
                   variant="tonal"
-                >
-                  {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
+                  @click="toggleSavedMaterial(resource)"
+                />
+              </div>
+
+              <div class="material-meta">
+                <v-chip color="primary" size="x-small" variant="tonal">
+                  {{ getResourceCategoryLabel(resource.category) }}
                 </v-chip>
-                <p v-if="resource.description" class="material-description">
-                  {{ resource.description }}
-                </p>
-                <v-btn
-                  block
-                  class="mt-auto"
-                  color="primary"
-                  :href="resource.url"
-                  rel="noopener noreferrer"
-                  rounded="pill"
-                  target="_blank"
-                  variant="tonal"
-                >
-                  Read PDF
-                  <v-icon end>mdi-open-in-new</v-icon>
-                </v-btn>
-                <v-btn
-                  v-if="isResourceModerator"
-                  aria-label="Edit material"
-                  block
-                  class="mt-2"
-                  color="secondary"
-                  prepend-icon="mdi-pencil-outline"
-                  rounded="pill"
-                  variant="tonal"
-                  @click="openEditResource(resource)"
-                >
-                  Edit material
-                </v-btn>
-                <v-btn
-                  v-if="isResourceModerator"
-                  block
-                  class="mt-2"
-                  color="error"
-                  prepend-icon="mdi-delete-outline"
-                  rounded="pill"
-                  variant="text"
-                  @click="resourceToDelete = resource"
-                >
-                  Delete resource
-                </v-btn>
+
+                <span>Shared by {{ resource.uploaded_by_name || 'Student' }}</span>
+              </div>
+
+              <v-chip
+                v-if="resource.status !== 'approved'"
+                class="mt-3 align-self-start"
+                :color="resource.status === 'pending' ? 'warning' : 'error'"
+                prepend-icon="mdi-clock-outline"
+                size="small"
+                variant="tonal"
+              >
+                {{ resource.status === 'pending' ? 'Awaiting creator approval' : 'Not approved Â· upload a corrected PDF' }}
+              </v-chip>
+
+              <p v-if="resource.description" class="material-description">
+                {{ resource.description }}
+              </p>
+
+              <v-btn
+                block
+                class="mt-auto"
+                color="primary"
+                :href="resource.url"
+                rel="noopener noreferrer"
+                rounded="pill"
+                target="_blank"
+                variant="tonal"
+              >
+                Read PDF
+                <v-icon end>mdi-open-in-new</v-icon>
+              </v-btn>
+
+              <v-btn
+                v-if="isResourceModerator"
+                aria-label="Edit material"
+                block
+                class="mt-2"
+                color="secondary"
+                prepend-icon="mdi-pencil-outline"
+                rounded="pill"
+                variant="tonal"
+                @click="openEditResource(resource)"
+              >
+                Edit material
+              </v-btn>
+
+              <v-btn
+                v-if="isResourceModerator"
+                block
+                class="mt-2"
+                color="error"
+                prepend-icon="mdi-delete-outline"
+                rounded="pill"
+                variant="text"
+                @click="resourceToDelete = resource"
+              >
+                Delete resource
+              </v-btn>
             </v-card>
           </div>
+
           <div v-if="materialTotalPages > 1" class="d-flex justify-center mt-6">
             <v-pagination v-model="materialPage" :length="materialTotalPages" rounded="circle" />
           </div>
@@ -1480,9 +1521,8 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useAppTheme } from '@/composables/useAppTheme'
   import {
-    academicLevels,
-    getAcademicLevels,
     getAcademicLevelLabel,
+    getAcademicLevels,
     getCourseAcademicLevel,
   } from '@/lib/academics'
   import {
@@ -1493,7 +1533,6 @@
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
   import { isLasuInstitution } from '@/lib/institutions'
-  import { normalizeCourseLabel } from '@/lib/identity'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
   import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
@@ -1514,6 +1553,8 @@
   const institutionNews = ref<InstitutionNewsItem[]>([])
   const loadingInstitutionNews = ref(false)
   const institutionNewsError = ref('')
+  const institutionNewsNote = ref('')
+  const institutionNewsSourceType = ref<'official' | 'search' | null>(null)
   const isLasuStudent = computed(() => Boolean(user.value && isLasuInstitution(user.value.institutionType, user.value.institution)))
   // The raw lists are kept so the duplicate counters stay accurate; every
   // visible list is derived from them through the automatic sorter.
@@ -1591,32 +1632,6 @@
   const duplicateTaskCount = computed(() => tasks.value.length - sortedTasks.value.length)
   const duplicateMaterialCount = computed(() => classMaterials.value.length - sortedClassMaterials.value.length)
 
-  interface ResourceGroup {
-    courseKey: string
-    courseLabel: string
-    items: Resource[]
-  }
-
-  const groupedClassMaterials = computed<ResourceGroup[]>(() => {
-    const groups = new Map<string, ResourceGroup>()
-
-    for (const resource of filteredClassMaterials.value) {
-      const courseLabel = resource.course.trim()
-      const courseKey = courseLabel ? normalizeCourseLabel(courseLabel) : '__unassigned__'
-      const group = groups.get(courseKey)
-      if (group) {
-        group.items.push(resource)
-      } else {
-        groups.set(courseKey, { courseKey, courseLabel: courseLabel || 'No course code', items: [resource] })
-      }
-    }
-
-    return [...groups.values()].toSorted((a, b) => {
-      if (a.courseKey === '__unassigned__') return 1
-      if (b.courseKey === '__unassigned__') return -1
-      return a.courseLabel.localeCompare(b.courseLabel, undefined, { sensitivity: 'base' })
-    })
-  })
   const title = ref('')
   // Course code (e.g. SVG 202) used to fold every upload for one course together.
   const courseCode = ref('')
@@ -1767,16 +1782,17 @@
   async function loadInstitutionNews (currentUser: AppUser) {
     institutionNews.value = []
     institutionNewsError.value = ''
+    institutionNewsNote.value = ''
+    institutionNewsSourceType.value = null
     loadingInstitutionNews.value = true
     try {
       const params = new URLSearchParams({ institution: currentUser.institution, type: currentUser.institutionType })
       const response = await fetch(`/api/institution-news?${params}`)
-      const result = await response.json() as { items?: InstitutionNewsItem[], officialSite?: string | null, error?: string }
+      const result = await response.json() as { items?: InstitutionNewsItem[], officialSite?: string | null, sourceType?: 'official' | 'search' | null, note?: string, error?: string }
       if (!response.ok) throw new Error(result.error || 'Institution updates are temporarily unavailable.')
       institutionNews.value = result.items || []
-      if (!result.officialSite) {
-        institutionNewsError.value = 'We could not verify an official news website for this institution.'
-      }
+      institutionNewsNote.value = result.note || ''
+      institutionNewsSourceType.value = result.sourceType || null
     } catch (error) {
       institutionNewsError.value = getErrorMessage(error, 'Institution updates are temporarily unavailable.')
     } finally {
@@ -3148,6 +3164,11 @@
     background: rgb(255 255 255 / 96%);
     box-shadow: 0 10px 32px rgb(28 49 40 / 16%);
     backdrop-filter: blur(14px);
+  }
+
+  @media (min-width: 1280px) {
+    .dashboard-quick-nav { display: none; }
+    .dashboard-width { padding-bottom: 32px; }
   }
 
   .dashboard-quick-nav a {

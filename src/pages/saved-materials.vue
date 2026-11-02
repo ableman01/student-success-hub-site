@@ -77,7 +77,7 @@
               <p v-if="resource.description" class="saved-description">{{ resource.description }}</p>
 
               <div class="saved-card-footer">
-                <span><v-icon size="15">mdi-account-outline</v-icon>{{ resource.uploaded_by_name || 'LASU student' }}</span>
+                <span><v-icon size="15">mdi-account-outline</v-icon>{{ resource.uploaded_by_name || 'Student' }}</span>
 
                 <v-btn
                   append-icon="mdi-open-in-new"

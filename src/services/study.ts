@@ -1,7 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getCurrentUser } from '@/lib/auth'
-import { getInstitutionKey } from '@/lib/institutions'
 import { getErrorMessage } from '@/lib/errors'
+import { getInstitutionKey } from '@/lib/institutions'
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase'
 
 const studyImageBucket = 'study-chat-images'
@@ -47,33 +47,47 @@ export interface StudyMessage {
 
 export async function getStudyGroups () {
   const user = await getCurrentUser()
-  if (!user) return []
+  if (!user) {
+    return []
+  }
   const institutionKey = getInstitutionKey(user.institutionType, user.institution)
   const client = requireSupabase()
   const { data: memberships, error: membershipError } = await client
     .from('study_group_members')
     .select('group_id')
-  if (membershipError) throw getSchemaError(membershipError)
+  if (membershipError) {
+    throw getSchemaError(membershipError)
+  }
 
   const groupIds = (memberships ?? []).map(item => item.group_id)
-  if (groupIds.length === 0) return []
+  if (groupIds.length === 0) {
+    return []
+  }
 
   const { data, error } = await client.from('study_groups').select('*').eq('institution_key', institutionKey).in('id', groupIds).order('created_at', { ascending: false })
-  if (error) throw getSchemaError(error)
+  if (error) {
+    throw getSchemaError(error)
+  }
   return data as StudyGroup[]
 }
 
 export async function createStudyGroup (input: { name: string, course: string, description: string }) {
   const { data, error } = await requireSupabase().functions.invoke('create-study-group', { body: input })
-  if (error) throw await getFunctionError(error)
+  if (error) {
+    throw await getFunctionError(error)
+  }
   return data as StudyGroup
 }
 
 export async function joinStudyGroup (inviteCode: string) {
   const normalizedInvite = normalizeInviteCode(inviteCode)
-  if (!normalizedInvite) throw new Error('Paste a valid group invite code or invite link.')
+  if (!normalizedInvite) {
+    throw new Error('Paste a valid group invite code or invite link.')
+  }
   const { data, error } = await requireSupabase().functions.invoke('join-study-group', { body: { invite_code: normalizedInvite } })
-  if (error) throw await getFunctionError(error)
+  if (error) {
+    throw await getFunctionError(error)
+  }
   return data as Pick<StudyGroup, 'id' | 'name' | 'course' | 'description'>
 }
 
@@ -84,8 +98,12 @@ export async function deleteStudyGroup (groupId: string) {
     .eq('id', groupId)
     .select('id')
     .maybeSingle()
-  if (error) throw getSchemaError(error)
-  if (!data) throw new Error('Only the group creator can delete this group, or it may already be gone.')
+  if (error) {
+    throw getSchemaError(error)
+  }
+  if (!data) {
+    throw new Error('Only the group creator can delete this group, or it may already be gone.')
+  }
 }
 
 export async function leaveStudyGroupMembership (groupId: string) {
@@ -95,13 +113,19 @@ export async function leaveStudyGroupMembership (groupId: string) {
     .eq('group_id', groupId)
     .select('group_id')
     .maybeSingle()
-  if (error) throw getSchemaError(error)
-  if (!data) throw new Error('You are no longer a member of this group.')
+  if (error) {
+    throw getSchemaError(error)
+  }
+  if (!data) {
+    throw new Error('You are no longer a member of this group.')
+  }
 }
 
 function normalizeInviteCode (value: string) {
   const input = value.trim()
-  if (!input) return ''
+  if (!input) {
+    return ''
+  }
   try {
     const url = new URL(input)
     return url.searchParams.get('invite')?.trim() || ''
@@ -114,7 +138,9 @@ async function getFunctionError (error: unknown) {
   if (typeof error === 'object' && error !== null && 'context' in error && error.context instanceof Response) {
     try {
       const body = await error.context.clone().json() as { error?: unknown }
-      if (typeof body.error === 'string' && body.error.trim()) return new Error(body.error)
+      if (typeof body.error === 'string' && body.error.trim()) {
+        return new Error(body.error)
+      }
     } catch {
       // Use the SDK error below when the response has no JSON body.
     }
@@ -124,30 +150,38 @@ async function getFunctionError (error: unknown) {
 
 export async function getStudyGroupPosts (groupId: string) {
   const { data, error } = await requireSupabase().from('study_group_posts').select('*').eq('group_id', groupId).order('created_at', { ascending: true }).limit(100)
-  if (error) throw getSchemaError(error)
+  if (error) {
+    throw getSchemaError(error)
+  }
   return addStudyImageUrls(data as StudyGroupPost[])
 }
 
 export async function sendStudyGroupPost (groupId: string, postType: GroupPostType, content: string, image?: File | null) {
   const text = content.trim()
-  if ((!text && !image) || text.length > maxMessageLength) throw new Error('Write a message or attach an image. Messages can be up to 2,000 characters.')
+  if ((!text && !image) || text.length > maxMessageLength) {
+    throw new Error('Write a message or attach an image. Messages can be up to 2,000 characters.')
+  }
   const imagePath = image ? await uploadStudyImage(image, `groups/${groupId}`) : null
   const { data, error } = await requireSupabase().from('study_group_posts').insert({ group_id: groupId, post_type: postType, content: text, image_path: imagePath }).select('*').single()
-  if (error && imagePath) await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
-  if (error) throw getSchemaError(error)
+  if (error && imagePath) {
+    await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
+  }
+  if (error) {
+    throw getSchemaError(error)
+  }
   return addStudyImageUrls([data as StudyGroupPost]).then(posts => posts[0])
 }
 
 export function subscribeToStudyGroup (groupId: string, onPost: (post: StudyGroupPost) => void) {
-  return requireSupabase().channel(`study-group:${groupId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_posts', filter: `group_id=eq.${groupId}` }, async payload => onPost((await addStudyImageUrls([payload.new as StudyGroupPost]))[0]))
-    .subscribe()
+  return requireSupabase().channel(`study-group:${groupId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_posts', filter: `group_id=eq.${groupId}` }, async payload => onPost((await addStudyImageUrls([payload.new as StudyGroupPost]))[0])).subscribe()
 }
 
 export async function leaveStudyGroup (channel: RealtimeChannel | null) {
   if (channel) {
     const { error } = await requireSupabase().removeChannel(channel)
-    if (error) throw new Error(getErrorMessage(error, 'Could not leave the group room cleanly.'))
+    if (error) {
+      throw new Error(getErrorMessage(error, 'Could not leave the group room cleanly.'))
+    }
   }
 }
 
@@ -175,7 +209,9 @@ function getSchemaError (error: { code?: string, message: string }) {
 
 export async function getStudyMessages (course: string) {
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to join a study room.')
+  if (!user) {
+    throw new Error('Sign in to join a study room.')
+  }
   const { data, error } = await requireSupabase()
     .from('study_messages')
     .select('*')
@@ -193,26 +229,36 @@ export async function getStudyMessages (course: string) {
 
 export async function openStudyRoom (courseInput: string) {
   const course = normalizeStudyCourse(courseInput)
-  if (!course) throw new Error('Choose a course before opening a room.')
+  if (!course) {
+    throw new Error('Choose a course before opening a room.')
+  }
 
   const client = requireSupabase()
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to open a study room.')
+  if (!user) {
+    throw new Error('Sign in to open a study room.')
+  }
   const institutionKey = getInstitutionKey(user.institutionType, user.institution)
   const { error: openError } = await client
     .from('study_rooms')
     .upsert({ course, institution_key: institutionKey }, { onConflict: 'institution_key,course', ignoreDuplicates: true })
-  if (openError) throw getSchemaError(openError)
+  if (openError) {
+    throw getSchemaError(openError)
+  }
 
   const { data, error } = await client.from('study_rooms').select('course').eq('institution_key', institutionKey).eq('course', course).single()
-  if (error) throw getSchemaError(error)
+  if (error) {
+    throw getSchemaError(error)
+  }
   return data.course as string
 }
 
 export async function deleteStudyRoom (courseInput: string) {
   const course = normalizeStudyCourse(courseInput)
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to manage a study room.')
+  if (!user) {
+    throw new Error('Sign in to manage a study room.')
+  }
   const { data, error } = await requireSupabase()
     .from('study_rooms')
     .delete()
@@ -221,8 +267,12 @@ export async function deleteStudyRoom (courseInput: string) {
     .select('course')
     .maybeSingle()
 
-  if (error) throw getSchemaError(error)
-  if (!data) throw new Error('Only an admin can delete a live course room, or the room was already removed.')
+  if (error) {
+    throw getSchemaError(error)
+  }
+  if (!data) {
+    throw new Error('Only an admin can delete a live course room, or the room was already removed.')
+  }
 }
 
 export async function sendStudyMessage (
@@ -233,7 +283,9 @@ export async function sendStudyMessage (
 ) {
   course = normalizeStudyCourse(course)
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to post in a study room.')
+  if (!user) {
+    throw new Error('Sign in to post in a study room.')
+  }
   const text = content.trim()
   if (!text && !image) {
     throw new Error('Write a message or attach an image.')
@@ -256,7 +308,9 @@ export async function sendStudyMessage (
     .single()
 
   if (error) {
-    if (imagePath) await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
+    if (imagePath) {
+      await requireSupabase().storage.from(studyImageBucket).remove([imagePath])
+    }
     throw getSchemaError(error)
   }
 
@@ -264,25 +318,35 @@ export async function sendStudyMessage (
 }
 
 export function validateStudyImage (file: File) {
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new Error('Choose a JPG, PNG, WebP, or GIF image.')
-  if (file.size > maxStudyImageSize) throw new Error('Images must be 5 MB or smaller.')
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    throw new Error('Choose a JPG, PNG, WebP, or GIF image.')
+  }
+  if (file.size > maxStudyImageSize) {
+    throw new Error('Images must be 5 MB or smaller.')
+  }
 }
 
 async function uploadStudyImage (file: File, scope: string) {
   validateStudyImage(file)
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in to upload an image.')
+  if (!user) {
+    throw new Error('Sign in to upload an image.')
+  }
   const safeName = file.name.replace(/[^\w.-]/g, '_').slice(-100) || 'solution-image'
   const path = `${scope}/${user.id}/${globalThis.crypto.randomUUID()}-${safeName}`
   const { error } = await requireSupabase().storage.from(studyImageBucket).upload(path, file, { contentType: file.type, upsert: false })
-  if (error) throw new Error(getErrorMessage(error, 'Could not upload this image.'))
+  if (error) {
+    throw new Error(getErrorMessage(error, 'Could not upload this image.'))
+  }
   return path
 }
 
 async function addStudyImageUrls<T extends { image_path?: string | null }> (items: T[]) {
   const client = requireSupabase()
   return Promise.all(items.map(async item => {
-    if (!item.image_path) return { ...item, image_url: null }
+    if (!item.image_path) {
+      return { ...item, image_url: null }
+    }
     const { data, error } = await client.storage.from(studyImageBucket).createSignedUrl(item.image_path, 60 * 60)
     return { ...item, image_url: error ? null : data.signedUrl }
   }))
@@ -316,7 +380,9 @@ export async function subscribeToStudyRoom (
     })
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_rooms' }, payload => {
       const deleted = payload.old as { course?: string, institution_key?: string }
-      if (deleted.course === course && deleted.institution_key === institutionKey) onRoomClosed?.()
+      if (deleted.course === course && deleted.institution_key === institutionKey) {
+        onRoomClosed?.()
+      }
     })
     .on('presence', { event: 'sync' }, () => {
       onPresence(Object.values(channel.presenceState()).reduce(

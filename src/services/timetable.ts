@@ -24,7 +24,9 @@ function demoStorageKey (userId: string) {
 
 async function getDemoContext () {
   const user = await getCurrentUser()
-  if (!user) throw new Error('Sign in before opening your timetable.')
+  if (!user) {
+    throw new Error('Sign in before opening your timetable.')
+  }
   return { user, key: demoStorageKey(user.id) }
 }
 
@@ -40,7 +42,7 @@ function readDemoEntries (key: string) {
 export async function getTimetableEntries () {
   if (!isSupabaseConfigured) {
     const { key } = await getDemoContext()
-    return readDemoEntries(key).sort((a, b) => a.start_time.localeCompare(b.start_time))
+    return readDemoEntries(key).toSorted((a, b) => a.start_time.localeCompare(b.start_time))
   }
 
   const { data, error } = await getSupabaseClient()
@@ -48,7 +50,9 @@ export async function getTimetableEntries () {
     .select('*')
     .order('start_time', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
   return data
 }
 
@@ -71,7 +75,9 @@ export async function createTimetableEntry (entry: TimetableEntryInput) {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
   return data
 }
 
@@ -80,7 +86,9 @@ export async function updateTimetableEntry (id: string, entry: TimetableEntryInp
     const { key } = await getDemoContext()
     const entries = readDemoEntries(key)
     const index = entries.findIndex(item => item.id === id)
-    if (index < 0) throw new Error('Timetable entry not found.')
+    if (index === -1) {
+      throw new Error('Timetable entry not found.')
+    }
     entries[index] = { ...entries[index]!, ...entry }
     localStorage.setItem(key, JSON.stringify(entries))
     return entries[index]!
@@ -93,7 +101,9 @@ export async function updateTimetableEntry (id: string, entry: TimetableEntryInp
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
   return data
 }
 
@@ -102,7 +112,9 @@ export async function deleteTimetableEntry (id: string) {
     const { key } = await getDemoContext()
     const entries = readDemoEntries(key)
     const remaining = entries.filter(item => item.id !== id)
-    if (remaining.length === entries.length) throw new Error('Timetable entry not found.')
+    if (remaining.length === entries.length) {
+      throw new Error('Timetable entry not found.')
+    }
     localStorage.setItem(key, JSON.stringify(remaining))
     return
   }
@@ -112,5 +124,7 @@ export async function deleteTimetableEntry (id: string) {
     .delete()
     .eq('id', id)
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
 }

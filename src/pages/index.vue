@@ -7,12 +7,13 @@
 
           <span class="brand-copy">
             <strong>Student Success Hub</strong>
-            <span>Supporting LASU students and beyond</span>
+            <span>Your academic space, whatever you study</span>
           </span>
         </RouterLink>
 
         <nav aria-label="Main navigation" class="header-actions">
-          <a class="header-link" href="#dashboard-tour-heading">How it works</a> <a class="header-link" href="#past-questions">Explore resources</a>
+          <a class="header-link" href="#dashboard-tour-heading">How it works</a>
+          <a class="header-link" href="#past-questions">Explore resources</a>
           <RouterLink class="header-link" to="/about-us">About us</RouterLink>
           <RouterLink class="header-link" to="/study">Study together</RouterLink>
           <a class="header-link" :href="customerCareWhatsAppUrl" rel="noopener noreferrer" target="_blank">WhatsApp support</a>
@@ -30,11 +31,14 @@
 
           <v-btn
             v-if="currentUser"
+            aria-label="Open your dashboard"
+            class="community-button"
             color="primary"
             rounded="pill"
             to="/dashboard"
           >
-            My dashboard
+            <span class="community-button-label">My dashboard</span>
+            <span class="community-button-mobile">Dashboard</span>
             <v-icon end>mdi-arrow-right</v-icon>
           </v-btn>
 
@@ -43,8 +47,15 @@
               Log in
             </v-btn>
 
-            <v-btn color="primary" rounded="pill" to="/signup">
-              Join the community
+            <v-btn
+              aria-label="Join the community"
+              class="community-button"
+              color="primary"
+              rounded="pill"
+              to="/signup"
+            >
+              <span class="community-button-label">Join the community</span>
+              <span class="community-button-mobile">Join</span>
               <v-icon end>mdi-arrow-right</v-icon>
             </v-btn>
           </template>
@@ -55,7 +66,7 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot" />
-            SUPPORTING LASU STUDENTS AND BEYOND
+            SUPPORTING STUDENTS AT EVERY INSTITUTION
           </div>
 
           <h1>
@@ -100,15 +111,21 @@
               </a>
             </template>
 
-            <RouterLink class="hero-secondary preview-link" to="/preview">Explore the dashboard <v-icon end size="18">mdi-eye-outline</v-icon></RouterLink> <a class="hero-secondary" href="#dashboard-tour-heading">Watch a quick tour <v-icon end size="18">mdi-play-circle-outline</v-icon></a> <RouterLink class="hero-secondary" to="/study">
+            <RouterLink class="hero-secondary preview-link" to="/preview">
+              Explore the dashboard
+              <v-icon end size="18">mdi-eye-outline</v-icon>
+            </RouterLink>
+
+            <a class="hero-secondary" href="#dashboard-tour-heading">
+              Watch a quick tour
+              <v-icon end size="18">mdi-play-circle-outline</v-icon>
+            </a>
+
+            <RouterLink class="hero-secondary" to="/study">
               Join a live study room
               <v-icon end size="18">mdi-account-group-outline</v-icon>
             </RouterLink>
 
-            <RouterLink class="hero-secondary" to="/about-us">
-              About us
-              <v-icon end size="18">mdi-information-outline</v-icon>
-            </RouterLink>
           </div>
 
           <div class="hero-proof">
@@ -122,7 +139,9 @@
         </div>
       </section>
 
-      <DashboardVideoTour class="home-tour" /><section aria-label="What you can do" class="feature-strip">
+      <DashboardVideoTour class="home-tour" />
+
+      <section aria-label="What you can do" class="feature-strip">
         <article class="feature-item">
           <span class="feature-icon feature-icon-blue"><v-icon>mdi-book-open-variant</v-icon></span>
 
@@ -402,10 +421,10 @@
                       size="x-small"
                       variant="tonal"
                     >
-                      {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved Â· see notifications' }}
+                      {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved - see notifications' }}
                     </v-chip>
 
-                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'LASU student' }}</strong></span>
+                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'Student' }}</strong></span>
 
                     <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">
                       {{ getAcademicLevelLabel(getQuestionLevel(resource)) }}
@@ -460,9 +479,9 @@
                 block
                 class="mt-2"
                 color="secondary"
+                prepend-icon="mdi-pencil-outline"
                 rounded="pill"
                 variant="tonal"
-                prepend-icon="mdi-pencil-outline"
                 @click="openEditResource(resource)"
               >
                 Edit past question
@@ -489,8 +508,6 @@
         </div>
 
       </section>
-
-
 
       <section class="closing-banner">
         <div class="closing-icon"><v-icon size="30">mdi-school-outline</v-icon></div>
@@ -527,11 +544,16 @@
       {{ successMessage }}
     </v-snackbar>
 
-    <v-dialog :model-value="Boolean(editingResource)" max-width="640" scrollable
-      @update:model-value="value => { if (!value) editingResource.value = null }">
+    <v-dialog
+      max-width="640"
+      :model-value="Boolean(editingResource)"
+      scrollable
+      @update:model-value="value => { if (!value) editingResource.value = null }"
+    >
       <v-card class="pa-5" rounded="xl">
         <div class="dialog-heading">
           <div class="form-icon"><v-icon>mdi-pencil-box-outline</v-icon></div>
+
           <div>
             <div class="section-kicker">EDIT PAST QUESTION</div>
             <h2 class="text-h6 font-weight-bold">Edit past question</h2>
@@ -584,6 +606,7 @@
               <v-btn rounded="pill" variant="text" @click="editingResource.value = null">
                 Cancel
               </v-btn>
+
               <v-btn color="primary" :loading="editing" rounded="pill" type="submit">
                 Save changes
               </v-btn>
@@ -616,7 +639,8 @@
 
 <script setup lang="ts">
   import type { Resource } from '@/services/resources'
-  import { computed, onMounted, ref } from 'vue'; import DashboardVideoTour from '@/components/DashboardVideoTour.vue'
+  import { computed, onMounted, ref } from 'vue'
+  import DashboardVideoTour from '@/components/DashboardVideoTour.vue'
   import { useAppTheme } from '@/composables/useAppTheme'
   import { academicLevels, getAcademicLevelLabel, getCourseAcademicLevel } from '@/lib/academics'
   import { type AppUser, getCurrentUser } from '@/lib/auth'
@@ -687,14 +711,14 @@
       .map(course => ({ title: course, value: course })),
   )
   const pastQuestionPage = ref(1)
-const pastQuestionPerPage = 10
-const paginatedPastQuestions = computed(() => {
-  const start = (pastQuestionPage.value - 1) * pastQuestionPerPage
-  return filteredPastQuestions.value.slice(start, start + pastQuestionPerPage)
-})
-const pastQuestionTotalPages = computed(() => Math.max(1, Math.ceil(filteredPastQuestions.value.length / pastQuestionPerPage)))
+  const pastQuestionPerPage = 10
+  const paginatedPastQuestions = computed(() => {
+    const start = (pastQuestionPage.value - 1) * pastQuestionPerPage
+    return filteredPastQuestions.value.slice(start, start + pastQuestionPerPage)
+  })
+  const pastQuestionTotalPages = computed(() => Math.max(1, Math.ceil(filteredPastQuestions.value.length / pastQuestionPerPage)))
 
-const filteredPastQuestions = computed(() => {
+  const filteredPastQuestions = computed(() => {
     const query = questionSearch.value.trim().toLocaleLowerCase()
 
     const rawFiltered = pastQuestions.value
@@ -917,7 +941,7 @@ const filteredPastQuestions = computed(() => {
   }
 
   .brand-copy > span {
-    color: #6a7b84;
+    color: #52636a;
     font-size: 12px;
   }
 
@@ -925,6 +949,10 @@ const filteredPastQuestions = computed(() => {
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .community-button-mobile {
+    display: none;
   }
 
   .header-link {
@@ -1042,6 +1070,7 @@ const filteredPastQuestions = computed(() => {
 
   .hero-primary {
     color: #173b4d !important;
+    background-color: #fffefa !important;
     font-weight: 700;
   }
 
@@ -1260,7 +1289,11 @@ const filteredPastQuestions = computed(() => {
     box-shadow: 0 8px 28px rgb(30 53 54 / 4%);
   }
 
-  .home-tour.tour-section{margin:8px 0 48px}.about-app-section {
+  .home-tour.tour-section {
+    margin: 8px 0 48px;
+  }
+
+  .about-app-section {
     scroll-margin-top: 24px;
     margin: 0 0 70px;
   }
@@ -1314,7 +1347,7 @@ const filteredPastQuestions = computed(() => {
   .about-app-heading p,
   .about-app-card p {
     margin: 0;
-    color: #718087;
+    color: #5a6b70;
     line-height: 1.65;
   }
 
@@ -1394,7 +1427,7 @@ const filteredPastQuestions = computed(() => {
 
   .feature-item p {
     margin: 4px 0 0;
-    color: #7a878b;
+    color: #58686c;
     font-size: 12px;
   }
 
@@ -1417,7 +1450,7 @@ const filteredPastQuestions = computed(() => {
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
-    color: #77868a;
+    color: #596a6e;
     font-size: 0.76rem;
   }
 
@@ -1452,7 +1485,7 @@ const filteredPastQuestions = computed(() => {
 
   .section-heading p {
     margin: 8px 0 0;
-    color: #748187;
+    color: #59696d;
     font-size: 14px;
   }
 
@@ -1545,7 +1578,7 @@ const filteredPastQuestions = computed(() => {
 
   .empty-library p {
     margin: 5px 0 0;
-    color: #77858a;
+    color: #58686c;
     font-size: 13px;
   }
 
@@ -1587,6 +1620,7 @@ const filteredPastQuestions = computed(() => {
   .closing-banner .v-btn {
     flex: 0 0 auto;
     color: #315643 !important;
+    background-color: #fffefa !important;
     font-weight: 700;
   }
 
@@ -1596,7 +1630,7 @@ const filteredPastQuestions = computed(() => {
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    color: #879294;
+    color: #5b696d;
     font-size: 11px;
   }
 
@@ -1826,6 +1860,12 @@ const filteredPastQuestions = computed(() => {
 
     .home-header {
       min-height: 72px;
+      gap: 8px;
+    }
+
+    .brand {
+      flex-shrink: 0;
+      gap: 8px;
     }
 
     .brand-mark {
@@ -1834,7 +1874,8 @@ const filteredPastQuestions = computed(() => {
     }
 
     .brand-copy strong {
-      font-size: 13px;
+      font-size: 12px;
+      white-space: nowrap;
     }
 
     .brand-copy > span,
@@ -1845,6 +1886,7 @@ const filteredPastQuestions = computed(() => {
 
     .header-actions {
       gap: 5px;
+      flex-shrink: 0;
     }
 
     .header-actions .v-btn {
@@ -1852,6 +1894,17 @@ const filteredPastQuestions = computed(() => {
       font-size: 11px;
     }
 
+    .header-actions .community-button {
+      padding-inline: 9px;
+    }
+
+    .community-button-label {
+      display: none;
+    }
+
+    .community-button-mobile {
+      display: inline;
+    }
     .hero-panel {
       grid-template-columns: 1fr;
       gap: 10px;

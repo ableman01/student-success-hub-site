@@ -8,7 +8,7 @@
       <header class="about-us-heading">
         <span class="about-us-kicker">WHY WE BUILT THIS</span>
         <h1>About the Student Success Hub</h1>
-        <p>A practical study space created to help university students find useful resources, plan their work, and learn together.</p>
+        <p>A practical study space for university, polytechnic, and college students to find useful resources, plan their work, and learn together.</p>
       </header>
 
       <v-card class="creator-card pa-5 pa-md-8" elevation="0" rounded="xl">
@@ -24,7 +24,7 @@
         <div class="about-study-hero">
           <img alt="Students studying together in a library" src="/about-study-group.jpg">
           <div class="about-study-shade" />
-          <h2 class="about-study-title">UNIVERSITY STUDENT SUCCESS HUB</h2>
+          <h2 class="about-study-title">STUDENT SUCCESS HUB</h2>
         </div>
 
         <div class="about-app-heading">
@@ -32,7 +32,7 @@
           <h2 id="about-app-heading">Helping every student move forward</h2>
 
           <p>
-            Our mission is to empower every student with the information, tools, opportunities, skills, and support they need to succeed academically, personally, and professionally.
+            Our mission is to help students find useful study resources, stay organised, and learn with peers.
           </p>
         </div>
 
@@ -41,7 +41,7 @@
             <span class="pillar-number">01</span>
             <v-icon color="primary" size="25">mdi-bullhorn-outline</v-icon>
             <h3>What do I need to know?</h3>
-            <p>Find important announcements, deadlines, registration information, academic updates, and verified opportunities in one trusted place.</p>
+            <p>Find study resources, plan upcoming coursework, and follow links to important updates from your institution.</p>
           </article>
 
           <article class="about-app-card">
@@ -55,22 +55,22 @@
             <span class="pillar-number">03</span>
             <v-icon color="primary" size="25">mdi-book-open-page-variant-outline</v-icon>
             <h3>How can I improve?</h3>
-            <p>Build confidence with study resources, tutorials, peer learning, practical skills, and career development.</p>
+            <p>Build confidence with shared course materials, past questions, and study groups.</p>
           </article>
 
           <article class="about-app-card">
             <span class="pillar-number">04</span>
             <v-icon color="primary" size="25">mdi-account-group-outline</v-icon>
             <h3>Who can help me?</h3>
-            <p>Connect with a trusted student community, peer mentors, academic support, and appropriate campus services.</p>
+            <p>Connect with classmates, share what you know, and explore study support available through your campus.</p>
           </article>
         </div>
 
         <div class="about-app-footer">
           <p>The Hub brings these four needs together, so every student can find the next useful step in one welcoming place.</p>
 
-          <v-btn color="primary" rounded="pill" :to="currentUser ? '/timetable' : '/signup'">
-            {{ currentUser ? 'Build my study week' : 'Join the student hub' }}
+          <v-btn color="primary" rounded="pill" to="/signup">
+            Join the student hub
             <v-icon end>mdi-arrow-right</v-icon>
           </v-btn>
         </div>

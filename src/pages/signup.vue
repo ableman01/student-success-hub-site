@@ -19,7 +19,6 @@
           <v-icon>{{ themeIcon }}</v-icon>
         </v-btn>
 
-        <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
         <v-btn class="signup-login-link" rounded="pill" to="/login" variant="text">Already a member? Log in</v-btn>
       </div>
     </header>
@@ -287,6 +286,7 @@
             :loading="loading"
             size="large"
             type="submit"
+            variant="flat"
           >
             Create account
           </v-btn>
@@ -360,13 +360,13 @@
     if (/error sending confirmation email|email_send_failed/i.test(message)) {
       return 'Your account may have been created, but Supabase could not send the confirmation email. Check your inbox and spam folder, then use Resend confirmation email. If delivery keeps failing, the project owner needs to check Supabase Auth SMTP settings.'
     }
-    if (/redirect.*(not allowed|allowlist)|email_redirect/i.test(message)) {
+    if (/redirect.*(?:not allowed|allowlist)|email_redirect/i.test(message)) {
       return 'Supabase rejected the confirmation link address. Add this site URL and /auth/confirm to the Supabase Auth redirect URL allowlist, then try again.'
     }
     if (/rate limit|too many requests/i.test(message)) {
       return 'Too many signup or email requests were made. Wait a few minutes, then try again.'
     }
-    if (/password.*(weak|characters|at least)/i.test(message)) {
+    if (/password.*(?:weak|characters|at least)/i.test(message)) {
       return 'Choose a stronger password with at least 8 characters, then try again.'
     }
     return message || 'Registration failed. Please check your details and try again.'
@@ -466,7 +466,7 @@
       }
     } catch (error) {
       errorMessage.value = getErrorMessage(error)
-      if (/already (has an account|registered)|already exists|error sending confirmation email|email_send_failed/i.test(error instanceof Error ? error.message : '')) canResendConfirmation.value = true
+      if (/already (?:has an account|registered)|already exists|error sending confirmation email|email_send_failed/i.test(error instanceof Error ? error.message : '')) canResendConfirmation.value = true
     } finally {
       loading.value = false
     }
@@ -519,7 +519,7 @@
   }
 
   .signup-login-link {
-    color: #5146ea;
+    color: #1b4658;
     font-size: 0.8rem;
   }
 
@@ -559,7 +559,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #5146ea;
+    color: #52826a;
     font-size: 0.68rem;
     font-weight: 750;
     letter-spacing: 0.09em;
@@ -568,7 +568,7 @@
   .signup-card-heading :deep(.v-card-subtitle) {
     max-width: 550px;
     padding: 0;
-    color: #718085;
+    color: #5a6b70;
     line-height: 1.55;
     white-space: normal;
   }
@@ -584,7 +584,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid #e6e9f2;
+    border: 1px solid #e4e9e1;
     border-radius: 999px;
     padding: 5px 10px;
     color: #68746f;
@@ -598,8 +598,8 @@
     height: 18px;
     place-items: center;
     border-radius: 50%;
-    background: #eeedff;
-    color: #5146ea;
+    background: #e5eee5;
+    color: #52826a;
     font-size: 0.65rem;
   }
 

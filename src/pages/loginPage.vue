@@ -21,7 +21,6 @@
           </v-btn>
 
           <span class="header-prompt">New to the hub?</span>
-          <v-btn rounded="pill" to="/dashboard" variant="tonal">My dashboard</v-btn>
           <v-btn rounded="pill" to="/signup" variant="text">Create account</v-btn>
         </div>
       </header>
@@ -272,7 +271,7 @@
   }
 
   .header-prompt {
-    color: #78858a;
+    color: #596a6e;
     font-size: 12px;
   }
 
@@ -492,7 +491,7 @@
 
   .login-card-heading p {
     margin: 8px 0 0;
-    color: #7b888c;
+    color: #5b6b70;
     font-size: 13px;
   }
 
@@ -528,7 +527,7 @@
 
   .login-signup {
     margin: 0;
-    color: #718087;
+    color: #596a6e;
     font-size: 12px;
     text-align: center;
   }
@@ -546,7 +545,7 @@
     justify-content: center;
     gap: 5px;
     margin-top: 24px;
-    color: #839094;
+    color: #5f6d71;
     font-size: 11px;
     text-decoration: none;
   }
@@ -556,8 +555,14 @@
     min-height: 54px;
     align-items: center;
     justify-content: space-between;
-    color: #879294;
+    color: #5f6d71;
     font-size: 10px;
+  }
+
+  .auth-footer a {
+    color: #4f8069;
+    font-weight: 650;
+    text-decoration: none;
   }
 
   .v-theme--academicDark .login-page {

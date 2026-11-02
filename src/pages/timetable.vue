@@ -217,7 +217,7 @@
     const weekday = date.getDay()
     const dayEntries = entries.value.filter(entry => entry.repeats_weekly
       ? entry.day_of_week === weekday
-      : entry.event_date === key).sort((a, b) => a.start_time.localeCompare(b.start_time))
+      : entry.event_date === key).toSorted((a, b) => a.start_time.localeCompare(b.start_time))
     return {
       dateKey: key,
       weekday,
@@ -292,13 +292,16 @@
 
   async function saveEntry () {
     if (!form.title.trim()) {
-      formError.value = 'Add a name for this timetable item.'; return
+      formError.value = 'Add a name for this timetable item.'
+      return
     }
     if (form.endTime <= form.startTime) {
-      formError.value = 'End time must be later than start time.'; return
+      formError.value = 'End time must be later than start time.'
+      return
     }
     if (form.scheduleType === 'once' && !form.eventDate) {
-      formError.value = 'Choose a date for this item.'; return
+      formError.value = 'Choose a date for this item.'
+      return
     }
 
     const input: TimetableEntryInput = {
