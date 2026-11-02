@@ -1360,7 +1360,7 @@
               <v-window-item value="profile">
                 <v-form @submit.prevent="saveProfile">
                   <v-row>
-                    <v-col cols="12" sm="6">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="profileFirstName"
                         autocomplete="given-name"
@@ -1370,7 +1370,7 @@
                       />
                     </v-col>
 
-                    <v-col cols="12" sm="6">
+                    <v-col cols="12">
                       <v-text-field
                         v-model="profileLastName"
                         autocomplete="family-name"
