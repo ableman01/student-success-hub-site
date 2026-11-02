@@ -57,8 +57,8 @@
           <v-window-item value="profile">
             <v-form @submit.prevent="saveProfile">
               <v-card-text class="profile-form">
-                <v-row>
-                  <v-col cols="12">
+                <v-row class="profile-fields">
+                  <v-col class="profile-field-column" cols="12">
                     <v-text-field
                       v-model="profileFirstName"
                       color="primary"
@@ -68,7 +68,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-text-field
                       v-model="profileLastName"
                       color="primary"
@@ -78,7 +78,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-text-field
                       v-model="profileEmail"
                       color="primary"
@@ -88,7 +88,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-select
                       v-model="profileInstitutionType"
                       color="primary"
@@ -99,7 +99,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-text-field
                       v-model="profileInstitution"
                       color="primary"
@@ -109,7 +109,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-select
                       v-model="profileAcademicLevel"
                       color="primary"
@@ -122,7 +122,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12">
+                  <v-col class="profile-field-column" cols="12">
                     <v-text-field
                       v-model="profileProgram"
                       color="primary"
@@ -417,6 +417,17 @@
 
   .profile-form {
     padding: 32px 24px 16px;
+  }
+
+  .profile-fields {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-field-column {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
   }
 
   .profile-hint {
