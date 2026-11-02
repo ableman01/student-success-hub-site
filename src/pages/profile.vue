@@ -58,7 +58,7 @@
             <v-form @submit.prevent="saveProfile">
               <v-card-text class="profile-form">
                 <v-row>
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-text-field
                       v-model="profileFirstName"
                       color="primary"
@@ -68,7 +68,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-text-field
                       v-model="profileLastName"
                       color="primary"
@@ -88,7 +88,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-select
                       v-model="profileInstitutionType"
                       color="primary"
@@ -99,7 +99,7 @@
                     />
                   </v-col>
 
-                  <v-col cols="12" md="6">
+                  <v-col cols="12">
                     <v-text-field
                       v-model="profileInstitution"
                       color="primary"

@@ -47,10 +47,13 @@
           rel="noopener noreferrer"
           target="_blank"
         >
+          <span class="news-icon"><v-icon size="26">mdi-bullhorn-outline</v-icon></span>
+          <span class="news-content">
           <span class="news-meta">{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
           <strong>{{ item.title }}</strong>
           <p v-if="item.summary">{{ item.summary }}</p>
           <span class="news-link">Read story <v-icon size="14">mdi-open-in-new</v-icon></span>
+          </span>
         </a>
       </div>
 
@@ -185,13 +188,15 @@
   .news-heading h1 { margin: 0; color: rgb(var(--v-theme-on-background)); font-size: clamp(2rem, 5vw, 2.8rem); letter-spacing: -.04em; }
   .news-heading p { max-width: 650px; margin: 8px 0 0; color: rgb(var(--v-theme-on-background) / 0.72); line-height: 1.65; }
   .news-actions { display: flex; align-items: center; gap: 8px; }
-  .news-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
-  .news-card { display: flex; flex-direction: column; gap: 12px; min-height: 190px; padding: 20px; border: 1px solid rgb(var(--v-theme-on-surface) / 0.1); border-radius: 18px; color: inherit; background: rgb(var(--v-theme-surface)); text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
-  .news-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px #20394a12; }
-  .news-meta, .news-attribution { color: rgb(var(--v-theme-on-background) / 0.64); font-size: 12px; }
-  .news-card strong { color: rgb(var(--v-theme-on-surface)); font-size: 17px; line-height: 1.5; }
-  .news-card p { margin: 0; color: rgb(var(--v-theme-on-surface) / 0.72); line-height: 1.55; }
-  .news-link { display: flex; align-items: center; gap: 5px; margin-top: auto; color: rgb(var(--v-theme-secondary)); font-size: 12px; font-weight: 700; }
+  .news-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .news-card { display: flex; align-items: flex-start; gap: 26px; min-height: 0; padding: 28px 26px; border: 1px solid rgb(var(--v-theme-on-surface) / 0.1); border-radius: 28px; color: inherit; background: rgb(var(--v-theme-surface)); text-decoration: none; transition: box-shadow .18s ease; }
+  .news-card:hover { box-shadow: 0 12px 28px #20394a12; }
+  .news-icon { display: grid; flex: 0 0 68px; width: 68px; height: 68px; place-items: center; border-radius: 22px; color: rgb(var(--v-theme-secondary)); background: rgb(var(--v-theme-secondary) / .09); }
+  .news-content { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; }
+  .news-meta, .news-attribution { color: rgb(var(--v-theme-on-background) / 0.64); font-size: 14px; }
+  .news-card strong { color: rgb(var(--v-theme-on-surface)); font-size: 22px; line-height: 1.45; }
+  .news-card p { margin: 0; color: rgb(var(--v-theme-on-surface) / 0.72); font-size: 17px; line-height: 1.6; }
+  .news-link { display: flex; align-items: center; gap: 5px; align-self: flex-end; margin-top: 8px; padding: 9px 16px; border-radius: 999px; color: rgb(var(--v-theme-primary)); background: rgb(var(--v-theme-secondary) / .1); font-size: 14px; font-weight: 700; }
   .news-state { display: grid; justify-items: center; gap: 12px; padding: 48px 20px; color: rgb(var(--v-theme-on-background) / 0.72); text-align: center; }
   .news-state h2 { margin: 0; color: rgb(var(--v-theme-on-background)); font-size: 19px; }
   .news-state p { max-width: 500px; margin: 0; line-height: 1.6; }
@@ -199,5 +204,5 @@
   .directory-fallback-copy { margin: 0 0 10px; line-height: 1.6; }
   .directory-link { display: inline-flex; align-items: center; gap: 5px; color: rgb(var(--v-theme-primary)); font-weight: 700; text-decoration: none; }
   .directory-link:hover { text-decoration: underline; }
-  @media (max-width: 600px) { .institution-news-page { padding: 28px 0 52px; } .news-heading { align-items: flex-start; flex-direction: column; } }
+  @media (max-width: 600px) { .institution-news-page { padding: 28px 0 52px; } .news-heading { align-items: flex-start; flex-direction: column; } .news-card { gap: 14px; padding: 20px 16px; border-radius: 20px; } .news-icon { flex-basis: 44px; width: 44px; height: 44px; border-radius: 15px; } .news-card strong { font-size: 18px; } .news-card p { font-size: 15px; } .news-link { align-self: flex-start; } }
 </style>
