@@ -286,8 +286,8 @@
           </div>
 
           <v-form @submit.prevent="sharePastQuestion">
-            <v-row>
-              <v-col cols="12" md="6">
+            <v-row class="upload-fields">
+              <v-col class="upload-field-column" cols="12" md="6">
                 <v-text-field
                   v-model="resourceTitle"
                   label="Title"
@@ -296,7 +296,7 @@
                 />
               </v-col>
 
-              <v-col cols="12" md="6">
+              <v-col class="upload-field-column" cols="12" md="6">
                 <v-text-field
                   v-model="resourceCourse"
                   label="Course"
@@ -305,11 +305,11 @@
                 />
               </v-col>
 
-              <v-col cols="12" sm="6"><v-text-field v-model="resourceAcademicYear" label="Academic year" placeholder="2026/2027" required /></v-col>
-              <v-col cols="12" sm="6"><v-select v-model="resourceSemester" :items="['First semester', 'Second semester', 'Summer']" label="Semester" required /></v-col>
-              <v-col cols="12"><v-text-field v-model="resourceSource" label="Source" placeholder="e.g. Department course pack or lecturer" required /></v-col>
+              <v-col class="upload-field-column" cols="12" sm="6"><v-text-field v-model="resourceAcademicYear" label="Academic year" placeholder="2026/2027" required /></v-col>
+              <v-col class="upload-field-column" cols="12" sm="6"><v-select v-model="resourceSemester" :items="['First semester', 'Second semester', 'Summer']" label="Semester" required /></v-col>
+              <v-col class="upload-field-column" cols="12"><v-text-field v-model="resourceSource" label="Source" placeholder="e.g. Department course pack or lecturer" required /></v-col>
 
-              <v-col cols="12" md="6">
+              <v-col class="upload-field-column" cols="12" md="6">
                 <v-select
                   v-model="resourceAcademicLevel"
                   clearable
@@ -321,7 +321,7 @@
                 />
               </v-col>
 
-              <v-col cols="12">
+              <v-col class="upload-field-column" cols="12">
                 <v-textarea
                   v-model="resourceDescription"
                   auto-grow
@@ -331,7 +331,7 @@
                 />
               </v-col>
 
-              <v-col cols="12" md="8">
+              <v-col class="upload-field-column" cols="12" md="8">
                 <v-file-input
                   v-model="resourceFile"
                   accept="application/pdf,.pdf"
@@ -342,7 +342,7 @@
                 />
               </v-col>
 
-              <v-col class="d-flex align-center" cols="12" md="4">
+              <v-col class="upload-field-column d-flex align-center" cols="12" md="4">
                 <v-btn
                   block
                   color="primary"
@@ -1573,8 +1573,18 @@
     box-shadow: 0 10px 30px rgb(24 49 57 / 5%);
   }
 
-  .upload-card > .v-row {
-    margin: 0 -12px;
+  .upload-card :deep(.upload-fields) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 20px;
+    margin: 0;
+  }
+
+  .upload-card :deep(.upload-field-column) {
+    width: auto;
+    max-width: none;
+    flex: initial;
+    padding: 7px 0;
   }
 
   .upload-card h3 {
