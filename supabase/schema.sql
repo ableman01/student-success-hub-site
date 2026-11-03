@@ -55,7 +55,7 @@ create table if not exists public.resources (
   file_path text not null unique,
   uploaded_by uuid not null default auth.uid()
     references auth.users (id) on delete cascade,
-  uploaded_by_name text not null default 'LASU student',
+  uploaded_by_name text not null default 'Student',
   created_at timestamptz not null default now()
 );
 
@@ -66,7 +66,7 @@ alter table public.resources
   add column if not exists category text not null default 'lecture_notes';
 
 alter table public.resources
-  add column if not exists uploaded_by_name text not null default 'LASU student';
+  add column if not exists uploaded_by_name text not null default 'Student';
 
 do $$
 begin
@@ -93,11 +93,11 @@ set uploaded_by_name = coalesce(
     nullif(user_record.raw_user_meta_data ->> 'first_name', ''),
     nullif(user_record.raw_user_meta_data ->> 'last_name', '')
   )), 80), ''),
-  'LASU student'
+  'Student'
 )
 from auth.users as user_record
 where resource.uploaded_by = user_record.id
-  and resource.uploaded_by_name = 'LASU student';
+  and resource.uploaded_by_name in ('LASU student', 'Student Contributor', 'Student');
 
 create or replace function public.set_resource_uploader_name()
 returns trigger
@@ -109,7 +109,7 @@ begin
     coalesce(nullif(trim(concat_ws(' ',
       nullif(auth.jwt() -> 'user_metadata' ->> 'first_name', ''),
       nullif(auth.jwt() -> 'user_metadata' ->> 'last_name', '')
-    )), ''), 'LASU student'),
+    )), ''), 'Student'),
     80
   );
   return new;

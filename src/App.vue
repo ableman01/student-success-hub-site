@@ -100,6 +100,15 @@
         />
 
         <v-list-item
+          :active="route.path === '/class-materials'"
+          prepend-icon="mdi-bookshelf"
+          rounded="lg"
+          title="Class materials"
+          to="/class-materials"
+          @click="closeMobileDrawer"
+        />
+
+        <v-list-item
           :active="route.path === '/timetable'"
           prepend-icon="mdi-calendar-clock-outline"
           rounded="lg"

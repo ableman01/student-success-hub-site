@@ -110,7 +110,7 @@
 
           <div class="saved-empty-actions">
             <v-btn color="primary" prepend-icon="mdi-file-question-outline" rounded="pill" to="/#past-questions">Browse questions</v-btn>
-            <v-btn prepend-icon="mdi-view-dashboard-outline" rounded="pill" to="/dashboard" variant="tonal">Browse class materials</v-btn>
+            <v-btn prepend-icon="mdi-bookshelf" rounded="pill" to="/class-materials" variant="tonal">Browse class materials</v-btn>
           </div>
         </div>
       </v-card>

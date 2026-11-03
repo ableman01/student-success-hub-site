@@ -429,7 +429,7 @@
                       {{ resource.status === 'pending' ? 'Awaiting approval' : 'Not approved - see notifications' }}
                     </v-chip>
 
-                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'Student Contributor' }}</strong></span>
+                    <span>Shared by <strong>{{ resource.uploaded_by_name || 'Student' }}</strong></span>
                     <span class="resource-source">Source: {{ resource.source || 'Not provided' }}</span>
 
                     <v-chip v-if="getQuestionLevel(resource)" color="secondary" size="x-small" variant="tonal">

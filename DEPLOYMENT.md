@@ -44,6 +44,8 @@ For an existing database, apply [`20261103160000_add_institution_to_upload_notif
 
 Apply [`20261103170000_all_students_resource_feedback_and_global_deletion.sql`](./supabase/migrations/20261103170000_all_students_resource_feedback_and_global_deletion.sql) to allow student feedback on any approved resource and ensure the global admin can delete resources and PDFs across institutions.
 
+Apply [`20261103180000_show_resource_uploader_names.sql`](./supabase/migrations/20261103180000_show_resource_uploader_names.sql) to backfill existing resource contributor names and ensure future uploads display the uploader's profile name across institutions.
+
 If using a custom SMTP sender, configure and verify it in Supabase Auth. Store SMTP credentials in Supabase settings, never in this repository or browser environment variables.
 
 ## Institution news

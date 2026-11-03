@@ -1,3 +1,4 @@
+import type { AppUser } from '@/lib/auth'
 import { getCourseAcademicLevel } from '@/lib/academics'
 import { getCurrentUser } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/errors'
@@ -97,8 +98,8 @@ function matchesAcademicLevel (resource: Resource, academicLevel: string) {
   return !resource.academic_level || resource.academic_level === academicLevel
 }
 
-function getContributorName () {
-  return 'Student Contributor'
+function getContributorName (user: Pick<AppUser, 'firstName' | 'lastName'>) {
+  return `${user.firstName} ${user.lastName}`.trim() || 'Student'
 }
 
 function openLocalDatabase () {
@@ -191,7 +192,10 @@ export async function getResources (kind: ResourceKind, academicLevel?: string) 
         reviewed_at: resource.reviewed_at || null,
         review_comment: resource.review_comment || null,
         category: resource.category || (resource.kind === 'past_question' ? 'past_question' : 'lecture_notes'),
-        uploaded_by_name: 'Student Contributor',
+        uploaded_by_name: ['Student Contributor', 'LASU student'].includes(resource.uploaded_by_name)
+          && resource.uploaded_by === user.id
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : resource.uploaded_by_name || 'Student',
         institution_key: resource.institution_key || 'university:lagos state university (lasu), ojo',
         url: URL.createObjectURL(blob),
       }))
@@ -456,7 +460,7 @@ export async function uploadResource (input: NewResource) {
       file_name: fileName,
       file_path: fileName,
       uploaded_by: user.id,
-      uploaded_by_name: getContributorName(),
+      uploaded_by_name: getContributorName(user),
       institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'approved',
       reviewed_at: null,
@@ -501,7 +505,7 @@ export async function uploadResource (input: NewResource) {
       file_name: fileName,
       file_path: filePath,
       uploaded_by: user.id,
-      uploaded_by_name: getContributorName(),
+      uploaded_by_name: getContributorName(user),
       institution_key: getInstitutionKey(user.institutionType, user.institution),
       status: 'pending',
     })

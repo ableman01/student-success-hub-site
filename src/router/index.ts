@@ -31,6 +31,11 @@ const router = createRouter({
       component: () => import('@/pages/dashboard.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/class-materials',
+      component: () => import('@/pages/dashboard.vue'),
+      meta: { requiresAuth: true },
+    },
 
     {
       path: '/saved-materials',

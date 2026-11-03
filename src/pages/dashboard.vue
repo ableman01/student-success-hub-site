@@ -1,5 +1,5 @@
 ﻿<template>
-  <main id="dashboard-top" class="dashboard-page">
+  <main id="dashboard-top" class="dashboard-page" :class="{ 'class-materials-page': isClassMaterialsPage }">
     <v-container class="dashboard-width py-5 py-md-8" fluid>
       <header class="dashboard-header">
         <RouterLink aria-label="Student Success Hub home" class="dashboard-brand" to="/">
@@ -57,6 +57,16 @@
             variant="text"
           >
             Past questions
+          </v-btn>
+
+          <v-btn
+            class="shared-link"
+            prepend-icon="mdi-bookshelf"
+            rounded="pill"
+            to="/class-materials"
+            variant="text"
+          >
+            Class materials
           </v-btn>
 
           <v-btn
@@ -118,7 +128,14 @@
         </nav>
       </header>
 
-      <section class="dashboard-welcome">
+      <section v-if="isClassMaterialsPage" aria-labelledby="class-materials-page-heading" class="class-materials-page-heading">
+        <div class="section-kicker">YOUR COURSE LIBRARY</div>
+        <h1 id="class-materials-page-heading">Class materials</h1>
+        <p>Browse, search, save, and share course notes for your institution and academic level.</p>
+        <v-btn prepend-icon="mdi-arrow-left" rounded="pill" to="/dashboard" variant="tonal">Back to dashboard</v-btn>
+      </section>
+
+      <section v-if="!isClassMaterialsPage" class="dashboard-welcome">
         <div>
           <div class="dashboard-kicker">
             <v-icon size="16">mdi-school-outline</v-icon>
@@ -135,7 +152,75 @@
         </div>
       </section>
 
-      <section v-if="isResourceModerator" aria-labelledby="reports-heading" class="moderation-panel report-review-panel">
+      <section v-if="!isClassMaterialsPage" aria-labelledby="dashboard-directions-heading" class="dashboard-directions">
+        <div class="section-title-row">
+          <div>
+            <div class="section-kicker">YOUR STUDY SPACE</div>
+            <h2 id="dashboard-directions-heading">Where would you like to go?</h2>
+            <p>Choose a space to continue learning, plan your week, or connect with classmates.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-directions-grid">
+          <RouterLink class="dashboard-direction-card" to="/class-materials">
+            <v-icon color="primary">mdi-bookshelf</v-icon>
+            <strong>Class materials</strong>
+            <span>Browse notes and course resources</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/#past-questions">
+            <v-icon color="warning">mdi-file-question-outline</v-icon>
+            <strong>Shared questions</strong>
+            <span>Find past questions to practise</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/study">
+            <v-icon color="success">mdi-account-group-outline</v-icon>
+            <strong>Study together</strong>
+            <span>Join the live course room</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/study-groups">
+            <v-icon color="success">mdi-account-multiple-plus-outline</v-icon>
+            <strong>Private study groups</strong>
+            <span>Create a group and invite classmates</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/timetable">
+            <v-icon color="secondary">mdi-calendar-clock-outline</v-icon>
+            <strong>Timetable</strong>
+            <span>Organize your classes and week</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/saved-materials">
+            <v-icon color="primary">mdi-bookmark-outline</v-icon>
+            <strong>Saved materials</strong>
+            <span>Return to resources you bookmarked</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" :to="isLasuStudent ? '/lasu-updates' : '/institution-news'">
+            <v-icon color="secondary">mdi-newspaper-variant-outline</v-icon>
+            <strong>Institution updates</strong>
+            <span>Read recent updates from your institution</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+
+          <RouterLink class="dashboard-direction-card" to="/profile">
+            <v-icon color="secondary">mdi-account-circle-outline</v-icon>
+            <strong>My profile</strong>
+            <span>Update your academic details</span>
+            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
+          </RouterLink>
+        </div>
+      </section>
+
+      <section v-if="!isClassMaterialsPage && isResourceModerator" aria-labelledby="reports-heading" class="moderation-panel report-review-panel">
         <div class="section-title-row">
           <div>
             <div class="section-kicker">STUDENT REPORTS</div>
@@ -170,7 +255,7 @@
         </div>
       </section>
 
-      <section aria-label="Study together" class="dashboard-hero">
+      <section v-if="!isClassMaterialsPage" aria-label="Study together" class="dashboard-hero">
         <div class="dashboard-hero-copy">
           <span class="dashboard-hero-kicker">A GOOD DAY TO LEARN</span>
           <h2>Big goals feel easier together.</h2>
@@ -185,7 +270,7 @@
         <img alt="" class="dashboard-hero-image" src="/study-dashboard.svg">
       </section>
 
-      <section v-if="user" aria-labelledby="institution-news-heading" class="institution-news-panel">
+      <section v-if="!isClassMaterialsPage && user" aria-labelledby="institution-news-heading" class="institution-news-panel">
         <div class="section-title-row">
           <div>
             <div class="section-kicker">{{ user.institution }}</div>
@@ -261,7 +346,7 @@
       </section>
 
       <v-alert
-        v-if="errorMessage && !showAssignmentForm && !showMaterialForm"
+        v-if="!isClassMaterialsPage && errorMessage && !showAssignmentForm && !showMaterialForm"
         class="mb-5"
         type="error"
         variant="tonal"
@@ -269,7 +354,7 @@
         {{ errorMessage }}
       </v-alert>
 
-      <section v-if="isResourceModerator" aria-labelledby="moderation-heading" class="moderation-panel">
+      <section v-if="!isClassMaterialsPage && isResourceModerator" aria-labelledby="moderation-heading" class="moderation-panel">
         <div class="section-title-row">
           <div>
             <div class="section-kicker">CREATOR TOOLS</div>
@@ -292,7 +377,7 @@
               <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
               <strong>{{ resource.title }}</strong>
               <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
-              <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
+              <span>Shared by {{ resource.uploaded_by_name || 'Student' }} · submitted {{ formatDate(resource.created_at) }}</span>
               <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
 
@@ -374,7 +459,7 @@
                 <strong>{{ resource.title }}</strong>
                 <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
                 <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
-                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student' }} · submitted {{ formatDate(resource.created_at) }}</span>
                 <span>Approved {{ resource.reviewed_at ? formatDate(resource.reviewed_at) : 'date unavailable' }}</span>
                 <p v-if="resource.description">{{ resource.description }}</p>
                 <p v-if="resource.review_comment">Reviewer note: {{ resource.review_comment }}</p>
@@ -415,7 +500,7 @@
                 <strong>{{ resource.title }}</strong>
                 <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
                 <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
-                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student' }} · submitted {{ formatDate(resource.created_at) }}</span>
                 <p v-if="resource.review_comment">Reviewer note: {{ resource.review_comment }}</p>
               </div>
 
@@ -433,7 +518,7 @@
         </details>
       </section>
 
-      <section aria-label="Academic overview" class="stats-grid">
+      <section v-if="!isClassMaterialsPage" aria-label="Academic overview" class="stats-grid">
         <v-card class="stat-card stat-pending" rounded="xl">
           <div class="stat-icon"><v-icon>mdi-clipboard-text-clock-outline</v-icon></div>
 
@@ -465,7 +550,7 @@
         </v-card>
       </section>
 
-      <v-row align="start" class="dashboard-content">
+      <v-row v-if="!isClassMaterialsPage" align="start" class="dashboard-content">
         <v-col cols="12" lg="8">
           <section aria-labelledby="assignments-heading" class="section-panel">
             <div class="section-title-row">
@@ -721,6 +806,7 @@
       </v-row>
 
       <v-dialog
+        v-if="!isClassMaterialsPage"
         v-model="showAssignmentForm"
         aria-labelledby="assignment-dialog-title"
         max-width="620"
@@ -846,6 +932,7 @@
       </v-dialog>
 
       <v-dialog
+        v-if="!isClassMaterialsPage"
         aria-labelledby="edit-assignment-dialog-title"
         max-width="620"
         :model-value="editTaskId !== null"
@@ -949,7 +1036,7 @@
         </v-card>
       </v-dialog>
 
-      <section aria-labelledby="materials-heading" class="materials-section">
+      <section v-if="isClassMaterialsPage" aria-labelledby="materials-heading" class="materials-section">
         <div class="section-title-row materials-title-row">
           <div>
             <div class="section-kicker">LEARN TOGETHER</div>
@@ -1025,6 +1112,10 @@
             {{ user?.academicLevel ? getAcademicLevelLabel(user.academicLevel) : 'All levels' }}
           </v-chip>
         </div>
+
+        <v-alert v-if="errorMessage" class="mb-4" type="error" variant="tonal">
+          {{ errorMessage }}
+        </v-alert>
 
         <p class="saved-materials-hint">All approved materials are shown by default, with your bookmarks at the top. You can switch to saved items only at any time.</p>
 
@@ -1121,7 +1212,7 @@
                   {{ getResourceCategoryLabel(resource.category) }}
                 </v-chip>
 
-                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student' }}</span>
                 <span>Source: {{ resource.source || 'Not provided' }}</span>
               </div>
 
@@ -1448,6 +1539,7 @@
       </v-dialog>
 
       <v-dialog
+        v-if="!isClassMaterialsPage"
         v-model="showProfileDialog"
         aria-labelledby="profile-dialog-title"
         max-width="700"
@@ -1639,10 +1731,10 @@
         <RouterLink to="/">Back to Student Success Hub</RouterLink>
       </footer>
 
-      <nav aria-label="Dashboard shortcuts" class="dashboard-quick-nav">
+      <nav v-if="!isClassMaterialsPage" aria-label="Dashboard shortcuts" class="dashboard-quick-nav">
         <a href="#dashboard-top"><v-icon>mdi-view-dashboard-outline</v-icon><span>Home</span></a>
         <a href="#assignments-heading"><v-icon>mdi-checkbox-marked-circle-outline</v-icon><span>Tasks</span></a>
-        <a href="#materials-heading"><v-icon>mdi-bookshelf</v-icon><span>Resources</span></a>
+        <RouterLink to="/class-materials"><v-icon>mdi-bookshelf</v-icon><span>Materials</span></RouterLink>
         <RouterLink to="/study"><v-icon>mdi-account-group-outline</v-icon><span>Community</span></RouterLink>
       </nav>
 
@@ -1688,6 +1780,7 @@
 
   const router = useRouter()
   const route = useRoute()
+  const isClassMaterialsPage = computed(() => route.path === '/class-materials')
   const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
   interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
@@ -2622,6 +2715,85 @@
     font-size: 13px;
   }
 
+  .dashboard-directions {
+    margin-bottom: 28px;
+    border: 1px solid #e4e9e1;
+    border-radius: 22px;
+    padding: 22px;
+    background: linear-gradient(120deg, #fffefa, #f3f7f1);
+  }
+
+  .dashboard-directions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .dashboard-direction-card {
+    position: relative;
+    display: grid;
+    min-height: 132px;
+    align-content: start;
+    justify-items: start;
+    gap: 8px;
+    border: 1px solid #e4e9e1;
+    border-radius: 16px;
+    padding: 16px;
+    color: #294453;
+    background: #fff;
+    text-decoration: none;
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  }
+
+  .dashboard-direction-card:hover,
+  .dashboard-direction-card:focus-visible {
+    transform: translateY(-2px);
+    border-color: #b7cbb9;
+    box-shadow: 0 8px 22px rgb(30 53 54 / 8%);
+    outline: none;
+  }
+
+  .dashboard-direction-card strong {
+    font-size: 0.94rem;
+  }
+
+  .dashboard-direction-card span {
+    max-width: 90%;
+    color: #748187;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .dashboard-direction-card .direction-arrow {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    color: #82948a;
+    font-size: 18px;
+  }
+
+  .class-materials-page-heading {
+    margin: 0 0 22px;
+    border: 1px solid #dce8dd;
+    border-radius: 22px;
+    padding: 24px;
+    background: linear-gradient(112deg, #eff5ed 0%, #fbfaf3 62%, #edf4ef 100%);
+  }
+
+  .class-materials-page-heading h1 {
+    margin: 5px 0;
+    color: #203a4a;
+    font-size: clamp(1.7rem, 4vw, 2.2rem);
+    font-weight: 780;
+    letter-spacing: -0.04em;
+  }
+
+  .class-materials-page-heading p {
+    margin: 0 0 16px;
+    color: #718085;
+  }
+
   .welcome-date {
     display: inline-flex;
     align-items: center;
@@ -3232,6 +3404,10 @@
     margin-top: 30px;
   }
 
+  .class-materials-page .materials-section {
+    margin-top: 0;
+  }
+
   .materials-title-row {
     margin-bottom: 17px;
   }
@@ -3420,6 +3596,8 @@
 
   .v-theme--academicDark .dashboard-brand small,
   .v-theme--academicDark .dashboard-welcome p,
+  .v-theme--academicDark .dashboard-direction-card span,
+  .v-theme--academicDark .class-materials-page-heading p,
   .v-theme--academicDark .section-title-row p,
   .v-theme--academicDark .stat-copy > span,
   .v-theme--academicDark .stat-copy small,
@@ -3431,6 +3609,9 @@
   }
 
   .v-theme--academicDark .welcome-date,
+  .v-theme--academicDark .dashboard-directions,
+  .v-theme--academicDark .dashboard-direction-card,
+  .v-theme--academicDark .class-materials-page-heading,
   .v-theme--academicDark .stat-card,
   .v-theme--academicDark .section-panel,
   .v-theme--academicDark .upcoming-card,
@@ -3809,6 +3990,8 @@
   @media (max-width: 760px) {
     .dashboard-quick-nav { width: calc(100vw - 24px); }
     .dashboard-quick-nav a { font-size: 10px; }
+    .dashboard-directions { padding: 17px; }
+    .dashboard-directions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .dashboard-header {
       margin-bottom: 26px;
     }
@@ -3871,6 +4054,8 @@
   }
 
   @media (max-width: 480px) {
+    .dashboard-directions-grid { grid-template-columns: 1fr; }
+    .class-materials-page-heading { padding: 19px; }
     .dashboard-width {
       padding-inline: 16px;
     }
