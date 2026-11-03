@@ -204,13 +204,6 @@
             <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
           </RouterLink>
 
-          <RouterLink class="dashboard-direction-card" :to="isLasuStudent ? '/lasu-updates' : '/institution-news'">
-            <v-icon color="secondary">mdi-newspaper-variant-outline</v-icon>
-            <strong>Institution updates</strong>
-            <span>Read recent updates from your institution</span>
-            <v-icon class="direction-arrow">mdi-arrow-right</v-icon>
-          </RouterLink>
-
           <RouterLink class="dashboard-direction-card" to="/profile">
             <v-icon color="secondary">mdi-account-circle-outline</v-icon>
             <strong>My profile</strong>
@@ -268,81 +261,6 @@
         </div>
 
         <img alt="" class="dashboard-hero-image" src="/study-dashboard.svg">
-      </section>
-
-      <section v-if="!isClassMaterialsPage && user" aria-labelledby="institution-news-heading" class="institution-news-panel">
-        <div class="section-title-row">
-          <div>
-            <div class="section-kicker">{{ user.institution }}</div>
-            <h2 id="institution-news-heading">{{ isLasuStudent ? 'LASU updates' : 'Institution updates' }}</h2>
-            <p>{{ institutionNewsSourceType === 'search' ? 'News search results for your school. Results may include unrelated coverage.' : 'Recent updates from your institution, when available.' }}</p>
-          </div>
-
-          <v-btn
-            :loading="loadingInstitutionNews"
-            :prepend-icon="isLasuStudent ? 'mdi-bullhorn-outline' : 'mdi-newspaper-variant-outline'"
-            rounded="pill"
-            :to="isLasuStudent ? '/lasu-updates' : '/institution-news'"
-            variant="tonal"
-          >
-            {{ isLasuStudent ? 'View LASU updates' : 'View institution updates' }}
-          </v-btn>
-        </div>
-
-        <v-alert
-          v-if="institutionNewsError"
-          class="mt-4"
-          density="compact"
-          type="info"
-          variant="tonal"
-        >
-          {{ institutionNewsError }}
-        </v-alert>
-
-        <v-alert
-          v-else-if="institutionNewsNote"
-          class="mt-4"
-          density="compact"
-          type="info"
-          variant="tonal"
-        >
-          {{ institutionNewsNote }}
-        </v-alert>
-
-        <div v-if="loadingInstitutionNews && institutionNews.length === 0" class="institution-news-loading">
-          Loading updates for {{ user.institution }}…
-        </div>
-
-        <div v-else-if="institutionNews.length > 0" class="institution-news-grid">
-          <a
-            v-for="item in institutionNews.slice(0, 3)"
-            :key="item.url"
-            class="institution-news-item"
-            :href="item.url"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span>{{ item.source }}<template v-if="item.published_at"> · {{ formatDate(item.published_at) }}</template></span>
-            <strong>{{ item.title }}</strong>
-            <p v-if="item.summary" class="institution-news-summary">{{ item.summary }}</p>
-            <span class="institution-news-link">Read update <v-icon size="14">mdi-open-in-new</v-icon></span>
-          </a>
-        </div>
-
-        <v-alert
-          v-else-if="!loadingInstitutionNews && !institutionNewsError && !institutionNewsNote"
-          class="mt-4"
-          density="compact"
-          type="info"
-          variant="tonal"
-        >
-          No institution news is available right now.
-        </v-alert>
-
-        <p v-if="institutionNews.length > 0" class="institution-news-attribution">
-          <template v-if="institutionNewsSourceType === 'official'">These updates are from an official institution website.</template>
-          <template v-else>These are news search results, not official school notices. Confirm important information with your school.</template>
-        </p>
       </section>
 
       <v-alert
@@ -1765,7 +1683,6 @@
     updateProfile,
   } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
-  import { isLasuInstitution } from '@/lib/institutions'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
   import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResourceModerationHistory, getResourceReports, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
@@ -1783,13 +1700,6 @@
   const isClassMaterialsPage = computed(() => route.path === '/class-materials')
   const { isDark: _isDark, toggleTheme, themeIcon, themeLabel } = useAppTheme()
   const user = ref<AppUser | null>(null)
-  interface InstitutionNewsItem { title: string, url: string, source: string, published_at: string | null, summary?: string }
-  const institutionNews = ref<InstitutionNewsItem[]>([])
-  const loadingInstitutionNews = ref(false)
-  const institutionNewsError = ref('')
-  const institutionNewsNote = ref('')
-  const institutionNewsSourceType = ref<'official' | 'search' | null>(null)
-  const isLasuStudent = computed(() => Boolean(user.value && isLasuInstitution(user.value.institutionType, user.value.institution)))
   // The raw lists are kept so the duplicate counters stay accurate; every
   // visible list is derived from them through the automatic sorter.
   const tasks = ref<Task[]>([])
@@ -2003,7 +1913,6 @@
       }
 
       user.value = currentUser
-      void loadInstitutionNews(currentUser)
       const moderator = await checkResourceModerator(currentUser.id)
       isResourceModerator.value = moderator
       const [loadedTasks, savedIds] = await Promise.all([
@@ -2018,27 +1927,6 @@
       errorMessage.value = getErrorMessage(error)
     } finally {
       loading.value = false
-    }
-  }
-
-  async function loadInstitutionNews (currentUser: AppUser) {
-    institutionNews.value = []
-    institutionNewsError.value = ''
-    institutionNewsNote.value = ''
-    institutionNewsSourceType.value = null
-    loadingInstitutionNews.value = true
-    try {
-      const params = new URLSearchParams({ institution: currentUser.institution, type: currentUser.institutionType })
-      const response = await fetch(`/api/institution-news?${params}`)
-      const result = await response.json() as { items?: InstitutionNewsItem[], officialSite?: string | null, sourceType?: 'official' | 'search' | null, note?: string, error?: string }
-      if (!response.ok) throw new Error(result.error || 'Institution updates are temporarily unavailable.')
-      institutionNews.value = result.items || []
-      institutionNewsNote.value = result.note || ''
-      institutionNewsSourceType.value = result.sourceType || null
-    } catch (error) {
-      institutionNewsError.value = getErrorMessage(error, 'Institution updates are temporarily unavailable.')
-    } finally {
-      loadingInstitutionNews.value = false
     }
   }
 
@@ -2558,83 +2446,6 @@
     max-width: 1420px;
     margin-inline: auto;
     padding-bottom: 104px;
-  }
-
-  .institution-news-panel {
-    margin: 24px 0 30px;
-    padding: 24px;
-    border: 1px solid rgb(30 78 64 / 12%);
-    border-radius: 22px;
-    background: rgb(255 255 255 / 88%);
-    box-shadow: 0 12px 36px rgb(31 58 71 / 5%);
-  }
-
-  .institution-news-panel .section-title-row {
-    margin-bottom: 0;
-  }
-
-  .institution-news-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-    gap: 12px;
-    margin-top: 18px;
-  }
-
-  .institution-news-item {
-    display: flex;
-    min-height: 150px;
-    flex-direction: column;
-    gap: 10px;
-    padding: 18px;
-    border: 1px solid rgb(30 78 64 / 10%);
-    border-radius: 16px;
-    color: inherit;
-    background: #fff;
-    text-decoration: none;
-    transition: border-color 160ms ease, transform 160ms ease;
-  }
-
-  .institution-news-item:hover {
-    transform: translateY(-2px);
-    border-color: rgb(30 120 91 / 40%);
-  }
-
-  .institution-news-item > span:first-child,
-  .institution-news-attribution {
-    color: #61756c;
-    font-size: 12px;
-  }
-
-  .institution-news-item strong {
-    font-size: 15px;
-    line-height: 1.45;
-  }
-
-  .institution-news-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    margin-top: auto;
-    color: #216b50;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .institution-news-summary {
-    margin: 0;
-    color: #61756c;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .institution-news-loading {
-    padding: 24px 0;
-    color: #61756c;
-  }
-
-  .institution-news-attribution {
-    display: block;
-    margin-top: 16px;
   }
 
   .dashboard-header {

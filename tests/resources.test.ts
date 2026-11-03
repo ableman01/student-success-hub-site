@@ -104,6 +104,11 @@ test('class materials have a dedicated route while the dashboard directs student
   assert.match(savedMaterials, /to="\/class-materials"[^>]*>Browse class materials/)
 })
 
+test('institution news is not shown or fetched on the dashboard', async () => {
+  const dashboard = await readFile(new URL('../src/pages/dashboard.vue', import.meta.url), 'utf8')
+  assert.doesNotMatch(dashboard, /institution-news|institutionNews|Institution updates|LASU updates/)
+})
+
 test('uploads and existing resources show uploader names instead of contributor placeholders', async () => {
   const service = await readFile(new URL('../src/services/resources.ts', import.meta.url), 'utf8')
   const homePage = await readFile(new URL('../src/pages/index.vue', import.meta.url), 'utf8')
