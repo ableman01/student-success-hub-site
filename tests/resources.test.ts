@@ -65,3 +65,18 @@ test('approved past questions and class materials show an expandable feedback bo
   assert.match(dashboard, /<ResourceFeedback :resource="resource" :viewer-id="user\?\.id" \/>/)
   assert.equal((dashboard.match(/prepend-icon="mdi-delete-outline"[\s\S]{0,180}>Delete<\/v-btn>/g) || []).length > 0, true)
 })
+
+test('past questions use an explicit upload label without a classmate discussion shortcut', async () => {
+  const homePage = await readFile(new URL('../src/pages/index.vue', import.meta.url), 'utf8')
+  assert.match(homePage, /Upload past question/)
+  assert.doesNotMatch(homePage, /Discuss with classmates/)
+})
+
+test('admin shows approved resources from every institution and paginates moderation history', async () => {
+  const dashboard = await readFile(new URL('../src/pages/dashboard.vue', import.meta.url), 'utf8')
+  const service = await readFile(new URL('../src/services/resources.ts', import.meta.url), 'utf8')
+  assert.match(dashboard, /Approved resources/)
+  assert.match(dashboard, /const approvedResources = computed\(\(\) => moderationHistory\.value\.filter\(resource => resource\.status === 'approved'\)\)/)
+  assert.match(dashboard, /institution_name \|\| resource\.institution_key/)
+  assert.match(service, /\.neq\('status', 'pending'\)[\s\S]*?\.range\(offset, offset \+ pageSize - 1\)/)
+})

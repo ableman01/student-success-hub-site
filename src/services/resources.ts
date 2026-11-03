@@ -257,16 +257,28 @@ export async function getPendingResources () {
 }
 
 export async function getResourceModerationHistory () {
-  const { data, error } = await getSupabaseClient()
-    .from('resources')
-    .select('*')
-    .neq('status', 'pending')
-    .order('reviewed_at', { ascending: false })
+  const pageSize = 500
+  const rows: Record<string, unknown>[] = []
 
-  if (error) {
-    throw new Error(getErrorMessage(error))
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await getSupabaseClient()
+      .from('resources')
+      .select('*')
+      .neq('status', 'pending')
+      .order('reviewed_at', { ascending: false })
+      .range(offset, offset + pageSize - 1)
+
+    if (error) {
+      throw new Error(getErrorMessage(error))
+    }
+
+    rows.push(...data)
+    if (data.length < pageSize) {
+      break
+    }
   }
-  return Promise.all(data.map(row => normalizeResource(row)))
+
+  return Promise.all(rows.map(row => normalizeResource(row)))
 }
 
 export async function getApprovedResourceById (resourceId: string) {

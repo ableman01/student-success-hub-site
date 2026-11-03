@@ -346,14 +346,28 @@
           </article>
         </div>
 
-        <details v-if="moderationHistory.length > 0" class="review-history">
-          <summary>Reviewed submissions ({{ moderationHistory.length }})</summary>
+        <section aria-labelledby="approved-resources-heading" class="approved-resources-panel">
+          <div class="section-title-row">
+            <div>
+              <div class="section-kicker">ALL INSTITUTIONS</div>
+              <h3 id="approved-resources-heading">Approved resources</h3>
+              <p>Every approved past question and course material is listed here. You can remove an upload if it was approved by mistake.</p>
+            </div>
 
-          <div class="moderation-list mt-4">
-            <article v-for="resource in moderationHistory" :key="resource.id" class="moderation-item">
+            <v-chip color="success" prepend-icon="mdi-check-circle-outline" variant="tonal">
+              {{ approvedResources.length }} approved
+            </v-chip>
+          </div>
+
+          <v-alert v-if="approvedResources.length === 0" class="mt-4" type="info" variant="tonal">
+            No approved resources are available to review yet.
+          </v-alert>
+
+          <div v-else class="moderation-list">
+            <article v-for="resource in approvedResources" :key="resource.id" class="moderation-item">
               <div class="moderation-copy">
                 <div class="d-flex flex-wrap align-center ga-2">
-                  <v-chip :color="resource.status === 'approved' ? 'success' : 'error'" size="x-small" variant="tonal">{{ resource.status }}</v-chip>
+                  <v-chip color="success" size="x-small" variant="tonal">approved</v-chip>
                   <v-chip size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
                 </div>
 
@@ -361,7 +375,8 @@
                 <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
                 <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
                 <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
-
+                <span>Approved {{ resource.reviewed_at ? formatDate(resource.reviewed_at) : 'date unavailable' }}</span>
+                <p v-if="resource.description">{{ resource.description }}</p>
                 <p v-if="resource.review_comment">Reviewer note: {{ resource.review_comment }}</p>
               </div>
 
@@ -374,6 +389,37 @@
                   variant="tonal"
                 >Preview PDF</v-btn>
 
+                <v-btn
+                  color="error"
+                  prepend-icon="mdi-delete-outline"
+                  rounded="pill"
+                  variant="text"
+                  @click="resourceToDelete = resource"
+                >Delete</v-btn>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <details v-if="rejectedResources.length > 0" class="review-history">
+          <summary>Rejected submissions ({{ rejectedResources.length }})</summary>
+
+          <div class="moderation-list mt-4">
+            <article v-for="resource in rejectedResources" :key="resource.id" class="moderation-item">
+              <div class="moderation-copy">
+                <div class="d-flex flex-wrap align-center ga-2">
+                  <v-chip color="error" size="x-small" variant="tonal">rejected</v-chip>
+                  <v-chip size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
+                </div>
+
+                <strong>{{ resource.title }}</strong>
+                <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
+                <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
+                <p v-if="resource.review_comment">Reviewer note: {{ resource.review_comment }}</p>
+              </div>
+
+              <div class="moderation-actions">
                 <v-btn
                   color="error"
                   prepend-icon="mdi-delete-outline"
@@ -1659,6 +1705,8 @@
   const savingResourceId = ref('')
   const pendingResources = ref<Resource[]>([])
   const moderationHistory = ref<Resource[]>([])
+  const approvedResources = computed(() => moderationHistory.value.filter(resource => resource.status === 'approved'))
+  const rejectedResources = computed(() => moderationHistory.value.filter(resource => resource.status === 'rejected'))
   const resourceReports = ref<ResourceReport[]>([])
   const openResourceReportCount = computed(() => resourceReports.value.filter(report => report.status === 'pending').length)
   const notifications = ref<AppNotification[]>([])

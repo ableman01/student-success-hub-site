@@ -186,7 +186,7 @@
             variant="tonal"
             @click="showUpload = !showUpload"
           >
-            Past question
+            Upload past question
           </v-btn>
 
           <v-btn
@@ -280,7 +280,7 @@
             <span class="feature-icon feature-icon-gold"><v-icon>mdi-file-upload-outline</v-icon></span>
 
             <div>
-              <h3 class="text-h6 font-weight-bold">Past question</h3>
+              <h3 class="text-h6 font-weight-bold">Upload past question</h3>
               <p class="text-body-2 text-medium-emphasis">Help another student feel prepared.</p>
             </div>
           </div>
@@ -466,18 +466,6 @@
               >
                 Read past question
                 <v-icon end>mdi-open-in-new</v-icon>
-              </v-btn>
-
-              <v-btn
-                block
-                class="mt-3"
-                color="secondary"
-                rounded="pill"
-                :to="{ path: '/study-groups', query: { course: resource.course || '', resource_id: resource.id } }"
-                variant="text"
-              >
-                Discuss with classmates
-                <v-icon end>mdi-forum-outline</v-icon>
               </v-btn>
 
               <ResourceFeedback :resource="resource" :viewer-id="currentUser?.id" />
