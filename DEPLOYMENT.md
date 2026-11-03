@@ -42,6 +42,8 @@ For a first-time setup, run [`supabase/schema.sql`](./supabase/schema.sql) in th
 
 For an existing database, apply [`20261103160000_add_institution_to_upload_notifications.sql`](./supabase/migrations/20261103160000_add_institution_to_upload_notifications.sql) so upload approval notifications include the submitting institution.
 
+Apply [`20261103170000_all_students_resource_feedback_and_global_deletion.sql`](./supabase/migrations/20261103170000_all_students_resource_feedback_and_global_deletion.sql) to allow student feedback on any approved resource and ensure the global admin can delete resources and PDFs across institutions.
+
 If using a custom SMTP sender, configure and verify it in Supabase Auth. Store SMTP credentials in Supabase settings, never in this repository or browser environment variables.
 
 ## Institution news

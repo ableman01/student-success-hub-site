@@ -334,6 +334,14 @@
                 rounded="pill"
                 @click="moderateResource(resource, 'approved')"
               >Approve</v-btn>
+
+              <v-btn
+                color="error"
+                prepend-icon="mdi-delete-outline"
+                rounded="pill"
+                variant="text"
+                @click="resourceToDelete = resource"
+              >Delete</v-btn>
             </div>
           </article>
         </div>
@@ -365,6 +373,14 @@
                   target="_blank"
                   variant="tonal"
                 >Preview PDF</v-btn>
+
+                <v-btn
+                  color="error"
+                  prepend-icon="mdi-delete-outline"
+                  rounded="pill"
+                  variant="text"
+                  @click="resourceToDelete = resource"
+                >Delete</v-btn>
               </div>
             </article>
           </div>
@@ -1960,11 +1976,15 @@
     try {
       await deleteResource(resource)
       classMaterials.value = classMaterials.value.filter(item => item.id !== resource.id)
+      pendingResources.value = pendingResources.value.filter(item => item.id !== resource.id)
+      moderationHistory.value = moderationHistory.value.filter(item => item.id !== resource.id)
+      resourceReports.value = resourceReports.value.filter(report => report.resource_id !== resource.id)
       resourceToDelete.value = null
-      successMessage.value = 'Your class material upload has been deleted.'
+      successMessage.value = 'The resource and its PDF have been deleted.'
       successSnackbar.value = true
+      await refreshDashboardSignals()
     } catch (error) {
-      errorMessage.value = getErrorMessage(error, 'Could not delete this class material.')
+      errorMessage.value = getErrorMessage(error, 'Could not delete this resource.')
     } finally {
       deletingResource.value = false
     }

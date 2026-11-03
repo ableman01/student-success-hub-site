@@ -1,14 +1,24 @@
 <template>
-  <div v-if="viewerId && resource.status === 'approved' && viewerId !== resource.uploaded_by" class="resource-feedback">
-    <details>
-      <summary>
-        <v-icon size="18">mdi-comment-alert-outline</v-icon>
-        Comment or report this upload
-      </summary>
+  <div v-if="viewerId && resource.status === 'approved'" class="resource-feedback">
+    <v-btn
+      :append-icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+      :aria-controls="`resource-feedback-${resource.id}`"
+      :aria-expanded="expanded"
+      block
+      class="feedback-toggle"
+      color="secondary"
+      prepend-icon="mdi-comment-text-outline"
+      rounded="lg"
+      variant="tonal"
+      @click="expanded = !expanded"
+    >
+      Add a comment or review
+    </v-btn>
 
-      <div class="feedback-form">
+    <v-expand-transition>
+      <section v-if="expanded" :id="`resource-feedback-${resource.id}`" class="feedback-form">
         <p class="text-body-2 text-medium-emphasis">
-          Your comment is private to the admin review team and will be attached to this upload.
+          Share a comment or report an issue. Your feedback is sent to the admin for review.
         </p>
 
         <v-select
@@ -43,8 +53,8 @@
             @click="sendFeedback"
           >Send to admin</v-btn>
         </div>
-      </div>
-    </details>
+      </section>
+    </v-expand-transition>
 
     <v-snackbar v-model="successOpen" color="success" timeout="3000">
       Your feedback was sent to the admin review page.
@@ -62,6 +72,7 @@
     viewerId?: string
   }>()
 
+  const expanded = ref(false)
   const successOpen = ref(false)
   const submitting = ref(false)
   const errorMessage = ref('')
@@ -99,27 +110,16 @@
     background: rgb(var(--v-theme-surface));
   }
 
-  summary {
-    display: flex;
+  .feedback-toggle {
     min-height: 48px;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 14px;
-    color: rgb(var(--v-theme-secondary));
-    cursor: pointer;
-    font-weight: 650;
-    list-style: none;
+    justify-content: flex-start;
+    padding-inline: 14px;
   }
-
-  summary::-webkit-details-marker { display: none; }
-  summary::after { margin-left: auto; content: '＋'; font-size: 18px; }
-  details[open] summary::after { content: '−'; }
-  summary:focus-visible { outline: 3px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
 
   .feedback-form {
     display: grid;
     gap: 14px;
-    padding: 0 14px 16px;
+    padding: 14px;
   }
 
   .feedback-form p { margin: 0; }

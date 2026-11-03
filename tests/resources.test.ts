@@ -44,3 +44,24 @@ test('upload approval notifications include institution details and stay scoped 
   assert.match(migration, /moderator\.is_global_admin\s+or profile\.institution_key = new\.institution_key/)
   assert.match(migration, /left\(concat_ws\([\s\S]*\), 500\)/)
 })
+
+test('all students can report approved resources and global admins can delete cross-institution resources', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20261103170000_all_students_resource_feedback_and_global_deletion.sql', import.meta.url), 'utf8')
+  assert.match(migration, /reporter_id = \(select auth\.uid\(\)\)/)
+  assert.match(migration, /resource\.status = 'approved'/)
+  assert.doesNotMatch(migration, /resource\.uploaded_by\s*<>\s*\(select auth\.uid\(\)\)/)
+  assert.match(migration, /for delete to authenticated\s+using \(\(select public\.is_global_resource_admin\(\)\)\)/)
+  assert.match(migration, /bucket_id = 'student-resources'\s+and \(select public\.is_global_resource_admin\(\)\)/)
+})
+
+test('approved past questions and class materials show an expandable feedback box', async () => {
+  const component = await readFile(new URL('../src/components/ResourceFeedback.vue', import.meta.url), 'utf8')
+  const homePage = await readFile(new URL('../src/pages/index.vue', import.meta.url), 'utf8')
+  const dashboard = await readFile(new URL('../src/pages/dashboard.vue', import.meta.url), 'utf8')
+  assert.match(component, /Add a comment or review/)
+  assert.match(component, /v-if="viewerId && resource\.status === 'approved'"/)
+  assert.doesNotMatch(component, /viewerId !== resource\.uploaded_by/)
+  assert.match(homePage, /<ResourceFeedback :resource="resource" :viewer-id="currentUser\?\.id" \/>/)
+  assert.match(dashboard, /<ResourceFeedback :resource="resource" :viewer-id="user\?\.id" \/>/)
+  assert.equal((dashboard.match(/prepend-icon="mdi-delete-outline"[\s\S]{0,180}>Delete<\/v-btn>/g) || []).length > 0, true)
+})
