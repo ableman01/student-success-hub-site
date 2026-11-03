@@ -78,7 +78,7 @@
       </section>
 
       <v-row align="start" class="study-content-columns">
-        <v-col cols="12" lg="8">
+        <v-col cols="12">
           <v-card id="course-room" class="room-card pa-4 pa-md-6" rounded="xl">
             <div class="room-toolbar">
               <div>
@@ -249,7 +249,7 @@
           </v-card>
         </v-col>
 
-        <v-col cols="12" lg="4">
+        <v-col cols="12" lg="12">
           <v-card id="course-resources" class="reading-card pa-5" rounded="xl">
             <div class="section-kicker">READ TOGETHER</div>
             <h2 class="mt-1">Course PDFs</h2>

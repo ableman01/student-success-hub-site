@@ -968,7 +968,7 @@
               rounded="pill"
               @click="showMaterialForm = true"
             >
-              Add new material
+              Upload class materials
             </v-btn>
 
             <v-btn
@@ -1074,7 +1074,7 @@
             variant="tonal"
             @click="showMaterialForm = true"
           >
-            Add new material
+            Upload class materials
           </v-btn>
         </div>
 
@@ -1243,7 +1243,7 @@
 
             <div>
               <div class="section-kicker">SHARE WITH CLASSMATES</div>
-              <h2 id="material-dialog-title">Add class material</h2>
+              <h2 id="material-dialog-title">Upload class materials</h2>
               <p>Share lecture notes. New uploads are reviewed before students can access them.</p>
             </div>
 

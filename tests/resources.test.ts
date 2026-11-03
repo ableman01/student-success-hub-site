@@ -80,3 +80,13 @@ test('admin shows approved resources from every institution and paginates modera
   assert.match(dashboard, /institution_name \|\| resource\.institution_key/)
   assert.match(service, /\.neq\('status', 'pending'\)[\s\S]*?\.range\(offset, offset \+ pageSize - 1\)/)
 })
+
+test('study room prioritizes full-width live chat and class material actions say upload', async () => {
+  const studyRoom = await readFile(new URL('../src/pages/study-room.vue', import.meta.url), 'utf8')
+  const dashboard = await readFile(new URL('../src/pages/dashboard.vue', import.meta.url), 'utf8')
+  assert.ok(studyRoom.indexOf('class="groups-invitation"') < studyRoom.indexOf('id="course-room"'))
+  assert.ok(studyRoom.indexOf('id="course-room"') < studyRoom.indexOf('id="course-resources"'))
+  assert.match(studyRoom, /<v-col cols="12">\s*<v-card id="course-room"/)
+  assert.match(dashboard, /Upload class materials/)
+  assert.doesNotMatch(dashboard, /Add new material|Add class material/)
+})
