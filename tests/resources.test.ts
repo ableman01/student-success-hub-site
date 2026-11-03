@@ -36,3 +36,11 @@ test('database report policies bind submissions and moderation to institution sc
   assert.match(migration, /exists \(select 1 from public\.resource_moderators moderator/)
   assert.match(migration, /where resource\.id = resource_reports\.resource_id/)
 })
+
+test('upload approval notifications include institution details and stay scoped to moderators', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20261103160000_add_institution_to_upload_notifications.sql', import.meta.url), 'utf8')
+  assert.match(migration, /new\.institution_type/)
+  assert.match(migration, /new\.institution_name/)
+  assert.match(migration, /moderator\.is_global_admin\s+or profile\.institution_key = new\.institution_key/)
+  assert.match(migration, /left\(concat_ws\([\s\S]*\), 500\)/)
+})

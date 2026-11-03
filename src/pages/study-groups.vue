@@ -53,6 +53,24 @@
         @click:close="groupNotice = ''"
       >{{ groupNotice }}</v-alert>
 
+      <v-card v-if="resourceContext && !contextGroupId" class="resource-context-card pa-4 pa-md-5 mb-5" rounded="xl" variant="tonal">
+        <div class="eyebrow">DOCUMENT FOR YOUR DISCUSSION · {{ resourceContext.course }}</div>
+        <h2 class="mt-2">{{ resourceContext.title }}</h2>
+        <p>This is the upload you opened. Open it while you discuss it with your course group.</p>
+
+        <v-btn
+          :href="resourceContext.url"
+          prepend-icon="mdi-file-eye-outline"
+          rel="noopener noreferrer"
+          rounded="pill"
+          target="_blank"
+          variant="tonal"
+        >Open document</v-btn>
+
+        <p v-if="groups.length > 0" class="mt-3 mb-0">You don’t have a study group for {{ resourceContext.course }} yet. Create one below to discuss this document with classmates.</p>
+        <p v-else class="mt-3 mb-0">Create a group for {{ resourceContext.course }} below. The document will be shown inside that group.</p>
+      </v-card>
+
       <v-expand-transition>
         <v-card v-if="showCreateGroup" class="create-card pa-5 pa-md-7" rounded="xl">
           <div class="card-heading"><div><div class="eyebrow">GET STARTED</div><h2>Create your group</h2><p>Give your study circle a name and course. You can invite classmates as soon as it’s ready.</p></div><v-btn aria-label="Close form" icon="mdi-close" variant="text" @click="showCreateGroup = false" /></div>
@@ -160,6 +178,21 @@
             </div>
 
             <div v-if="expandedGroupIds.includes(group.id)" class="group-body">
+              <v-card v-if="resourceContext && contextGroupId === group.id" class="resource-context-card pa-4 mb-4" rounded="xl" variant="tonal">
+                <div class="eyebrow">DOCUMENT FOR YOUR DISCUSSION · {{ resourceContext.course }}</div>
+                <h3 class="mt-2">{{ resourceContext.title }}</h3>
+                <p>Keep this document open while you discuss it with your group. A message draft is ready below; review and send it to share the topic with classmates.</p>
+
+                <v-btn
+                  :href="resourceContext.url"
+                  prepend-icon="mdi-file-eye-outline"
+                  rel="noopener noreferrer"
+                  rounded="pill"
+                  target="_blank"
+                  variant="tonal"
+                >Open document</v-btn>
+              </v-card>
+
               <v-progress-linear
                 v-if="loadingGroupIds.includes(group.id)"
                 class="my-3"
@@ -260,16 +293,20 @@
 </template>
 
 <script setup lang="ts">
+  import type { Resource } from '@/services/resources'
   import type { GroupPostType, StudyGroup, StudyGroupPost } from '@/services/study'
   import type { RealtimeChannel } from '@supabase/supabase-js'
   import { onBeforeUnmount, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getCurrentUser } from '@/lib/auth'
   import { getErrorMessage } from '@/lib/errors'
+  import { getApprovedResourceById } from '@/services/resources'
   import { createStudyGroup as createGroupRecord, deleteStudyGroup, getStudyGroupPosts, getStudyGroups, joinStudyGroup, leaveStudyGroup, leaveStudyGroupMembership, sendStudyGroupPost, subscribeToStudyGroup } from '@/services/study'
 
   const route = useRoute()
   const groups = ref<StudyGroup[]>([])
+  const resourceContext = ref<Resource | null>(null)
+  const contextGroupId = ref('')
   const currentUserId = ref('')
   const expandedGroupIds = ref<string[]>([])
   const groupPostsById = ref<Record<string, StudyGroupPost[]>>({})
@@ -309,6 +346,43 @@
     }
   }
 
+  function normalizeCourse (course: string) {
+    return course.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+  }
+
+  function prepareResourceDiscussionDraft (groupId: string) {
+    const resource = resourceContext.value
+    if (!resource) return
+    groupPostTypes.value[groupId] = resource.kind === 'past_question' ? 'question' : 'discussion'
+    groupDrafts.value[groupId] = `Can we discuss “${resource.title}” for ${resource.course}?\nDocument: ${resource.url}`
+  }
+
+  async function loadResourceContext () {
+    const resourceId = typeof route.query.resource_id === 'string' ? route.query.resource_id : ''
+    if (!resourceId) return
+
+    try {
+      resourceContext.value = await getApprovedResourceById(resourceId)
+      if (!resourceContext.value) {
+        groupNotice.value = 'This resource is no longer available for discussion.'
+        return
+      }
+
+      newGroupCourse.value = resourceContext.value.course
+      const matchingGroup = groups.value.find(group => normalizeCourse(group.course) === normalizeCourse(resourceContext.value!.course))
+      if (matchingGroup) {
+        contextGroupId.value = matchingGroup.id
+        prepareResourceDiscussionDraft(matchingGroup.id)
+        await expandGroup(matchingGroup.id)
+      } else {
+        newGroupName.value = `${resourceContext.value.course} study group`
+        showCreateGroup.value = true
+      }
+    } catch (error) {
+      groupError.value = getErrorMessage(error, 'Could not load the document for discussion.')
+    }
+  }
+
   async function createGroup () {
     groupError.value = ''
     const name = newGroupName.value.trim()
@@ -319,6 +393,10 @@
       const group = await createGroupRecord({ name, course, description: newGroupDescription.value.trim() })
       groups.value.unshift(group)
       groupPostTypes.value[group.id] = 'discussion'
+      if (resourceContext.value && normalizeCourse(group.course) === normalizeCourse(resourceContext.value.course)) {
+        contextGroupId.value = group.id
+        prepareResourceDiscussionDraft(group.id)
+      }
       await expandGroup(group.id)
       showCreateGroup.value = false
       newGroupName.value = ''
@@ -465,6 +543,7 @@
       groupError.value = getErrorMessage(error, 'Your profile could not be checked. Reload or sign in again before managing a group.')
     }
     await loadGroups()
+    await loadResourceContext()
     if (inviteCodeInput.value) await joinGroup()
   })
 

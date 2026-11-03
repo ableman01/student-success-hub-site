@@ -291,7 +291,8 @@
             <div class="moderation-copy">
               <v-chip color="warning" size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
               <strong>{{ resource.title }}</strong>
-              <span v-if="resource.institution_name">{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name }}</span>
+              <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
+              <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
               <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
               <p v-if="resource.description">{{ resource.description }}</p>
 
@@ -336,6 +337,38 @@
             </div>
           </article>
         </div>
+
+        <details v-if="moderationHistory.length > 0" class="review-history">
+          <summary>Reviewed submissions ({{ moderationHistory.length }})</summary>
+
+          <div class="moderation-list mt-4">
+            <article v-for="resource in moderationHistory" :key="resource.id" class="moderation-item">
+              <div class="moderation-copy">
+                <div class="d-flex flex-wrap align-center ga-2">
+                  <v-chip :color="resource.status === 'approved' ? 'success' : 'error'" size="x-small" variant="tonal">{{ resource.status }}</v-chip>
+                  <v-chip size="x-small" variant="tonal">{{ resource.kind === 'past_question' ? 'Past question' : getResourceCategoryLabel(resource.category) }}</v-chip>
+                </div>
+
+                <strong>{{ resource.title }}</strong>
+                <span>{{ resource.institution_type || 'Institution' }} · {{ resource.institution_name || resource.institution_key }}</span>
+                <span>{{ resource.course || 'Course not specified' }} · {{ resource.academic_year || 'Academic year not provided' }} · {{ resource.semester || 'Semester not provided' }}</span>
+                <span>Shared by {{ resource.uploaded_by_name || 'Student Contributor' }} · submitted {{ formatDate(resource.created_at) }}</span>
+
+                <p v-if="resource.review_comment">Reviewer note: {{ resource.review_comment }}</p>
+              </div>
+
+              <div class="moderation-actions">
+                <v-btn
+                  :href="resource.url"
+                  prepend-icon="mdi-file-eye-outline"
+                  rounded="pill"
+                  target="_blank"
+                  variant="tonal"
+                >Preview PDF</v-btn>
+              </div>
+            </article>
+          </div>
+        </details>
       </section>
 
       <section aria-label="Academic overview" class="stats-grid">
@@ -1581,7 +1614,7 @@
   import { isLasuInstitution } from '@/lib/institutions'
   import { isSupabaseConfigured } from '@/lib/supabase'
   import { customerCareWhatsAppUrl } from '@/lib/support'
-  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResourceReports, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
+  import { isResourceModerator as checkResourceModerator, deduplicateAndSortResources, deleteResource, getNotifications, getPendingResources, getResourceCategoryLabel, getResourceModerationHistory, getResourceReports, getResources, getSavedResourceIds, markNotificationsRead, removeDuplicateResources, resourceCategories, reviewResource, reviewResourceReport, setResourceSaved, updateResource, uploadResource } from '@/services/resources'
   import {
     createTask,
     deduplicateAndSortTasks,
@@ -1609,6 +1642,7 @@
   const savedResourceIds = ref<string[]>([])
   const savingResourceId = ref('')
   const pendingResources = ref<Resource[]>([])
+  const moderationHistory = ref<Resource[]>([])
   const resourceReports = ref<ResourceReport[]>([])
   const openResourceReportCount = computed(() => resourceReports.value.filter(report => report.status === 'pending').length)
   const notifications = ref<AppNotification[]>([])
@@ -1854,13 +1888,15 @@
   async function refreshDashboardSignals (moderator = isResourceModerator.value) {
     if (!isSupabaseConfigured) return
     try {
-      const [loadedNotifications, pending, reports] = await Promise.all([
+      const [loadedNotifications, pending, history, reports] = await Promise.all([
         getNotifications(),
         moderator ? getPendingResources() : Promise.resolve([]),
+        moderator ? getResourceModerationHistory() : Promise.resolve([]),
         moderator ? getResourceReports() : Promise.resolve([]),
       ])
       notifications.value = loadedNotifications
       pendingResources.value = pending
+      moderationHistory.value = history
       resourceReports.value = reports
     } catch (error) {
       errorMessage.value = getErrorMessage(error, 'Could not refresh notifications and upload approvals.')
@@ -3548,6 +3584,21 @@
     gap: 10px;
     margin-top: 15px;
   }
+
+  .review-history {
+    margin-top: 20px;
+    border-top: 1px solid #e5eae3;
+    padding-top: 14px;
+  }
+
+  .review-history > summary {
+    width: fit-content;
+    color: #1e6567;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .review-history > summary:focus-visible { outline: 3px solid #1e6567; outline-offset: 3px; }
 
   .moderation-item {
     display: flex;

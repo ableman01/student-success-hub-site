@@ -40,6 +40,8 @@ Add preview URLs separately if you want email links from preview builds to work.
 
 For a first-time setup, run [`supabase/schema.sql`](./supabase/schema.sql) in the SQL Editor of the same Supabase project to set up the app's tables, storage policies, and realtime study-room messages. Incremental database changes are recorded under [`supabase/migrations`](./supabase/migrations). If this project already has a live schema, inspect and synchronize its migration history before enabling automatic schema migrations.
 
+For an existing database, apply [`20261103160000_add_institution_to_upload_notifications.sql`](./supabase/migrations/20261103160000_add_institution_to_upload_notifications.sql) so upload approval notifications include the submitting institution.
+
 If using a custom SMTP sender, configure and verify it in Supabase Auth. Store SMTP credentials in Supabase settings, never in this repository or browser environment variables.
 
 ## Institution news

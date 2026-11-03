@@ -645,7 +645,12 @@ as $$
 begin
   insert into public.app_notifications (recipient_id, resource_id, type, message)
   select moderator.user_id, new.id, 'resource_uploaded',
-    'New upload awaiting review: ' || left(new.title, 350)
+    left(concat_ws(
+      ' · ',
+      'New upload awaiting review: ' || left(new.title, 240),
+      coalesce(nullif(left(btrim(new.institution_type), 100), ''), 'Institution'),
+      coalesce(nullif(left(btrim(new.institution_name), 120), ''), left(new.institution_key, 120))
+    ), 500)
   from public.resource_moderators as moderator;
   return new;
 end;

@@ -473,7 +473,7 @@
                 class="mt-3"
                 color="secondary"
                 rounded="pill"
-                :to="{ path: '/study', query: { course: resource.course || '' } }"
+                :to="{ path: '/study-groups', query: { course: resource.course || '', resource_id: resource.id } }"
                 variant="text"
               >
                 Discuss with classmates

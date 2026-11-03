@@ -256,6 +256,40 @@ export async function getPendingResources () {
   return Promise.all(data.map(row => normalizeResource(row)))
 }
 
+export async function getResourceModerationHistory () {
+  const { data, error } = await getSupabaseClient()
+    .from('resources')
+    .select('*')
+    .neq('status', 'pending')
+    .order('reviewed_at', { ascending: false })
+
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
+  return Promise.all(data.map(row => normalizeResource(row)))
+}
+
+export async function getApprovedResourceById (resourceId: string) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return null
+  }
+
+  const institutionKey = getInstitutionKey(user.institutionType, user.institution)
+  const { data, error } = await getSupabaseClient()
+    .from('resources')
+    .select('*')
+    .eq('id', resourceId)
+    .eq('institution_key', institutionKey)
+    .eq('status', 'approved')
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(getErrorMessage(error))
+  }
+  return data ? normalizeResource(data) : null
+}
+
 export async function reviewResource (resourceId: string, status: Exclude<ResourceStatus, 'pending'>, reviewComment: string) {
   const comment = reviewComment.trim()
   if (status === 'rejected' && !comment) {
