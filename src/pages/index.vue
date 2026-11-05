@@ -401,8 +401,6 @@
             v-for="resource in paginatedPastQuestions"
             :key="resource.id"
             cols="12"
-            lg="4"
-            md="6"
           >
             <v-card class="resource-card fill-height pa-5" rounded="xl">
               <div class="d-flex align-start ga-3">
@@ -1541,13 +1539,9 @@
   }
 
   .resource-description {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
     color: #687983;
     font-size: 12px !important;
-    line-height: 1.45;
+    line-height: 1.65;
   }
 
   .min-width-0 {
@@ -1811,11 +1805,6 @@
   }
 
   @media (max-width: 1279px) {
-    .past-question-grid > .v-col {
-      flex: 0 0 100% !important;
-      max-width: 100% !important;
-    }
-
     .resource-card h3,
     .resource-card p,
     .resource-attribution {
