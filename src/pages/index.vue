@@ -66,7 +66,7 @@
         <div class="hero-copy">
           <div class="eyebrow">
             <span class="eyebrow-dot" />
-            SUPPORTING STUDENTS AT EVERY INSTITUTION
+            SUPPORTING STUDENTS ACROSS EVERY INSTITUTION IN NIGERIA
           </div>
 
           <h1>
@@ -900,9 +900,9 @@
     padding: 0 24px 32px;
     color: #172d43;
     background:
-      radial-gradient(ellipse at 6% 8%, rgb(221 238 231 / 52%), transparent 32rem),
-      radial-gradient(ellipse at 95% 27%, rgb(244 232 203 / 48%), transparent 28rem),
-      #f7f7f2;
+      radial-gradient(ellipse at 6% 8%, rgb(210 235 223 / 62%), transparent 32rem),
+      radial-gradient(ellipse at 95% 27%, rgb(246 232 194 / 42%), transparent 28rem),
+      #f3f7f4;
   }
 
   .home-width {
@@ -982,8 +982,8 @@
     padding: 58px 72px;
     color: #fff;
     background:
-      radial-gradient(ellipse at 82% 15%, rgb(75 132 132 / 44%), transparent 30rem),
-      linear-gradient(120deg, #15344c 0%, #1e4657 58%, #28615e 100%);
+      radial-gradient(ellipse at 82% 15%, rgb(83 160 133 / 44%), transparent 30rem),
+      linear-gradient(120deg, #123b46 0%, #18534e 58%, #26745f 100%);
     box-shadow: 0 26px 60px rgb(29 57 66 / 14%);
   }
 
@@ -1023,6 +1023,7 @@
 
   .eyebrow {
     display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 9px;
     margin-bottom: 22px;
@@ -1931,6 +1932,7 @@
     }
 
     .eyebrow {
+      max-width: 100%;
       margin-bottom: 17px;
       font-size: 10px;
     }

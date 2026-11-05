@@ -19,10 +19,10 @@ export default createVuetify({
       academicLight: {
         dark: false,
         colors: {
-          background: '#f7f9f5',
+          background: '#f3f7f4',
           surface: '#ffffff',
-          primary: '#16535b',
-          secondary: '#4a8c78',
+          primary: '#14594f',
+          secondary: '#3e8b6d',
           success: '#2e7d5b',
           warning: '#b38943',
           error: '#b85d52',
