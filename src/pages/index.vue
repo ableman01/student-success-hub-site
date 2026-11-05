@@ -396,13 +396,13 @@
           </div>
         </div>
 
-        <v-row v-else class="past-question-grid">
-          <v-col
+        <div v-else class="past-question-grid">
+          <v-card
             v-for="resource in paginatedPastQuestions"
             :key="resource.id"
-            cols="12"
+            class="resource-card fill-height pa-5"
+            rounded="xl"
           >
-            <v-card class="resource-card fill-height pa-5" rounded="xl">
               <div class="d-flex align-start ga-3">
                 <span class="resource-icon"><v-icon color="error">mdi-file-pdf-box</v-icon></span>
 
@@ -493,9 +493,8 @@
                 Delete resource
                 <v-icon end>mdi-delete-outline</v-icon>
               </v-btn>
-            </v-card>
-          </v-col>
-        </v-row>
+          </v-card>
+        </div>
 
         <div v-if="filteredPastQuestions.length > pastQuestionPerPage" class="d-flex justify-center mt-6">
           <v-pagination v-model="pastQuestionPage" :length="pastQuestionTotalPages" rounded="circle" />
@@ -710,7 +709,7 @@
       .map(course => ({ title: course, value: course })),
   )
   const pastQuestionPage = ref(1)
-  const pastQuestionPerPage = 10
+  const pastQuestionPerPage = 18
   const paginatedPastQuestions = computed(() => {
     const start = (pastQuestionPage.value - 1) * pastQuestionPerPage
     return filteredPastQuestions.value.slice(start, start + pastQuestionPerPage)
@@ -1523,6 +1522,17 @@
     transition: transform 160ms ease, box-shadow 160ms ease;
   }
 
+  .past-question-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .resource-card > .d-flex > .min-width-0 {
+    flex: 1 1 0;
+  }
+
   .resource-card:hover {
     box-shadow: 0 16px 36px rgb(24 49 57 / 10%);
     transform: translateY(-3px);
@@ -1812,6 +1822,10 @@
       word-break: normal;
     }
 
+  }
+
+  @media (max-width: 760px) {
+    .past-question-grid { grid-template-columns: minmax(0, 1fr); }
   }
 
   @media (max-width: 900px) {

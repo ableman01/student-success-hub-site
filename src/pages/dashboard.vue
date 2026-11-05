@@ -1738,7 +1738,7 @@
     { title: 'Saved only', value: 'saved-only' },
   ]
   const materialPage = ref(1)
-  const materialPerPage = 10
+  const materialPerPage = 18
   const paginatedClassMaterials = computed(() => {
     const start = (materialPage.value - 1) * materialPerPage
     return filteredClassMaterials.value.slice(start, start + materialPerPage)
@@ -2766,7 +2766,7 @@
 
   .material-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
     align-items: stretch;
     gap: 16px;
   }
